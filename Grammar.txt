@@ -1,84 +1,21 @@
-/*----------------------------------------------*/
-/*--------------------Legend--------------------*/
-/* '<Type>'         = Token type                */
-/* '<Type:Value>'   = Token                     */
-/* 'someRule :='    = Grammar rule creation     */
-/* 'someRule'       = Grammar rule calling      */
-/* '*'              = Zero or more times        */
-/* '+'              = One or more times         */
-/* '?'              = Zero or one times         */
-/* '(...)'          = Grouping                  */
-/* '|'              = either one                */
-/*----------------------------------------------*/
-/* Begin from the top, jump to other rules when */
-/* They get called.                             */
-/*----------------------------------------------*/
+/*--------------------------------------------------*/
+/*--------------------Legend------------------------*/
+/* '<Type>'          = Token type                   */
+/* '<Type:Value>'    = Token                        */
+/* 'someRule := ...' = Grammar rule creation        */
+/* 'someRule'        = Grammar rule calling         */
+/* '...*'            = Zero or more times           */
+/* '...+'            = One or more times            */
+/* '...?'            = Zero or one times            */
+/* '(...)'           = Grouping                     */
+/* '...|...'         = Either one. Can be chained   */
+/*--------------------------------------------------*/
+/* Begin from the top, jump to other rules when     */
+/* They get called.                                 */
+/*--------------------------------------------------*/
 
-module          := topLevelDecl
+expression      := additive_expr
 
-declList        := topLevelDecl topLevelDecl
-                := topLevelDecl
+add_expr        := factor (<Plus|Minus> factor)*
 
-topLevelDecl    := VarDecl
-                := funcDecl
-
-funcDecl        := <Keyword:func> <LAngle> builtinType <RAngle> paramList <Identifier> 
-                            <LCurly> stmtList <RCurly>
-
-paramList       := (parameter (<Comma> parameter)*)?
-
-parameter       := <LAngle> builtinType <RAngle> <Identifier>
-
-stmtList        := (statement)*
-
-statement       := varDecl
-                := ifStmt
-
-exprStmt        := expression <Terminal>
-
-varDecl         := <Keyword:let> <LAngle> builtinType <RAngle> <Identifier> 
-                            (<Assign> <expression>)? <Terminal>
-
-ifStmt          := <Keyword:if> expression <LCurly> stmtList <RCurly>
-                            (<Keyword:elif> expression <LCurly> stmtList <RCurly>)*
-                            (<Keyword:else> <LCurly> stmtList <RCurly>)?
-
-expression      := orExpr
-
-orExpr          := xorExpr (<Or|Keyword:or> xorExpr)*
-
-xorExpr         := andExpr (<Xor|Keyword:xor> andExpr)*
-
-andExpr         := compExpr (<And|Keyword:and> compExpr)*
-
-notExpr         := <Not|Keyword:Not> notExpr
-                := compExpr
-
-compExpr        := arithmExpr (<Eq|Ne|LAngle|RAngle|Gte|Lte> arithmExpr)*
-
-bitOrExpr       := bitXorExpr (<BitOr> bitXorExpr)*
-
-bitXorExpr      := bitAndExpr (<BitXor> bitAndExpr)*
-
-bitAndExpr      := additiveExpr (<BitAnd> additiveExpr)*
-
-additiveExpr    := factor (<Plus|Minus> factor)*
-
-factor          := sign (<Mul|Div|Mod> sign)*
-
-sign            := <Plus|Minus> sign
-                := bitNotExpr
-
-bitNotExpr      := <BitNot> bitNotExpr
-                := power
-
-power           := primary (<Pow> sign)*
-
-primary         := literal
-                := <Identifier>
-                := <Keyword:true|Keyword:false>
-                := <LParen> expression <RParen>
-
-literal         := <Int|Float|Double>
-
-builtinType     := <Keyword:int|Keyword:float|Keyword:double|Keyword:bool|Keyword:void>
+factor          := <Int|Float>
