@@ -70,14 +70,18 @@ endif
 GENERATED :=
 OBJECTS :=
 
+GENERATED += $(OBJDIR)/Interpreter.o
 GENERATED += $(OBJDIR)/Main.o
 GENERATED += $(OBJDIR)/Parser.o
 GENERATED += $(OBJDIR)/Token.o
 GENERATED += $(OBJDIR)/Tokenizer.o
+GENERATED += $(OBJDIR)/Variant.o
+OBJECTS += $(OBJDIR)/Interpreter.o
 OBJECTS += $(OBJDIR)/Main.o
 OBJECTS += $(OBJDIR)/Parser.o
 OBJECTS += $(OBJDIR)/Token.o
 OBJECTS += $(OBJDIR)/Tokenizer.o
+OBJECTS += $(OBJDIR)/Variant.o
 
 # Rules
 # #############################################
@@ -142,6 +146,12 @@ endif
 # #############################################
 
 $(OBJDIR)/Token.o: src/DataTypes/Token.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Variant.o: src/DataTypes/Variant.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Interpreter.o: src/Interpreter.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/Main.o: src/Main.cpp

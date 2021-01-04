@@ -6,7 +6,6 @@ namespace SourDo
     {
         this->tokens = tokens;
         position = 0;
-        std::cout << tokens.size();
         current_token = tokens[position];
         std::shared_ptr<Node> ast = expression(ExprPrecedence::AddExpr);
         return ast;
@@ -19,7 +18,6 @@ namespace SourDo
         {
             current_token = tokens[position];
         }
-        std::cout << current_token << "\n";
         return current_token;
     }
 

@@ -3,16 +3,19 @@
 
 #include "Tokenizer.hpp"
 #include "Parser.hpp"
+#include "Interpreter.hpp"
 
 namespace SourDo {
-    std::shared_ptr<Node> parse(const std::string& text)
+    Variant parse(const std::string& text)
     {
         std::vector<Token> tokens = tokenize_string(text);
-        std::cout << tokens << "\n";
+        //std::cout << tokens << "\n";
         Parser parser;
-        std::cout << "I got the parser\n";
         std::shared_ptr<Node> ast = parser.parse_tokens(tokens);
-        return ast;
+        //std::cout << ast << "\n";
+        Interpreter interpreter;
+        Variant result = interpreter.travel_node(ast);
+        return result;
     }
 } // namespace SourDo
 
@@ -23,7 +26,8 @@ int main()
     {
         std::cout << "SourDo > ";
         std::getline(std::cin, text);
-        auto result = SourDo::parse(text);
+        SourDo::Variant result = SourDo::parse(text);
         std::cout << result << std::endl;
     }
+    return 0;
 }
