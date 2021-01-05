@@ -30,7 +30,7 @@ namespace SourDo {
         Variant& operator=(NullType other);
         Variant& operator=(int other);
         Variant& operator=(double other);
-    public:
+        
         Variant operator+(const Variant& other);
         Variant operator-(const Variant& other);
 

@@ -1,10 +1,11 @@
 #include "DataTypes/Token.hpp"
 
 #include <unordered_map>
+#include <sstream>
 
 namespace SourDo {
-    Token::Token(Type type, std::string value)
-        : type(type), value(value)
+    Token::Token(Type type, const Position& position, const std::string& value)
+        : type(type), position(position), value(value)
     {
     }
 
@@ -36,6 +37,13 @@ namespace SourDo {
         }
         
         return os;
+    }
+
+    std::string operator+(const std::string& string, const Token::Type& type)
+    {
+        std::stringstream ss;
+        ss << string << type;
+        return ss.str();
     }
 
 } // namespace SourDo

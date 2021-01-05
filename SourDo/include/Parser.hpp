@@ -1,15 +1,22 @@
 #pragma once
 
 #include "DataTypes/Nodes.hpp"
+#include "Errors/Error.hpp"
 
 #include <unordered_map>
 #include <vector>
 
-namespace SourDo { 
+namespace SourDo {
+    struct ParseResult
+    {
+        std::shared_ptr<Node> result;
+        std::optional<Error> error;
+    };
+
     class Parser
     {
     public:
-        std::shared_ptr<Node> parse_tokens(const std::vector<Token>& tokens);
+        ParseResult parse_tokens(const std::vector<Token>& tokens);
     private:
         typedef std::shared_ptr<ExpressionNode> (Parser::*ParseExprFunc)(std::shared_ptr<ExpressionNode>);
 
@@ -27,11 +34,11 @@ namespace SourDo {
             ExprPrecedence precedence;
         };
 
+        std::optional<Error> error;
         std::vector<Token> tokens;
         Token current_token;
         uint32_t position;
 
-    private:
         Token advance();
 
         std::shared_ptr<ExpressionNode> expression(ExprPrecedence precedence);

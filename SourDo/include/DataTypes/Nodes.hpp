@@ -15,9 +15,8 @@ namespace SourDo {
             BinaryOpNode,
             LiteralNode,
         };
-    public:
         Type type = Type::None;
-    public:
+
         virtual std::string to_string() = 0;
     protected:
         Node() = default;
@@ -35,18 +34,20 @@ namespace SourDo {
         BinaryOpNode(std::shared_ptr<ExpressionNode> left_operand, 
                 const Token& op_token, std::shared_ptr<ExpressionNode> right_operand)
             : left_operand(left_operand), op_token(op_token), right_operand(right_operand)
-    {
-        type = Type::BinaryOpNode;
-    }
-    public:
+        {
+            type = Type::BinaryOpNode;
+        }
+
         std::shared_ptr<ExpressionNode> left_operand;
         Token op_token;
         std::shared_ptr<ExpressionNode> right_operand;
-    public:
+
         std::string to_string() final
         {
             std::stringstream ss;
-            ss << "(" << left_operand->to_string() << ", " << op_token << ", " << right_operand->to_string() << ")";
+            ss << "(" << left_operand->to_string() 
+                    << ", " << op_token << ", " 
+                    << right_operand->to_string() << ")";
             return ss.str();
         }
     };
@@ -60,9 +61,8 @@ namespace SourDo {
             type = Type::LiteralNode;
         }
 
-    public:
         Token token;
-    public:
+        
         std::string to_string() final
         {
             std::stringstream ss;

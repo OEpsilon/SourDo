@@ -1,17 +1,19 @@
 #include "Tokenizer.hpp"
 
+#include <cctype>
+
 namespace SourDo {
-    std::vector<Token> tokenize_string(const std::string& text)
+    TokenizerResult tokenize_string(const std::string& text)
     {
+        Position position(0, 0, 0);
         std::vector<Token> tokens;
-        uint32_t position = 0;
         char current_char = '\0';
-        while(position < text.length())
+        while(position.index < text.length())
         {
-            current_char = text[position];
+            current_char = text[position.index];
             if(isblank(current_char))
             {
-                position++;
+                position.advance(current_char);
                 continue;
             }
             else if(isdigit(current_char))
@@ -20,8 +22,8 @@ namespace SourDo {
                 std::string number_string = "";
                 uint8_t dot_count = 0;
                 
-                while(position < text.length() && (isdigit(current_char) || 
-                        current_char == '.'))
+                while(position.index < text.length() && (isdigit(current_char) 
+                        || current_char == '.'))
                 {
                     if(current_char == '.')
                     {
@@ -36,37 +38,45 @@ namespace SourDo {
                     {
                         number_string += current_char;
                     }
-                    position++;
-                    current_char = text[position];
+                    position.advance(current_char);
+                    current_char = text[position.index];
                 }
 
                 if(dot_count == 0)
                 {
-                    tokens.emplace_back(Token::Type::INT, number_string);
+                    tokens.emplace_back(Token::Type::INT, position, number_string);
                 }
                 else
                 {  
-                    tokens.emplace_back(Token::Type::FLOAT, number_string);
+                    tokens.emplace_back(Token::Type::FLOAT, position, number_string);
                 }
             }
             else
             {
                 switch (current_char)
                 {
-                case '+':
-                    tokens.emplace_back(Token::Type::PLUS);
-                    position++;
-                    break;
-                case '-':
-                    tokens.emplace_back(Token::Type::MINUS);
-                    position++;
-                    break;
+                    case '+':
+                        tokens.emplace_back(Token::Type::PLUS, position);
+                        position.advance(current_char);
+                        break;
+                    case '-':
+                        tokens.emplace_back(Token::Type::MINUS, position);
+                        position.advance(current_char);
+                        break;
+                    default:
+                    {
+                        using namespace std::string_literals;
+                        return {tokens, Error(
+                                "Unexpected character '"s + current_char + "'", 
+                                position)};
+                        break;
+                    }
                 }
             }
             
         }
-        tokens.push_back(Token::Type::TK_EOF);
-        return tokens;
+        tokens.emplace_back(Token::Type::TK_EOF, position);
+        return {tokens};
     }
 
     std::ostream& operator<<(std::ostream& os, const std::vector<Token>& tokens)

@@ -3,10 +3,17 @@
 #include "DataTypes/Token.hpp"
 
 #include <vector>
-#include <cctype>
+#include <optional>
+#include "Errors/Error.hpp"
 
 namespace SourDo {
-    std::vector<Token> tokenize_string(const std::string& text);
+    struct TokenizerResult 
+    {
+        std::vector<Token> result;
+        std::optional<Error> error;
+    };
+
+    TokenizerResult tokenize_string(const std::string& text);
 
     std::ostream& operator<<(std::ostream& os, const std::vector<Token>& tokens);
 } // namespace SourDo

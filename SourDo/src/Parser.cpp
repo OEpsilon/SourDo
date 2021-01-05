@@ -2,13 +2,13 @@
 
 namespace SourDo
 {
-    std::shared_ptr<Node> Parser::parse_tokens(const std::vector<Token>& tokens)
+    ParseResult Parser::parse_tokens(const std::vector<Token>& tokens)
     {
         this->tokens = tokens;
         position = 0;
         current_token = tokens[position];
         std::shared_ptr<Node> ast = expression(ExprPrecedence::AddExpr);
-        return ast;
+        return {ast, error};
     }
     
     Token Parser::advance()
@@ -24,12 +24,25 @@ namespace SourDo
     std::shared_ptr<ExpressionNode> Parser::expression(ExprPrecedence precedence)
     {
         ParseExprFunc prefix_func = get_rule(current_token.type).prefix;
+        if(prefix_func == nullptr)
+        {
+            error = Error("Expected an expression", current_token.position);
+            return nullptr;
+        }
         std::shared_ptr<ExpressionNode> previous_operand = std::invoke(prefix_func, this, nullptr);
+        if(error)
+        {
+            return nullptr;
+        }
 
         while(precedence <= get_rule(current_token.type).precedence)
         {
             ParseExprFunc infix_func = get_rule(current_token.type).infix;
             previous_operand = std::invoke(infix_func, this, previous_operand);
+            if(error)
+            {
+                return nullptr;
+            }
         }
         return previous_operand;
     }
@@ -46,9 +59,14 @@ namespace SourDo
 
     std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous)
     {
-        Token literal_tok = current_token;
-        advance();
-        return std::make_shared<LiteralNode>(literal_tok);
+        Token tok = current_token;
+        if(tok.type == Token::Type::INT || tok.type == Token::Type::FLOAT)
+        {
+            advance();
+            return std::make_shared<LiteralNode>(tok);
+        }
+        error = Error("Expected an expression", tok.position);
+        return nullptr;
     }
 
     Parser::ParseExprRule& Parser::get_rule(const Token::Type& type)

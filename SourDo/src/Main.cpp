@@ -6,16 +6,30 @@
 #include "Interpreter.hpp"
 
 namespace SourDo {
-    Variant parse(const std::string& text)
+    struct InterpretResult
     {
-        std::vector<Token> tokens = tokenize_string(text);
+        Variant result;
+        std::optional<Error> error;
+    };
+
+    InterpretResult interpret(const std::string& text)
+    {
+        auto[tokens, tokenizer_error] = tokenize_string(text);
+        if(tokenizer_error)
+        {
+            return {NullType(), tokenizer_error};
+        }
         //std::cout << tokens << "\n";
         Parser parser;
-        std::shared_ptr<Node> ast = parser.parse_tokens(tokens);
+        auto[ast, parser_error] = parser.parse_tokens(tokens);
+        if(parser_error)
+        {
+            return {NullType(), parser_error};
+        }
         //std::cout << ast << "\n";
         Interpreter interpreter;
         Variant result = interpreter.travel_node(ast);
-        return result;
+        return {result};
     }
 } // namespace SourDo
 
@@ -26,7 +40,12 @@ int main()
     {
         std::cout << "SourDo > ";
         std::getline(std::cin, text);
-        SourDo::Variant result = SourDo::parse(text);
+        auto[result, error] = SourDo::interpret(text);
+        if(error)
+        {
+            std::cout << error.value() << std::endl;
+            continue;
+        }
         std::cout << result << std::endl;
     }
     return 0;
