@@ -22,9 +22,11 @@ namespace SourDo {
 
         enum class ExprPrecedence
         {
-            None        = 0,
-            AddExpr     = 1,
-            Factor      = 2,
+            NONE        = 0,
+            ADD_EXPR    = 1,
+            MUL_EXPR    = 2,
+            POWER       = 3,
+            FACTOR      = 4,
         };
 
         struct ParseExprRule 
@@ -44,7 +46,9 @@ namespace SourDo {
         std::shared_ptr<ExpressionNode> expression(ExprPrecedence precedence);
 
         std::shared_ptr<ExpressionNode> binary_op_left(std::shared_ptr<ExpressionNode> previous);
+        std::shared_ptr<ExpressionNode> binary_op_right(std::shared_ptr<ExpressionNode> previous);
 
+        std::shared_ptr<ExpressionNode> sign(std::shared_ptr<ExpressionNode> previous);
         std::shared_ptr<ExpressionNode> factor(std::shared_ptr<ExpressionNode> previous);
 
         ParseExprRule& get_rule(const Token::Type& type);

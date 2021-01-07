@@ -12,8 +12,9 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
+            "targetArchitecture": "x64",
             "environment": [],
-            "externalConsole": false,
+            "externalConsole": true,
             "MIMode": "lldb",
             "preLaunchTask": "Build Project"
         }

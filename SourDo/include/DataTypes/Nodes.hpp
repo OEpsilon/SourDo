@@ -12,8 +12,9 @@ namespace SourDo {
         enum class Type
         {
             None = 0,
-            BinaryOpNode,
-            LiteralNode,
+            BINARY_OP_NODE,
+            UNARY_OP_NODE,
+            LITERAL_NODE,
         };
         Type type = Type::None;
 
@@ -35,7 +36,7 @@ namespace SourDo {
                 const Token& op_token, std::shared_ptr<ExpressionNode> right_operand)
             : left_operand(left_operand), op_token(op_token), right_operand(right_operand)
         {
-            type = Type::BinaryOpNode;
+            type = Type::BINARY_OP_NODE;
         }
 
         std::shared_ptr<ExpressionNode> left_operand;
@@ -52,13 +53,33 @@ namespace SourDo {
         }
     };
 
+    class UnaryOpNode : public ExpressionNode
+    {
+    public:
+        UnaryOpNode(const Token& op_token, std::shared_ptr<ExpressionNode> operand)
+            : op_token(op_token), operand(operand)
+        {
+            type = Type::UNARY_OP_NODE;
+        }
+
+        Token op_token;
+        std::shared_ptr<ExpressionNode> operand;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << "(" << op_token << ", " << operand->to_string() << ")";
+            return ss.str();
+        }
+    };
+
     class LiteralNode : public ExpressionNode
     {
     public:
         LiteralNode(const Token& token)
             : token(token)
         {
-            type = Type::LiteralNode;
+            type = Type::LITERAL_NODE;
         }
 
         Token token;

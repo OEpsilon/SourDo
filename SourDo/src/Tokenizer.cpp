@@ -14,11 +14,10 @@ namespace SourDo {
             if(isblank(current_char))
             {
                 position.advance(current_char);
-                continue;
             }
             else if(isdigit(current_char))
             {
-                // Get an int or float literal token.
+                Position saved_position = position;
                 std::string number_string = "";
                 uint8_t dot_count = 0;
                 
@@ -44,11 +43,11 @@ namespace SourDo {
 
                 if(dot_count == 0)
                 {
-                    tokens.emplace_back(Token::Type::INT, position, number_string);
+                    tokens.emplace_back(Token::Type::INT, saved_position, number_string);
                 }
                 else
                 {  
-                    tokens.emplace_back(Token::Type::FLOAT, position, number_string);
+                    tokens.emplace_back(Token::Type::FLOAT, saved_position, number_string);
                 }
             }
             else
@@ -61,6 +60,29 @@ namespace SourDo {
                         break;
                     case '-':
                         tokens.emplace_back(Token::Type::MINUS, position);
+                        position.advance(current_char);
+                        break;
+                    case '*':
+                        position.advance(current_char);
+                        current_char = text[position.index];
+                        if(current_char == '*')
+                        {
+                            tokens.emplace_back(Token::Type::POWER, position);
+                            position.advance(current_char);
+                            break;
+                        }
+                        tokens.emplace_back(Token::Type::MULTI, position);
+                        break;
+                    case '/':
+                        tokens.emplace_back(Token::Type::DIVIDE, position);
+                        position.advance(current_char);
+                        break;
+                    case '(':
+                        tokens.emplace_back(Token::Type::L_PAREN, position);
+                        position.advance(current_char);
+                        break;
+                    case ')':
+                        tokens.emplace_back(Token::Type::R_PAREN, position);
                         position.advance(current_char);
                         break;
                     default:

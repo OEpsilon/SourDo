@@ -16,6 +16,14 @@
 
 expression      := additive_expr
 
-add_expr        := factor (<Plus|Minus> factor)*
+add_expr        := mul_expr (<Plus|Minus> mul_expr)*
+
+mul_expr        := sign (<Mul|Div> sign)*
+
+sign            := <Plus|Minus> sign
+                := power
+
+power           := factor (<Power> sign)*
 
 factor          := <Int|Float>
+                := <LParen> expression <RParen>

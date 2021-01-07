@@ -19,17 +19,17 @@ namespace SourDo {
         {
             return {NullType(), tokenizer_error};
         }
-        //std::cout << tokens << "\n";
+        std::cout << tokens << "\n";
         Parser parser;
         auto[ast, parser_error] = parser.parse_tokens(tokens);
         if(parser_error)
         {
             return {NullType(), parser_error};
         }
-        //std::cout << ast << "\n";
+        std::cout << ast << "\n";
         Interpreter interpreter;
-        Variant result = interpreter.travel_node(ast);
-        return {result};
+        auto[result, interpreter_error] = interpreter.travel_ast(ast);
+        return {result, interpreter_error};
     }
 } // namespace SourDo
 

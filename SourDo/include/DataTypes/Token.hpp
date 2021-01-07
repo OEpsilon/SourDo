@@ -12,7 +12,8 @@ namespace SourDo {
         {
             NONE = 0,
             INT, FLOAT,
-            PLUS, MINUS,
+            PLUS, MINUS, MULTI, DIVIDE, POWER,
+            L_PAREN, R_PAREN,
             TK_EOF,
         };
 

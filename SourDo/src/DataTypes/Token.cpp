@@ -13,12 +13,17 @@ namespace SourDo {
     {
         static std::unordered_map<Token::Type, const char*> strings = 
         {
-            {Token::Type::NONE,     "None"  },
-            {Token::Type::INT,      "Int"   },
-            {Token::Type::FLOAT,    "Float" },
-            {Token::Type::PLUS,     "Plus"  },
-            {Token::Type::MINUS,    "Minus" },
-            {Token::Type::TK_EOF,   "Eof"   }
+            {Token::Type::NONE,     "None"      },
+            {Token::Type::INT,      "Int"       },
+            {Token::Type::FLOAT,    "Float"     },
+            {Token::Type::PLUS,     "Plus"      },
+            {Token::Type::MINUS,    "Minus"     },
+            {Token::Type::MULTI,    "Multi"     },
+            {Token::Type::DIVIDE,   "Divide"    },
+            {Token::Type::POWER,    "Power"     },
+            {Token::Type::L_PAREN,  "LParen"    },
+            {Token::Type::R_PAREN,  "RParen"    },
+            {Token::Type::TK_EOF,   "Eof"       },
         };
 
         os << strings[type];

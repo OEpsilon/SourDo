@@ -7,7 +7,13 @@ namespace SourDo
         this->tokens = tokens;
         position = 0;
         current_token = tokens[position];
-        std::shared_ptr<Node> ast = expression(ExprPrecedence::AddExpr);
+        std::shared_ptr<Node> ast = expression(ExprPrecedence::ADD_EXPR);
+        std::cout << current_token.type << "\n";
+        if(!error && current_token.type != Token::Type::TK_EOF)
+        {
+            return {nullptr, Error("Expected an operator", current_token.position)};
+        }
+
         return {ast, error};
     }
     
@@ -23,6 +29,22 @@ namespace SourDo
 
     std::shared_ptr<ExpressionNode> Parser::expression(ExprPrecedence precedence)
     {
+        if(current_token.type == Token::Type::L_PAREN)
+        {
+            advance();
+            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::ADD_EXPR);
+            if(error)
+            {
+                return nullptr;
+            }
+            if(current_token.type != Token::Type::R_PAREN)
+            {
+                error = Error("Expected a ')'", current_token.position);
+                return nullptr;
+            }
+            return expr;
+        }
+
         ParseExprFunc prefix_func = get_rule(current_token.type).prefix;
         if(prefix_func == nullptr)
         {
@@ -33,6 +55,11 @@ namespace SourDo
         if(error)
         {
             return nullptr;
+        }
+
+        if(get_rule(current_token.type).infix == nullptr)
+        {
+            return previous_operand;
         }
 
         while(precedence <= get_rule(current_token.type).precedence)
@@ -57,6 +84,24 @@ namespace SourDo
         return std::make_shared<BinaryOpNode>(previous, op_token, right);
     }
 
+    std::shared_ptr<ExpressionNode> Parser::binary_op_right(std::shared_ptr<ExpressionNode> previous)
+    {
+        Token op_token = current_token;
+        advance();
+        ExprPrecedence precedence = static_cast<ExprPrecedence>(
+                static_cast<int>(get_rule(op_token.type).precedence));
+        std::shared_ptr<ExpressionNode> right = expression(precedence);
+        return std::make_shared<BinaryOpNode>(previous, op_token, right);
+    }
+
+    std::shared_ptr<ExpressionNode> Parser::sign(std::shared_ptr<ExpressionNode> previous)
+    {
+        Token op_token = current_token;
+        advance();
+        std::shared_ptr<ExpressionNode> operand = expression(ExprPrecedence::POWER);
+        return std::make_shared<UnaryOpNode>(op_token, operand);
+    }
+
     std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous)
     {
         Token tok = current_token;
@@ -74,12 +119,15 @@ namespace SourDo
         static std::unordered_map<Token::Type, ParseExprRule> rules =
         {
             //                      Prefix              Infix                       Precedence
-            {Token::Type::NONE,     {nullptr,           nullptr,                    ExprPrecedence::None    }},
-            {Token::Type::INT,      {&Parser::factor,   nullptr,                    ExprPrecedence::Factor  }},
-            {Token::Type::FLOAT,    {&Parser::factor,   nullptr,                    ExprPrecedence::Factor  }},
-            {Token::Type::PLUS,     {nullptr,           &Parser::binary_op_left,    ExprPrecedence::AddExpr }},
-            {Token::Type::MINUS,    {nullptr,           &Parser::binary_op_left,    ExprPrecedence::AddExpr }},
-            {Token::Type::TK_EOF,   {nullptr,           nullptr,                    ExprPrecedence::None    }},
+            {Token::Type::NONE,     {nullptr,           nullptr,                    ExprPrecedence::NONE        }},
+            {Token::Type::INT,      {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::FLOAT,    {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::PLUS,     {&Parser::sign,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::MINUS,    {&Parser::sign,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::MULTI,    {nullptr,           &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
+            {Token::Type::DIVIDE,   {nullptr,           &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
+            {Token::Type::POWER,    {nullptr,           &Parser::binary_op_right,   ExprPrecedence::POWER       }},
+            {Token::Type::TK_EOF,   {nullptr,           nullptr,                    ExprPrecedence::NONE        }},
         };
 
         return rules[type];
