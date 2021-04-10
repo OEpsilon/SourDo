@@ -1,22 +1,40 @@
 #pragma once
 
-#include "DataTypes/Nodes.hpp"
-#include "Errors/Error.hpp"
-
-#include <unordered_map>
 #include <vector>
+#include <optional>
 
-namespace SourDo {
-    struct ParseResult
+#include "Datatypes/Token.hpp"
+#include "Datatypes/Nodes.hpp"
+#include "Datatypes/Value.hpp"
+
+struct sourdo_Data;
+
+namespace sourdo
+{
+    struct TokenizerReturn
     {
-        std::shared_ptr<Node> result;
-        std::optional<Error> error;
+        std::vector<Token> tokens;
+        std::optional<std::string> error_message;
     };
 
+    struct ParserReturn
+    {
+        std::shared_ptr<Node> ast;
+        std::optional<std::string> error_message;
+    };
+
+    struct VisitorReturn
+    {
+        Value result;
+        std::optional<std::string> error_message;
+    };
+
+    TokenizerReturn tokenize_string(const std::string& string);
+    VisitorReturn visit_ast(sourdo_Data* data, std::shared_ptr<Node>);
     class Parser
     {
     public:
-        ParseResult parse_tokens(const std::vector<Token>& tokens);
+        ParserReturn parse_tokens(const std::vector<Token>& tokens);
     private:
         typedef std::shared_ptr<ExpressionNode> (Parser::*ParseExprFunc)(std::shared_ptr<ExpressionNode>);
 
@@ -36,7 +54,7 @@ namespace SourDo {
             ExprPrecedence precedence;
         };
 
-        std::optional<Error> error;
+        std::optional<std::string> error;
         std::vector<Token> tokens;
         Token current_token;
         uint32_t position;
@@ -53,5 +71,4 @@ namespace SourDo {
 
         ParseExprRule& get_rule(const Token::Type& type);
     };
-} // namespace SourDo
-
+} // namespace sourdo

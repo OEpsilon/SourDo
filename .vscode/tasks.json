@@ -3,23 +3,20 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "Build Project",
-            "command": "./vendor/premake/bin/premake5 gmake2 && make",
+            "label": "Build SourDo",
+            "command": "vendor/premake/bin/MacOS/premake5 gmake2 && make",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"
             ],
-            "group":{
-                "kind": "build",
-                "isDefault": true
-            }
+            "group": "build"
         },
         {
             "type": "shell",
-            "label": "Run Executable",
-            "command": "bin/macosx/Debug-x86_64/SourDo/SourDo",
+            "label": "Test SourDo",
+            "command": "vendor/premake/bin/MacOS/premake5 gmake2 && make && ./bin/macosx/Debug-x86_64/SourDo/SourDo ",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -29,10 +26,7 @@
             "group": {
                 "kind": "test",
                 "isDefault": true
-            },
-            "dependsOn": [
-                "Build Project"
-            ]
-        }
+            }
+        },
     ]
 }

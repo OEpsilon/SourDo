@@ -1,0 +1,11 @@
+import "Sourdo/CommandLine.srdo"
+
+namespace Example
+    export func print_line_in_blue(thing: Object) -> void
+        srdo.CommandLine.text_color = srdo.CommandLine.Colors.BLUE
+        
+        srdo.print_line(thing)
+        
+        srdo.CommandLine.text_color = srdo.CommandLine.Colors.DEFAULT
+    end
+end

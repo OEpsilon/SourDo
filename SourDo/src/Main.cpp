@@ -1,52 +1,32 @@
 #include <string>
 #include <iostream>
 
-#include "Tokenizer.hpp"
-#include "Parser.hpp"
-#include "Interpreter.hpp"
-
-namespace SourDo {
-    struct InterpretResult
-    {
-        Variant result;
-        std::optional<Error> error;
-    };
-
-    InterpretResult interpret(const std::string& text)
-    {
-        auto[tokens, tokenizer_error] = tokenize_string(text);
-        if(tokenizer_error)
-        {
-            return {NullType(), tokenizer_error};
-        }
-        std::cout << tokens << "\n";
-        Parser parser;
-        auto[ast, parser_error] = parser.parse_tokens(tokens);
-        if(parser_error)
-        {
-            return {NullType(), parser_error};
-        }
-        std::cout << ast << "\n";
-        Interpreter interpreter;
-        auto[result, interpreter_error] = interpreter.travel_ast(ast);
-        return {result, interpreter_error};
-    }
-} // namespace SourDo
+#include "SourDo/SourDo.hpp"
 
 int main()
 {
-    std::string text;
-    while(true)
+    sourdo_Data* module = sourdo_data_create();
+
+    bool running = true;
+    while(running)
     {
-        std::cout << "SourDo > ";
+        std::string text;
+        std::cout << "SourDo> ";
         std::getline(std::cin, text);
-        auto[result, error] = SourDo::interpret(text);
-        if(error)
+
+        SourDoBool result = sourdo_do_string(module, text.c_str());
+        if(!result)
         {
-            std::cout << error.value() << std::endl;
-            continue;
+            std::string error = sourdo_to_string(module, -1);
+            std::cout << error;
         }
-        std::cout << result << std::endl;
+        else
+        {
+            float result = sourdo_to_float(module, -1);
+            std::cout << result << std::endl;
+        }
     }
+
+    sourdo_data_destroy(module);
     return 0;
 }

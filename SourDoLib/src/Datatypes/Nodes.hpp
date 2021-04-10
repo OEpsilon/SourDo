@@ -1,14 +1,17 @@
 #pragma once
 
-#include "Token.hpp"
-
+#include <string>
 #include <memory>
 #include <sstream>
 
-namespace SourDo {
-    class Node 
+#include "Token.hpp"
+
+namespace sourdo
+{
+    struct Node 
     {
-    public:
+        virtual ~Node() = default;
+        
         enum class Type
         {
             None = 0,
@@ -19,25 +22,25 @@ namespace SourDo {
         Type type = Type::None;
 
         virtual std::string to_string() = 0;
-    protected:
-        Node() = default;
     };
 
-    class ExpressionNode : public Node
+    struct ExpressionNode : public Node
     {
+        virtual ~ExpressionNode() = default;
     protected:
         ExpressionNode() = default;
     };
 
-    class BinaryOpNode : public ExpressionNode
+    struct BinaryOpNode : public ExpressionNode
     {
-    public:
         BinaryOpNode(std::shared_ptr<ExpressionNode> left_operand, 
                 const Token& op_token, std::shared_ptr<ExpressionNode> right_operand)
             : left_operand(left_operand), op_token(op_token), right_operand(right_operand)
         {
             type = Type::BINARY_OP_NODE;
         }
+
+        virtual ~BinaryOpNode() = default;
 
         std::shared_ptr<ExpressionNode> left_operand;
         Token op_token;
@@ -53,14 +56,15 @@ namespace SourDo {
         }
     };
 
-    class UnaryOpNode : public ExpressionNode
+    struct UnaryOpNode : public ExpressionNode
     {
-    public:
         UnaryOpNode(const Token& op_token, std::shared_ptr<ExpressionNode> operand)
             : op_token(op_token), operand(operand)
         {
             type = Type::UNARY_OP_NODE;
         }
+
+        virtual ~UnaryOpNode() = default;
 
         Token op_token;
         std::shared_ptr<ExpressionNode> operand;
@@ -73,14 +77,15 @@ namespace SourDo {
         }
     };
 
-    class LiteralNode : public ExpressionNode
+    struct LiteralNode : public ExpressionNode
     {
-    public:
         LiteralNode(const Token& token)
             : token(token)
         {
             type = Type::LITERAL_NODE;
         }
+
+        virtual ~LiteralNode() = default;
 
         Token token;
         
@@ -97,4 +102,4 @@ namespace SourDo {
         os << node->to_string();
         return os;
     }
-} // namespace SourDo
+} // namespace sourdo

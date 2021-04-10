@@ -1,17 +1,21 @@
-#include "Parser.hpp"
+#include "Interpreter.hpp"
 
-namespace SourDo
+#include <unordered_map> 
+
+#include <iostream>
+
+namespace sourdo
 {
-    ParseResult Parser::parse_tokens(const std::vector<Token>& tokens)
+    ParserReturn Parser::parse_tokens(const std::vector<Token>& tokens)
     {
         this->tokens = tokens;
         position = 0;
         current_token = tokens[position];
         std::shared_ptr<Node> ast = expression(ExprPrecedence::ADD_EXPR);
-        std::cout << current_token.type << "\n";
+        
         if(!error && current_token.type != Token::Type::TK_EOF)
         {
-            return {nullptr, Error("Expected an operator", current_token.position)};
+            return {nullptr, "Expected an operator"};
         }
 
         return {ast, error};
@@ -29,7 +33,7 @@ namespace SourDo
 
     std::shared_ptr<ExpressionNode> Parser::expression(ExprPrecedence precedence)
     {
-        if(current_token.type == Token::Type::L_PAREN)
+        if(current_token.type == Token::Type::LPAREN)
         {
             advance();
             std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::ADD_EXPR);
@@ -37,9 +41,9 @@ namespace SourDo
             {
                 return nullptr;
             }
-            if(current_token.type != Token::Type::R_PAREN)
+            if(current_token.type != Token::Type::RPAREN)
             {
-                error = Error("Expected a ')'", current_token.position);
+                error = "Expected a ')'";
                 return nullptr;
             }
             return expr;
@@ -48,7 +52,7 @@ namespace SourDo
         ParseExprFunc prefix_func = get_rule(current_token.type).prefix;
         if(prefix_func == nullptr)
         {
-            error = Error("Expected an expression", current_token.position);
+            error = "Expected an expression";
             return nullptr;
         }
         std::shared_ptr<ExpressionNode> previous_operand = std::invoke(prefix_func, this, nullptr);
@@ -105,12 +109,12 @@ namespace SourDo
     std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous)
     {
         Token tok = current_token;
-        if(tok.type == Token::Type::INT || tok.type == Token::Type::FLOAT)
+        if(tok.type == Token::Type::INT_LITERAL || tok.type == Token::Type::FLOAT_LITERAL)
         {
             advance();
             return std::make_shared<LiteralNode>(tok);
         }
-        error = Error("Expected an expression", tok.position);
+        error = "Expected an expression";
         return nullptr;
     }
 
@@ -118,20 +122,18 @@ namespace SourDo
     {
         static std::unordered_map<Token::Type, ParseExprRule> rules =
         {
-            //                      Prefix              Infix                       Precedence
-            {Token::Type::NONE,     {nullptr,           nullptr,                    ExprPrecedence::NONE        }},
-            {Token::Type::INT,      {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::FLOAT,    {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::PLUS,     {&Parser::sign,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
-            {Token::Type::MINUS,    {&Parser::sign,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
-            {Token::Type::MULTI,    {nullptr,           &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
-            {Token::Type::DIVIDE,   {nullptr,           &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
-            {Token::Type::POWER,    {nullptr,           &Parser::binary_op_right,   ExprPrecedence::POWER       }},
-            {Token::Type::TK_EOF,   {nullptr,           nullptr,                    ExprPrecedence::NONE        }},
+            //                              Prefix              Infix                       Precedence
+            {Token::Type::NONE,             {nullptr,           nullptr,                    ExprPrecedence::NONE        }},
+            {Token::Type::INT_LITERAL,      {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::FLOAT_LITERAL,    {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::ADD,              {&Parser::sign,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::SUB,              {&Parser::sign,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::MUL,              {nullptr,           &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
+            {Token::Type::DIV,              {nullptr,           &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
+            {Token::Type::POW,              {nullptr,           &Parser::binary_op_right,   ExprPrecedence::POWER       }},
+            {Token::Type::TK_EOF,           {nullptr,           nullptr,                    ExprPrecedence::NONE        }},
         };
 
         return rules[type];
     }
-
-} // namespace SourDo
-
+} // namespace sourdo

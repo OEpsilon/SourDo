@@ -5,18 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "clang++ - Build and debug active file",
+            "name": "Debug SourDo",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/macosx/Debug-x86_64/SourDo/SourDo",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "targetArchitecture": "x64",
             "environment": [],
             "externalConsole": true,
             "MIMode": "lldb",
-            "preLaunchTask": "Build Project"
+            "preLaunchTask": "Build SourDo"
         }
     ]
 }

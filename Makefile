@@ -9,28 +9,37 @@ ifndef verbose
 endif
 
 ifeq ($(config),debug)
+  SourDoLib_config = debug
   SourDo_config = debug
 
 else ifeq ($(config),release)
+  SourDoLib_config = release
   SourDo_config = release
 
 else
   $(error "invalid configuration $(config)")
 endif
 
-PROJECTS := SourDo
+PROJECTS := SourDoLib SourDo
 
 .PHONY: all clean help $(PROJECTS) 
 
 all: $(PROJECTS)
 
-SourDo:
+SourDoLib:
+ifneq (,$(SourDoLib_config))
+	@echo "==== Building SourDoLib ($(SourDoLib_config)) ===="
+	@${MAKE} --no-print-directory -C SourDoLib -f Makefile config=$(SourDoLib_config)
+endif
+
+SourDo: SourDoLib
 ifneq (,$(SourDo_config))
 	@echo "==== Building SourDo ($(SourDo_config)) ===="
 	@${MAKE} --no-print-directory -C SourDo -f Makefile config=$(SourDo_config)
 endif
 
 clean:
+	@${MAKE} --no-print-directory -C SourDoLib -f Makefile clean
 	@${MAKE} --no-print-directory -C SourDo -f Makefile clean
 
 help:
@@ -43,6 +52,7 @@ help:
 	@echo "TARGETS:"
 	@echo "   all (default)"
 	@echo "   clean"
+	@echo "   SourDoLib"
 	@echo "   SourDo"
 	@echo ""
 	@echo "For more information, see https://github.com/premake/premake-core/wiki"
