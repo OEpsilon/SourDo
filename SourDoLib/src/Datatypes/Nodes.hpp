@@ -8,20 +8,72 @@
 
 namespace sourdo
 {
+    struct Node;
+    struct VarDeclarationNode;
+    struct VarAssignmentNode;
+    struct VarAccessNode;
+    struct ExpressionNode;
+    struct BinaryOpNode;
+    struct UnaryOpNode;
+    struct IntValueNode;
+    struct FloatValueNode;
+    struct NullValueNode;
+
     struct Node 
     {
         virtual ~Node() = default;
         
         enum class Type
         {
-            None = 0,
+            NONE = 0,
+            VAR_DECLARATION_NODE,
+            VAR_ASSIGNMENT_NODE,
+            VAR_ACCESS_NODE,
             BINARY_OP_NODE,
             UNARY_OP_NODE,
-            LITERAL_NODE,
+            INT_VALUE_NODE,
+            FLOAT_VALUE_NODE,
+            NULL_VALUE_NODE,
         };
-        Type type = Type::None;
+        Type type = Type::NONE;
 
         virtual std::string to_string() = 0;
+    };
+
+    struct VarDeclarationNode : public Node
+    {
+        VarDeclarationNode(const Token& name_tok, std::shared_ptr<ExpressionNode> initializer)
+            : name_tok(name_tok), initializer(initializer)
+        {
+            type = Type::VAR_DECLARATION_NODE;
+        }
+        Token name_tok;
+        std::shared_ptr<ExpressionNode> initializer;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << "(var " << name_tok << ", " << initializer << ")";
+            return ss.str();
+        }
+    };
+
+    struct VarAssignmentNode : public Node
+    {
+        VarAssignmentNode(const Token& name_tok, std::shared_ptr<ExpressionNode> new_value)
+            : name_tok(name_tok), new_value(new_value)
+        {
+            type = Type::VAR_ASSIGNMENT_NODE;
+        }
+        Token name_tok;
+        std::shared_ptr<ExpressionNode> new_value;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << "(" << name_tok << ", " << new_value << ")";
+            return ss.str();
+        }
     };
 
     struct ExpressionNode : public Node
@@ -29,6 +81,26 @@ namespace sourdo
         virtual ~ExpressionNode() = default;
     protected:
         ExpressionNode() = default;
+    };
+
+    struct VarAccessNode : public ExpressionNode
+    {
+        VarAccessNode(const Token& name_tok)
+            : name_tok(name_tok)
+        {
+            type = Type::VAR_ACCESS_NODE;
+        }
+
+        virtual ~VarAccessNode() = default;
+        
+        Token name_tok;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << name_tok;
+            return ss.str();
+        }
     };
 
     struct BinaryOpNode : public ExpressionNode
@@ -77,22 +149,59 @@ namespace sourdo
         }
     };
 
-    struct LiteralNode : public ExpressionNode
+    struct IntValueNode : public ExpressionNode
     {
-        LiteralNode(const Token& token)
-            : token(token)
+        IntValueNode(const Token& value)
+            : value(value)
         {
-            type = Type::LITERAL_NODE;
+            type = Type::INT_VALUE_NODE;
         }
 
-        virtual ~LiteralNode() = default;
+        virtual ~IntValueNode() = default;
 
-        Token token;
+        Token value;
         
         std::string to_string() final
         {
             std::stringstream ss;
-            ss << token;
+            ss << value;
+            return ss.str();
+        }
+    };
+
+    struct FloatValueNode : public ExpressionNode
+    {
+        FloatValueNode(const Token& value)
+            : value(value)
+        {
+            type = Type::INT_VALUE_NODE;
+        }
+
+        virtual ~FloatValueNode() = default;
+
+        Token value;
+        
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << value;
+            return ss.str();
+        }
+    };
+
+    struct NullValueNode : public ExpressionNode
+    {
+        NullValueNode()
+        {
+            type = Type::NULL_VALUE_NODE;
+        }
+
+        virtual ~NullValueNode() = default;
+        
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << "null";
             return ss.str();
         }
     };

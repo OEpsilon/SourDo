@@ -1,4 +1,4 @@
-import "Sourdo/CommandLine.srdo"
+import "Sourdo/CommandLine.sourdo"
 
 namespace Example
     export func print_line_in_blue(thing: Object) -> void

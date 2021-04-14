@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <optional>
+#include <optional>  
 
 #include "Datatypes/Token.hpp"
 #include "Datatypes/Nodes.hpp"
@@ -40,11 +40,11 @@ namespace sourdo
 
         enum class ExprPrecedence
         {
-            NONE        = 0,
-            ADD_EXPR    = 1,
-            MUL_EXPR    = 2,
-            POWER       = 3,
-            FACTOR      = 4,
+            NONE            = 0,
+            ADD_EXPR        = 1,
+            MUL_EXPR        = 2,
+            POWER           = 3,
+            FACTOR          = 4,
         };
 
         struct ParseExprRule 
@@ -60,6 +60,8 @@ namespace sourdo
         uint32_t position;
 
         Token advance();
+
+        std::shared_ptr<Node> statement();
 
         std::shared_ptr<ExpressionNode> expression(ExprPrecedence precedence);
 

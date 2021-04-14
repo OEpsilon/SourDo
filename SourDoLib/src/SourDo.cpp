@@ -128,6 +128,19 @@ extern "C" {
         data->stack.push_back(sourdo::Null());
     }
 
+    SourDoBool sourdo_get_global(sourdo_Data* data, const char* name)
+    {
+        if(data->symbol_table.find(name) == data->symbol_table.end())
+        {
+            std::stringstream ss;
+            ss << sourdo::COLOR_RED << "Variable '" << name << "' is undefined" << sourdo::COLOR_DEFAULT << std::flush;
+            sourdo_push_string(data, ss.str().c_str());
+            return SOURDO_FALSE;
+        }
+        data->stack.push_back(data->symbol_table[name]);
+        return SOURDO_TRUE;
+    }
+
     void sourdo_pop(sourdo_Data* data)
     {
         SOURDO_DATA_NOT_NULL();
@@ -141,7 +154,7 @@ extern "C" {
         if(tok_error)
         {
             std::stringstream ss;
-            ss << sourdo::COLOR_RED << tok_error.value() << sourdo::COLOR_DEFAULT << std::endl;
+            ss << sourdo::COLOR_RED << tok_error.value() << sourdo::COLOR_DEFAULT << std::flush;
             sourdo_push_string(data, ss.str().c_str());
             return SOURDO_FALSE;
         }
@@ -151,16 +164,16 @@ extern "C" {
         if(parse_error)
         {
             std::stringstream ss;
-            ss << sourdo::COLOR_RED << parse_error.value() << sourdo::COLOR_DEFAULT << std::endl;
+            ss << sourdo::COLOR_RED << parse_error.value() << sourdo::COLOR_DEFAULT << std::flush;
             sourdo_push_string(data, ss.str().c_str());
             return SOURDO_FALSE;
         }
-        std::cout << ast << std::endl;
+        //std::cout << ast << std::endl;
         auto[result, visit_error] = sourdo::visit_ast(data, ast);
         if(visit_error)
         {
             std::stringstream ss;
-            ss << sourdo::COLOR_RED << visit_error.value() << sourdo::COLOR_DEFAULT << std::endl;
+            ss << sourdo::COLOR_RED << visit_error.value() << sourdo::COLOR_DEFAULT << std::flush;
             sourdo_push_string(data, ss.str().c_str());
             return SOURDO_FALSE;
         }

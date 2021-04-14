@@ -41,7 +41,7 @@ namespace sourdo
 
         int& to_int() 
         { 
-            return std::get<int>(value); 
+            return std::get<int>(value);
         }
 
         float& to_float() 

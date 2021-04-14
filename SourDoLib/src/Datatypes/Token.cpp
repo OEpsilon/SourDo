@@ -10,6 +10,8 @@ namespace sourdo
         static std::unordered_map<Token::Type, const char*> strings = {
             //  Type                            String
             {   Token::Type::NONE,              "NONE"              },
+            {   Token::Type::KEYWORD ,          "KEYWORD"           },
+            {   Token::Type::IDENTIFIER ,       "IDENTIFIER"        },
             {   Token::Type::INT_LITERAL,       "INT_LITERAL"       },
             {   Token::Type::FLOAT_LITERAL,     "FLOAT_LITERAL"     },
             {   Token::Type::ADD,               "ADD"               },
@@ -17,6 +19,9 @@ namespace sourdo
             {   Token::Type::MUL,               "MUL"               },
             {   Token::Type::DIV,               "DIV"               },
             {   Token::Type::POW,               "POW"               },
+
+            {   Token::Type::ASSIGN,            "ASSIGN"            },
+
             {   Token::Type::LPAREN,            "LPAREN"            },
             {   Token::Type::RPAREN,            "RPAREN"            },
             {   Token::Type::TK_EOF,            "EOF"               },

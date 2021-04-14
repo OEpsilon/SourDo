@@ -1,8 +1,7 @@
 #include "Interpreter.hpp"
 
-#include <unordered_map> 
-
-#include <iostream>
+#include <unordered_map>
+#include <sstream>
 
 namespace sourdo
 {
@@ -11,7 +10,7 @@ namespace sourdo
         this->tokens = tokens;
         position = 0;
         current_token = tokens[position];
-        std::shared_ptr<Node> ast = expression(ExprPrecedence::ADD_EXPR);
+        std::shared_ptr<Node> ast = statement();
         
         if(!error && current_token.type != Token::Type::TK_EOF)
         {
@@ -29,6 +28,47 @@ namespace sourdo
             current_token = tokens[position];
         }
         return current_token;
+    }
+
+    std::shared_ptr<Node> Parser::statement()
+    {
+        if(current_token == Token(Token::Type::KEYWORD, "var"))
+        {
+            advance();
+            if(current_token.type != Token::Type::IDENTIFIER)
+            {
+                error = "Expected an identifier";
+                return nullptr;
+            }
+            Token name_tok = current_token;
+            advance();
+            if(current_token.type != Token::Type::ASSIGN)
+            {
+                return std::make_shared<VarDeclarationNode>(name_tok, std::make_shared<NullValueNode>());
+            }
+            advance();
+            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::ADD_EXPR);
+            if(error)
+            {
+                return nullptr;
+            }
+            return std::make_shared<VarDeclarationNode>(name_tok, expr);
+        }
+        // Looking ahead at the next token probably isn't the best idea but it works for now.
+        else if(current_token.type == Token::Type::IDENTIFIER && tokens[position + 1].type == Token::Type::ASSIGN)
+        {
+            Token name_tok = current_token;
+            advance();
+            advance();
+            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::ADD_EXPR);
+            if(error)
+            {
+                return nullptr;
+            }
+            return std::make_shared<VarAssignmentNode>(name_tok, expr);
+        }
+
+        return expression(ExprPrecedence::ADD_EXPR);
     }
 
     std::shared_ptr<ExpressionNode> Parser::expression(ExprPrecedence precedence)
@@ -109,10 +149,20 @@ namespace sourdo
     std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous)
     {
         Token tok = current_token;
-        if(tok.type == Token::Type::INT_LITERAL || tok.type == Token::Type::FLOAT_LITERAL)
+        if(tok.type == Token::Type::IDENTIFIER)
         {
             advance();
-            return std::make_shared<LiteralNode>(tok);
+            return std::make_shared<VarAccessNode>(tok);
+        }
+        else if(tok.type == Token::Type::INT_LITERAL)
+        {
+            advance();
+            return std::make_shared<IntValueNode>(tok);
+        }
+        else if(tok.type == Token::Type::FLOAT_LITERAL)
+        {
+            advance();
+            return std::make_shared<FloatValueNode>(tok);
         }
         error = "Expected an expression";
         return nullptr;
@@ -124,6 +174,7 @@ namespace sourdo
         {
             //                              Prefix              Infix                       Precedence
             {Token::Type::NONE,             {nullptr,           nullptr,                    ExprPrecedence::NONE        }},
+            {Token::Type::IDENTIFIER,       {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::INT_LITERAL,      {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::FLOAT_LITERAL,    {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::ADD,              {&Parser::sign,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},

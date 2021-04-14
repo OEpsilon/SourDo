@@ -1,8 +1,9 @@
 #include "Interpreter.hpp"
 
 #include <cmath>
+#include <sstream>
 
-#include <iostream>
+#include "SourDoData.hpp"
 
 namespace sourdo
 {
@@ -14,7 +15,6 @@ namespace sourdo
         {
             case Token::Type::ADD:
             {
-                std::cout << "LEFT: " << left << " RIGHT: " << right << std::endl;
                 return_value.result = left + right;
                 break;
             }
@@ -55,29 +55,6 @@ namespace sourdo
         }
         return return_value;
     }
-
-    static VisitorReturn visit_literal_node(sourdo_Data* data, std::shared_ptr<LiteralNode> node)
-    {
-        VisitorReturn return_value;
-        switch(node->token.type)
-        {
-            case Token::Type::INT_LITERAL:
-            {
-                return_value.result = std::stoi(node->token.value);
-                break;
-            }
-            case Token::Type::FLOAT_LITERAL:
-            {
-                return_value.result = std::stof(node->token.value);
-                break;
-            }
-            default:
-            {
-                return_value.error_message = "This should not happen! Token types INT_LITERAL or FLOAT_LITERAL were expected.";
-            }
-        }
-        return return_value;
-    }
     static VisitorReturn visit_unary_op_node(sourdo_Data* data, std::shared_ptr<UnaryOpNode> node)
     {
         VisitorReturn return_value;
@@ -103,7 +80,7 @@ namespace sourdo
         }
         else
         {
-            return_value.error_message = "Expected a numeric type.";
+            return_value.error_message = "Expected a numeric type";
         }
 
         return return_value;
@@ -149,7 +126,71 @@ namespace sourdo
                 return return_value;
             }
         }
-        return_value.error_message = "Expected a numeric type.";
+        return_value.error_message = "Expected a numeric type";
+        return return_value;
+    }
+
+    static VisitorReturn visit_var_declaration_node(sourdo_Data* data, std::shared_ptr<VarDeclarationNode> node)
+    {
+        VisitorReturn return_value;
+        VisitorReturn var_value = visit_ast(data, node->initializer);
+        if(var_value.error_message)
+        {
+            return var_value;
+        }
+
+        if(data->symbol_table.find(node->name_tok.value) != data->symbol_table.end())
+        {
+            std::stringstream ss;
+            ss << "Variable '" << node->name_tok.value << "' is already defined";
+            return_value.error_message = ss.str();
+        }
+        else
+        {
+            data->symbol_table[node->name_tok.value] = var_value.result;
+            return_value.result = var_value.result;
+        }
+
+        return return_value;
+    }
+
+    static VisitorReturn visit_var_assignment_node(sourdo_Data* data, std::shared_ptr<VarAssignmentNode> node)
+    {
+        VisitorReturn return_value;
+        VisitorReturn new_value = visit_ast(data, node->new_value);
+        if(new_value.error_message)
+        {
+            return new_value;
+        }
+
+        if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
+        {
+            std::stringstream ss;
+            ss << "Variable '" << node->name_tok.value << "' is not defined";
+            return_value.error_message = ss.str();
+        }
+        else
+        {
+            data->symbol_table[node->name_tok.value] = new_value.result;
+            return_value.result = data->symbol_table[node->name_tok.value];
+        }
+
+        return return_value;
+    }
+
+    static VisitorReturn visit_var_access_node(sourdo_Data* data, std::shared_ptr<VarAccessNode> node)
+    {
+        VisitorReturn return_value;
+        if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
+        {
+            std::stringstream ss;
+            ss << "Variable '" << node->name_tok.value << "' is not defined";
+            return_value.error_message = ss.str();
+        }
+        else
+        {
+            return_value.result = data->symbol_table[node->name_tok.value];
+        }
         return return_value;
     }
 
@@ -158,9 +199,36 @@ namespace sourdo
         VisitorReturn return_value;
         switch(node->type)
         {
-            case Node::Type::LITERAL_NODE:
+            case Node::Type::VAR_DECLARATION_NODE:
             {
-                return_value = visit_literal_node(data, std::static_pointer_cast<LiteralNode>(node));
+                return_value = visit_var_declaration_node(data, std::static_pointer_cast<VarDeclarationNode>(node));
+                break;
+            }
+            case Node::Type::VAR_ASSIGNMENT_NODE:
+            {
+                return_value = visit_var_assignment_node(data, std::static_pointer_cast<VarAssignmentNode>(node));
+                break;
+            }
+            case Node::Type::VAR_ACCESS_NODE:
+            {
+                return_value = visit_var_access_node(data, std::static_pointer_cast<VarAccessNode>(node));
+                break;
+            }
+            case Node::Type::INT_VALUE_NODE:
+            {
+                auto int_node = std::static_pointer_cast<IntValueNode>(node);
+                return_value.result = std::stoi(int_node->value.value);
+                break;
+            }
+            case Node::Type::FLOAT_VALUE_NODE:
+            {
+                auto float_node = std::static_pointer_cast<IntValueNode>(node);
+                return_value.result = std::stof(float_node->value.value);
+                break;
+            }
+            case Node::Type::NULL_VALUE_NODE:
+            {
+                return_value.result = Null(); 
                 break;
             }
             case Node::Type::UNARY_OP_NODE:
@@ -174,7 +242,11 @@ namespace sourdo
                 break;
             }
             default:
+            {
+                // Just warns me that I missed something.
+                throw std::logic_error("A node hasn't been implemented yet!");
                 break;
+            }
         }
         return return_value;
     }

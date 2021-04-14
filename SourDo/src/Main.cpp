@@ -18,7 +18,7 @@ int main()
         if(!result)
         {
             std::string error = sourdo_to_string(module, -1);
-            std::cout << error;
+            std::cout << error << std::endl;
         }
         else
         {

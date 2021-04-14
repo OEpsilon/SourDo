@@ -10,8 +10,10 @@ namespace sourdo
         enum class Type : uint32_t
         {
             NONE,
+            KEYWORD, IDENTIFIER,
             INT_LITERAL, FLOAT_LITERAL,
             ADD, SUB, MUL, DIV, POW,
+            ASSIGN,
             LPAREN, RPAREN,
             TK_EOF,
         };

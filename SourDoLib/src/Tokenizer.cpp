@@ -7,6 +7,8 @@
 
 namespace sourdo
 {
+    static const std::vector<std::string> KEYWORDS = { "var" };
+
     TokenizerReturn tokenize_string(const std::string& string)
     {
         std::vector<Token> tokens;
@@ -14,7 +16,7 @@ namespace sourdo
 
         for(int i = 0; i < string.size(); i++)
         {
-            current_char = string[i]; 
+            current_char = string[i];
             if(isspace(current_char))
             {
                 continue;
@@ -25,17 +27,17 @@ namespace sourdo
                 bool is_float = false;
                 while(i < string.size() && (std::isdigit(current_char) || current_char == '.'))
                 {
-                    current_char = string[i]; 
                     if(std::isdigit(current_char))
                     {
                         number_string += current_char;
                     }
-                    else if(current_char == '.')
+                    else
                     {
                         number_string += current_char;
                         is_float = true;
                     }
                     i++;
+                    current_char = string[i]; 
                 }
                 i--;
                 
@@ -46,6 +48,26 @@ namespace sourdo
                 else
                 {
                     tokens.emplace_back(Token::Type::INT_LITERAL, number_string);
+                }
+            }
+            else if(std::isalpha(current_char) || current_char == '_')
+            {
+                std::string identifier_string;
+                while(i < string.size() && (std::isalpha(current_char) || current_char == '_'))
+                {
+                    identifier_string += current_char;
+                    i++;
+                    current_char = string[i];
+                }
+                i--;
+
+                if(std::find(KEYWORDS.begin(), KEYWORDS.end(), identifier_string) != KEYWORDS.end())
+                {
+                    tokens.emplace_back(Token::Type::KEYWORD, identifier_string);
+                }
+                else
+                {
+                    tokens.emplace_back(Token::Type::IDENTIFIER, identifier_string);
                 }
             }
             else
@@ -69,7 +91,6 @@ namespace sourdo
                         if(current_char == '*')
                         {
                             tokens.emplace_back(Token::Type::POW);
-                            i++;
                             break;
                         }
                         i--;
@@ -80,6 +101,23 @@ namespace sourdo
                     case '/':
                     {
                         tokens.emplace_back(Token::Type::DIV);
+                        break;
+                    }
+                    case ':':
+                    {
+                        i++;
+                        current_char = string[i];
+                        if(current_char == '=')
+                        {
+                            tokens.emplace_back(Token::Type::ASSIGN);
+                            break;
+                        }
+                        i--;
+
+                        std::stringstream ss;
+                        ss << "Unexpected character: '" << current_char << "'. Did you mean '='?";
+
+                        return { {}, ss.str() };
                         break;
                     }
                     case '(':
@@ -94,12 +132,10 @@ namespace sourdo
                     }
                     default:
                     {
-                        using namespace std::string_literals;
-                        
                         std::stringstream ss;
                         ss << "Unexpected character: '" << current_char << "'";
 
-                        return { {}, {ss.str()}};
+                        return { {}, ss.str()};
                         break;
                     }
                 }

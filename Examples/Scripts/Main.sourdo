@@ -1,4 +1,4 @@
-import "BluePrinting.srdo"
+import "BluePrinting.sourdo"
 
 print_line_in_blue("Hello world!")
 
