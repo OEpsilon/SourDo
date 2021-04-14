@@ -7,7 +7,7 @@
 
 namespace sourdo
 {
-    static const std::vector<std::string> KEYWORDS = { "var" };
+    static const std::vector<std::string> KEYWORDS = { "var", "and", "or", "not" };
 
     TokenizerReturn tokenize_string(const std::string& string)
     {
@@ -101,6 +101,57 @@ namespace sourdo
                     case '/':
                     {
                         tokens.emplace_back(Token::Type::DIV);
+                        break;
+                    }
+                    case '>':
+                    {
+                        i++;
+                        current_char = string[i];
+                        if(current_char == '=')
+                        {
+                            tokens.emplace_back(Token::Type::GREATER_EQUAL);
+                            break;
+                        }
+                        i--;
+
+                        tokens.emplace_back(Token::Type::GREATER_THAN);
+                        break;
+                    }
+                    case '<':
+                    {
+                        i++;
+                        current_char = string[i];
+                        if(current_char == '=')
+                        {
+                            tokens.emplace_back(Token::Type::LESS_EQUAL);
+                            break;
+                        }
+                        i--;
+
+                        tokens.emplace_back(Token::Type::LESS_THAN);
+                        break;
+                    }
+                    case '=':
+                    {
+                        tokens.emplace_back(Token::Type::EQUAL);
+                        break;
+                    }
+                    case '!':
+                    {
+                        i++;
+                        current_char = string[i];
+                        if(current_char == '=')
+                        {
+                            tokens.emplace_back(Token::Type::NOT_EQUAL);
+                            break;
+                        }
+                        i--;
+
+                        std::stringstream ss;
+                        ss << "Unexpected character: '" << current_char << "'. Did you mean '='?";
+
+                        return { {}, ss.str() };
+
                         break;
                     }
                     case ':':

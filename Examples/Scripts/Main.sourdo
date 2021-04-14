@@ -1,5 +1,3 @@
 import "BluePrinting.sourdo"
 
 print_line_in_blue("Hello world!")
-
-srdo.print_line();

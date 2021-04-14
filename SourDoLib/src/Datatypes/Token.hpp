@@ -13,6 +13,7 @@ namespace sourdo
             KEYWORD, IDENTIFIER,
             INT_LITERAL, FLOAT_LITERAL,
             ADD, SUB, MUL, DIV, POW,
+            LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, EQUAL, NOT_EQUAL,
             ASSIGN,
             LPAREN, RPAREN,
             TK_EOF,

@@ -20,6 +20,13 @@ namespace sourdo
             {   Token::Type::DIV,               "DIV"               },
             {   Token::Type::POW,               "POW"               },
 
+            {   Token::Type::LESS_THAN,         "LESS_THAN"         },
+            {   Token::Type::GREATER_THAN,      "GREATER_THAN"      },
+            {   Token::Type::LESS_EQUAL,        "LESS_EQUAL"        },
+            {   Token::Type::GREATER_EQUAL,     "GREATER_EQUAL"     },
+            {   Token::Type::EQUAL,             "EQUAL"             },
+            {   Token::Type::NOT_EQUAL,         "NOT_EQUAL"         },
+
             {   Token::Type::ASSIGN,            "ASSIGN"            },
 
             {   Token::Type::LPAREN,            "LPAREN"            },

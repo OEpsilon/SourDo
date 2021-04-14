@@ -14,14 +14,23 @@
 /* They get called.                                 */
 /*--------------------------------------------------*/
 
-statement           := <KEYWORD:var> <IDENTIFIER> <ASSIGN> 
+statement           := <KEYWORD:var> <IDENTIFIER> <ASSIGN> expression
                     := <KEYWORD:var> <IDENTIFIER> expression
                     := <IDENTIFIER> <ASSIGN> expression
                     := expression
 
-expression          := additive_expr
+expression          := logic_or
 
-// This section shows expression precedence. Lower rules have higher precedence.
+// This section shows expression precedence. Lower rules have higher precedence
+
+logic_or            := logic_and (<KEYWORD:or> logic_and)*
+
+logic_and           := logic_not (<KEYWORD:and> logic_not)*
+
+logic_not           := <KEYWORD:not> logic_not
+                    := comparison
+
+comparison          := add_expr (<LESS_THAN | GREATER_THAN | LESS_EQUAL | GREATER_EQUAL | EQUAL | NOT_EQUAL> add_expr)*
 
 add_expr            := mul_expr (<ADD|SUB> mul_expr)*
 
