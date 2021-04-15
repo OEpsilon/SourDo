@@ -11,7 +11,7 @@ int main()
     while(running)
     {
         std::string text;
-        std::cout << "SourDo> ";
+        std::cout << std::boolalpha << "SourDo> ";
         std::getline(std::cin, text);
 
         SourDoBool result = sourdo_do_string(module, text.c_str());
@@ -22,8 +22,21 @@ int main()
         }
         else
         {
-            float result = sourdo_to_float(module, -1);
-            std::cout << result << std::endl;
+            if(sourdo_is_number(module, -1))
+            {
+                double result = sourdo_to_number(module, -1);
+                std::cout << result << std::endl;
+            }
+            else if(sourdo_is_bool(module, -1))
+            {
+                bool result = sourdo_to_bool(module, -1);
+                std::cout << result << std::endl;
+            }
+            else if(sourdo_is_null(module, -1))
+            {
+                std::cout << "null" << std::endl;
+            }
+            
         }
     }
 

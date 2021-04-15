@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <sstream>
 
+#include <iostream>
+
 namespace sourdo
 {
     ParserReturn Parser::parse_tokens(const std::vector<Token>& tokens)
@@ -68,7 +70,7 @@ namespace sourdo
             return std::make_shared<VarAssignmentNode>(name_tok, expr);
         }
 
-        return expression(ExprPrecedence::ADD_EXPR);
+        return expression(ExprPrecedence::LOGIC_OR);
     }
 
     std::shared_ptr<ExpressionNode> Parser::expression(ExprPrecedence precedence)
@@ -76,7 +78,7 @@ namespace sourdo
         if(current_token.type == Token::Type::LPAREN)
         {
             advance();
-            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::ADD_EXPR);
+            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::LOGIC_OR);
             if(error)
             {
                 return nullptr;
@@ -86,6 +88,7 @@ namespace sourdo
                 error = "Expected a ')'";
                 return nullptr;
             }
+            advance();
             return expr;
         }
 
@@ -146,6 +149,14 @@ namespace sourdo
         return std::make_shared<UnaryOpNode>(op_token, operand);
     }
 
+    std::shared_ptr<ExpressionNode> Parser::logic_not(std::shared_ptr<ExpressionNode> previous)
+    {
+        Token op_token = current_token;
+        advance();
+        std::shared_ptr<ExpressionNode> operand = expression(ExprPrecedence::COMPARISON);
+        return std::make_shared<UnaryOpNode>(op_token, operand);
+    }
+
     std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous)
     {
         Token tok = current_token;
@@ -154,15 +165,20 @@ namespace sourdo
             advance();
             return std::make_shared<VarAccessNode>(tok);
         }
-        else if(tok.type == Token::Type::INT_LITERAL)
+        else if(tok.type == Token::Type::NUMBER_LITERAL)
         {
             advance();
-            return std::make_shared<IntValueNode>(tok);
+            return std::make_shared<NumberValueNode>(tok);
         }
-        else if(tok.type == Token::Type::FLOAT_LITERAL)
+        else if(tok.type == Token::Type::BOOL_LITERAL)
         {
             advance();
-            return std::make_shared<FloatValueNode>(tok);
+            return std::make_shared<BoolValueNode>(tok);
+        }
+        else if(tok.type == Token::Type::NULL_LITERAL)
+        {
+            advance();
+            return std::make_shared<NullValueNode>();
         }
         error = "Expected an expression";
         return nullptr;
@@ -172,17 +188,31 @@ namespace sourdo
     {
         static std::unordered_map<Token::Type, ParseExprRule> rules =
         {
-            //                              Prefix              Infix                       Precedence
-            {Token::Type::NONE,             {nullptr,           nullptr,                    ExprPrecedence::NONE        }},
-            {Token::Type::IDENTIFIER,       {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::INT_LITERAL,      {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::FLOAT_LITERAL,    {&Parser::factor,   nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::ADD,              {&Parser::sign,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
-            {Token::Type::SUB,              {&Parser::sign,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
-            {Token::Type::MUL,              {nullptr,           &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
-            {Token::Type::DIV,              {nullptr,           &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
-            {Token::Type::POW,              {nullptr,           &Parser::binary_op_right,   ExprPrecedence::POWER       }},
-            {Token::Type::TK_EOF,           {nullptr,           nullptr,                    ExprPrecedence::NONE        }},
+            //                              Prefix                  Infix                       Precedence
+            {Token::Type::NONE,             {nullptr,               nullptr,                    ExprPrecedence::NONE        }},
+            {Token::Type::IDENTIFIER,       {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::NUMBER_LITERAL,   {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::BOOL_LITERAL,     {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::NULL_LITERAL,     {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
+
+            {Token::Type::ADD,              {&Parser::sign,         &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::SUB,              {&Parser::sign,         &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::MUL,              {nullptr,               &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
+            {Token::Type::DIV,              {nullptr,               &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
+            {Token::Type::POW,              {nullptr,               &Parser::binary_op_right,   ExprPrecedence::POWER       }},
+            
+            {Token::Type::LESS_THAN,        {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::GREATER_THAN,     {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::LESS_EQUAL,       {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::GREATER_EQUAL,    {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::EQUAL,            {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::NOT_EQUAL,        {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+
+            {Token::Type::LOGIC_OR,         {nullptr,               &Parser::binary_op_left,    ExprPrecedence::LOGIC_OR    }},
+            {Token::Type::LOGIC_AND,        {nullptr,               &Parser::binary_op_left,    ExprPrecedence::LOGIC_AND   }},
+            {Token::Type::LOGIC_NOT,        {&Parser::logic_not,    nullptr,                    ExprPrecedence::LOGIC_NOT   }},
+            
+            {Token::Type::TK_EOF,           {nullptr,               nullptr,                    ExprPrecedence::NONE        }},
         };
 
         return rules[type];

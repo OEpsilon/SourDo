@@ -39,16 +39,16 @@ extern "C" {
         delete data;
     }
 
-    SourDoBool sourdo_is_int(sourdo_Data* data, int index)
+    SourDoBool sourdo_is_number(sourdo_Data* data, int index)
     {
         SOURDO_DATA_NOT_NULL();
-        return (sourdo_index_stack(data, index).get_type() == sourdo::Value::Type::INT);
+        return (sourdo_index_stack(data, index).get_type() == sourdo::Value::Type::NUMBER);
     }
-    
-    SourDoBool sourdo_is_float(sourdo_Data* data, int index)
+
+    SourDoBool sourdo_is_bool(sourdo_Data* data, int index)
     {
         SOURDO_DATA_NOT_NULL();
-        return (sourdo_index_stack(data, index).get_type() == sourdo::Value::Type::FLOAT);
+        return (sourdo_index_stack(data, index).get_type() == sourdo::Value::Type::BOOL);
     }
 
     SourDoBool sourdo_is_string(sourdo_Data* data, int index)
@@ -63,34 +63,26 @@ extern "C" {
         return (sourdo_index_stack(data, index).get_type() == sourdo::Value::Type::_NULL);
     }
 
-    int sourdo_to_int(sourdo_Data* data, int index)
+    SourDoNumber sourdo_to_number(sourdo_Data* data, int index)
     {
         SOURDO_DATA_NOT_NULL();
         sourdo::Value& value = sourdo_index_stack(data, index);
-        if(value.get_type() == sourdo::Value::Type::FLOAT)
-        {
-            return value.to_float();
-        }
-        if(value.get_type() != sourdo::Value::Type::INT)
+        if(value.get_type() != sourdo::Value::Type::NUMBER)
         {
             return 0;
         }
-        return value.to_int();
+        return value.to_number();
     }
-    
-    float sourdo_to_float(sourdo_Data* data, int index)
+
+    SourDoBool sourdo_to_bool(sourdo_Data* data, int index)
     {
         SOURDO_DATA_NOT_NULL();
         sourdo::Value& value = sourdo_index_stack(data, index);
-        if(value.get_type() == sourdo::Value::Type::INT)
+        if(value.get_type() != sourdo::Value::Type::BOOL)
         {
-            return value.to_int();
+            return false;
         }
-        else if(value.get_type() != sourdo::Value::Type::FLOAT)
-        {
-            return 0.0;
-        }
-        return value.to_float();
+        return value.to_bool();
     }
     
     const char* sourdo_to_string(sourdo_Data* data, int index)
@@ -104,16 +96,16 @@ extern "C" {
         return value.to_string().c_str();
     }
 
-    void sourdo_push_int(sourdo_Data* data, int value)
+    void sourdo_push_number(sourdo_Data* data, SourDoNumber value)
     {
         SOURDO_DATA_NOT_NULL();
         data->stack.push_back(value);
     }
 
-    void sourdo_push_float(sourdo_Data* data, float value)
+    void sourdo_push_bool(sourdo_Data* data, SourDoBool value)
     {
         SOURDO_DATA_NOT_NULL();
-        data->stack.push_back(value);
+        data->stack.push_back(bool(value));
     }
 
     void sourdo_push_string(sourdo_Data* data, const char* value)

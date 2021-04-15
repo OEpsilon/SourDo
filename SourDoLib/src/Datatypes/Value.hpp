@@ -15,15 +15,15 @@ namespace sourdo
         enum class Type
         {
             _NULL,
-            INT,
-            FLOAT,
+            NUMBER,
+            BOOL,
             STRING,
         };
 
         Value();
         Value(Null new_value);
-        Value(int new_value);
-        Value(float new_value);
+        Value(double new_value);
+        Value(bool new_value);
         Value(const std::string& new_value);
         
         Value(const Value& new_value);
@@ -33,27 +33,27 @@ namespace sourdo
         Value& operator=(Value&& new_value);
 
         Value& operator=(Null new_value);
-        Value& operator=(int new_value);
-        Value& operator=(float new_value);
+        Value& operator=(double new_value);
+        Value& operator=(bool new_value);
         Value& operator=(const std::string& new_value);
 
         Type get_type();
 
-        int& to_int() 
+        double& to_number() 
         { 
-            return std::get<int>(value);
+            return std::get<double>(value);
         }
-
-        float& to_float() 
-        { 
-            return std::get<float>(value); 
+        
+        bool& to_bool()
+        {
+            return std::get<bool>(value); 
         }
 
         std::string& to_string() 
         { 
-            if(type == Type::INT)
+            if(type == Type::NUMBER)
             {
-                value = std::to_string(std::get<int>(value));
+                value = std::to_string(std::get<double>(value));
                 return std::get<std::string>(value);
             }
             return std::get<std::string>(value); 
@@ -61,7 +61,7 @@ namespace sourdo
     private:
         Type type;
 
-        std::variant<Null, int, float, std::string> value;
+        std::variant<Null, double, bool, std::string> value;
     };
 
 } // namespace SourDo

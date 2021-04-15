@@ -7,54 +7,6 @@
 
 namespace sourdo
 {
-    template<typename Left, typename Right>
-    static VisitorReturn perform_binary_operation(Token op, Left left, Right right)
-    {
-        VisitorReturn return_value;
-        switch(op.type)
-        {
-            case Token::Type::ADD:
-            {
-                return_value.result = left + right;
-                break;
-            }
-            case Token::Type::SUB:
-            {   
-                return_value.result = left - right;
-                break;
-            }
-            case Token::Type::MUL:
-            {
-                return_value.result = left * right;
-                break;
-            }
-            case Token::Type::DIV:
-            {
-                if(right == 0)
-                {
-                    return_value.error_message = "Cannot divide a number by zero";
-                    break;
-                }
-                return_value.result = left / right;
-                break;
-            }
-            case Token::Type::POW:
-            {
-                if(std::is_same<Left, int>::value && std::is_same<Right, int>::value)
-                {
-                    return_value.result = (int)(std::powf(left, right));
-                    break;
-                }
-                return_value.result = std::powf(left, right);
-                break;
-            }
-            default:
-            {
-                break;
-            }
-        }
-        return return_value;
-    }
     static VisitorReturn visit_unary_op_node(sourdo_Data* data, std::shared_ptr<UnaryOpNode> node)
     {
         VisitorReturn return_value;
@@ -64,23 +16,72 @@ namespace sourdo
             return return_value;
         }
 
-        if(operand_value.result.get_type() == Value::Type::INT)
+        if(operand_value.result.get_type() == Value::Type::NUMBER)
         {
-            if(node->op_token.type == Token::Type::SUB)
+            switch(node->op_token.type)
             {
-                return_value.result = -(return_value.result.to_int());
+                case Token::Type::ADD:
+                {
+                    return_value.result = operand_value.result.to_number();
+                    break;
+                }
+                case Token::Type::SUB:
+                {
+                    return_value.result = -(operand_value.result.to_number());
+                    break;
+                }
+                case Token::Type::LOGIC_NOT:
+                {
+                    return_value.error_message = "Cannot perform a logical operation on numbers";
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
             }
         }
-        else if(operand_value.result.get_type() == Value::Type::FLOAT)
+        else if(operand_value.result.get_type() == Value::Type::BOOL)
         {
-            if(node->op_token.type == Token::Type::SUB)
+            switch(node->op_token.type)
             {
-                return_value.result = -(operand_value.result.to_float());
+                case Token::Type::ADD:
+                case Token::Type::SUB:
+                {
+                    return_value.error_message = "Cannot perform an arithmetic operation on bools";
+                    break;
+                }
+                case Token::Type::LOGIC_NOT:
+                {
+                    return_value.result = !(operand_value.result.to_bool());
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
             }
         }
-        else
+        else if(operand_value.result.get_type() == Value::Type::_NULL)
         {
-            return_value.error_message = "Expected a numeric type";
+            switch(node->op_token.type)
+            {
+                case Token::Type::ADD:
+                case Token::Type::SUB:
+                {
+                    return_value.error_message = "Cannot perform an arithmetic operation on null";
+                    break;
+                }
+                case Token::Type::LOGIC_NOT:
+                {
+                    return_value.error_message = "Cannot perform a logical operation on null";
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
         }
 
         return return_value;
@@ -100,33 +101,438 @@ namespace sourdo
             return right_value;
         }
 
-        if(left_value.result.get_type() == Value::Type::INT)
+        if(left_value.result.get_type() == Value::Type::NUMBER)
         {
-            if(right_value.result.get_type() == Value::Type::INT)
+            if(right_value.result.get_type() == Value::Type::NUMBER)
             {
-                return_value = perform_binary_operation(node->op_token, left_value.result.to_int(), right_value.result.to_int());
+                double left = left_value.result.to_number();
+                double right = right_value.result.to_number();
+                switch(node->op_token.type)
+                {
+                    case Token::Type::ADD:
+                    {
+                        return_value.result = left + right;
+                        break;
+                    }
+                    case Token::Type::SUB:
+                    {   
+                        return_value.result = left - right;
+                        break;
+                    }
+                    case Token::Type::MUL:
+                    {
+                        return_value.result = left * right;
+                        break;
+                    }
+                    case Token::Type::DIV:
+                    {
+                        if(right == 0)
+                        {
+                        return_value.error_message = "Cannot divide a number by zero";
+                            break;
+                        }
+                        return_value.result = left / right;
+                        break;
+                    }
+                    case Token::Type::POW:
+                    {
+                        return_value.result = std::pow(left, right);
+                        break;
+                    }
+                    case Token::Type::LESS_THAN:
+                    {
+                        return_value.result = left < right;
+                        break;
+                    }
+                    case Token::Type::GREATER_THAN:
+                    {
+                        return_value.result = left > right;
+                        break;
+                    }
+                    case Token::Type::LESS_EQUAL:
+                    {
+                        return_value.result = left <= right;
+                        break;
+                    }
+                    case Token::Type::GREATER_EQUAL:
+                    {
+                        return_value.result = left >= right;
+                        break;
+                    }
+                    case Token::Type::EQUAL:
+                    {
+                        return_value.result = left == right;
+                        break;
+                    }
+                    case Token::Type::NOT_EQUAL:
+                    {
+                        return_value.result = left != right;
+                        break;
+                    }
+                    case Token::Type::LOGIC_OR:
+                    case Token::Type::LOGIC_AND:
+                    {
+                        return_value.error_message = "Cannot perform a logical operation on numbers";
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+            else if(right_value.result.get_type() == Value::Type::BOOL)
+            {
+                double left = left_value.result.to_number();
+                bool right = right_value.result.to_bool();
+
+                switch(node->op_token.type)
+                {
+                    case Token::Type::ADD:
+                    case Token::Type::SUB:
+                    case Token::Type::MUL:
+                    case Token::Type::DIV:
+                    case Token::Type::POW:
+                    {
+                        return_value.error_message = "Cannot perform an arithmetic operation with numbers and bools";
+                        break;
+                    }
+                    case Token::Type::LESS_THAN:
+                    case Token::Type::GREATER_THAN:
+                    case Token::Type::LESS_EQUAL:
+                    case Token::Type::GREATER_EQUAL:
+                    case Token::Type::EQUAL:
+                    case Token::Type::NOT_EQUAL:
+                    {
+                        return_value.error_message = "Cannot perform a comparison operation with numbers and bools";
+                        break;
+                    }
+                    case Token::Type::LOGIC_OR:
+                    case Token::Type::LOGIC_AND:
+                    {
+                        return_value.error_message = "Cannot perform a logical operation with numbers and bools";
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+            else if(right_value.result.get_type() == Value::Type::_NULL)
+            {
+                switch(node->op_token.type)
+                {
+                    case Token::Type::ADD:
+                    case Token::Type::SUB:
+                    case Token::Type::MUL:
+                    case Token::Type::DIV:
+                    case Token::Type::POW:
+                    {
+                        return_value.error_message = "Cannot perform an arithmetic operation with number and null";
+                        break;
+                    }
+                    case Token::Type::LESS_THAN:
+                    case Token::Type::GREATER_THAN:
+                    case Token::Type::LESS_EQUAL:
+                    case Token::Type::GREATER_EQUAL:
+                    {
+                        return_value.error_message = "Cannot perform this comparison operation with number and null";
+                        break;
+                    }
+                    case Token::Type::EQUAL:
+                    {
+                        return_value.result = false;
+                        break;
+                    }
+                    case Token::Type::NOT_EQUAL:
+                    {
+                        return_value.result = true;
+                        break;
+                    }
+                    case Token::Type::LOGIC_OR:
+                    case Token::Type::LOGIC_AND:
+                    {
+                        return_value.error_message = "Cannot perform a logical operation with number and null";
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        else if(left_value.result.get_type() == Value::Type::BOOL)
+        {
+            if(right_value.result.get_type() == Value::Type::NUMBER)
+            {
+                double left = left_value.result.to_bool();
+                double right = right_value.result.to_number();
+                switch(node->op_token.type)
+                {
+                    case Token::Type::ADD:
+                    case Token::Type::SUB:
+                    case Token::Type::MUL:
+                    case Token::Type::DIV:
+                    case Token::Type::POW:
+                    {
+                        return_value.error_message = "Cannot perform an arithmetic operation with bools and numbers";
+                        break;
+                    }
+                    case Token::Type::LESS_THAN:
+                    case Token::Type::GREATER_THAN:
+                    case Token::Type::LESS_EQUAL:
+                    case Token::Type::GREATER_EQUAL:
+                    case Token::Type::EQUAL:
+                    case Token::Type::NOT_EQUAL:
+                    {
+                        return_value.error_message = "Cannot perform a comparison operation with bools and numbers";
+                        break;
+                    }
+                    case Token::Type::LOGIC_OR:
+                    case Token::Type::LOGIC_AND:
+                    {
+                        return_value.error_message = "Cannot perform a logical operation with bools and numbers";
+                        break;
+                    } 
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+            else if(right_value.result.get_type() == Value::Type::BOOL)
+            {
+                bool left = left_value.result.to_bool();
+                bool right = right_value.result.to_bool();
+
+                switch(node->op_token.type)
+                {
+                    case Token::Type::ADD:
+                    case Token::Type::SUB:
+                    case Token::Type::MUL:
+                    case Token::Type::DIV:
+                    case Token::Type::POW:
+                    {
+                        return_value.error_message = "Cannot perform an arithmetic operation with bools";
+                        break;
+                    }
+                    case Token::Type::LESS_THAN:
+                    case Token::Type::GREATER_THAN:
+                    case Token::Type::LESS_EQUAL:
+                    case Token::Type::GREATER_EQUAL:
+                    {
+                        return_value.error_message = "Cannot perform this comparison operation with bools";
+                        break;
+                    }
+                    case Token::Type::EQUAL:
+                    {
+                        return_value.result = left == right;
+                        break;
+                    }
+                    case Token::Type::NOT_EQUAL:
+                    {
+                        return_value.result = left != right;
+                        break;
+                    }
+                    case Token::Type::LOGIC_OR:
+                    {
+                        return_value.result = left || right;
+                        break;
+                    }
+                    case Token::Type::LOGIC_AND:
+                    {
+                        return_value.result = left && right;
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+            else if(right_value.result.get_type() == Value::Type::_NULL)
+            {
+                switch(node->op_token.type)
+                {
+                    case Token::Type::ADD:
+                    case Token::Type::SUB:
+                    case Token::Type::MUL:
+                    case Token::Type::DIV:
+                    case Token::Type::POW:
+                    {
+                        return_value.error_message = "Cannot perform an arithmetic operation with bool and null";
+                        break;
+                    }
+                    case Token::Type::LESS_THAN:
+                    case Token::Type::GREATER_THAN:
+                    case Token::Type::LESS_EQUAL:
+                    case Token::Type::GREATER_EQUAL:
+                    {
+                        return_value.error_message = "Cannot perform this comparison operation with bool and null";
+                        break;
+                    }
+                    case Token::Type::EQUAL:
+                    {
+                        return_value.result = false;
+                        break;
+                    }
+                    case Token::Type::NOT_EQUAL:
+                    {
+                        return_value.result = true;
+                        break;
+                    }
+                    case Token::Type::LOGIC_OR:
+                    case Token::Type::LOGIC_AND:
+                    {
+                        return_value.error_message = "Cannot perform a logical operation with bool and null";
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        else if(left_value.result.get_type() == Value::Type::_NULL)
+        {
+            if(right_value.result.get_type() == Value::Type::NUMBER)
+            {
+                switch(node->op_token.type)
+                {
+                    case Token::Type::ADD:
+                    case Token::Type::SUB:
+                    case Token::Type::MUL:
+                    case Token::Type::DIV:
+                    case Token::Type::POW:
+                    {
+                        return_value.error_message = "Cannot perform an arithmetic operation with null and numbers";
+                        break;
+                    }
+                    case Token::Type::LESS_THAN:
+                    case Token::Type::GREATER_THAN:
+                    case Token::Type::LESS_EQUAL:
+                    case Token::Type::GREATER_EQUAL:
+                    {
+                        return_value.error_message = "Cannot perform this comparison operation with bools";
+                        break;
+                    }
+                    case Token::Type::EQUAL:
+                    {
+                        return_value.result = false;
+                        break;
+                    }
+                    case Token::Type::NOT_EQUAL:
+                    {
+                        return_value.result = true;
+                        break;
+                    }
+                    case Token::Type::LOGIC_OR:
+                    case Token::Type::LOGIC_AND:
+                    {
+                        return_value.error_message = "Cannot perform a logical operation with null and numbers";
+                        break;
+                    } 
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+            else if(right_value.result.get_type() == Value::Type::BOOL)
+            {
+                switch(node->op_token.type)
+                {
+                    case Token::Type::ADD:
+                    case Token::Type::SUB:
+                    case Token::Type::MUL:
+                    case Token::Type::DIV:
+                    case Token::Type::POW:
+                    {
+                        return_value.error_message = "Cannot perform an arithmetic operation with bools";
+                        break;
+                    }
+                    case Token::Type::LESS_THAN:
+                    case Token::Type::GREATER_THAN:
+                    case Token::Type::LESS_EQUAL:
+                    case Token::Type::GREATER_EQUAL:
+                    {
+                        return_value.error_message = "Cannot perform this comparison operation with null and bools";
+                        break;
+                    }
+                    case Token::Type::EQUAL:
+                    {
+                        return_value.result = false;
+                        break;
+                    }
+                    case Token::Type::NOT_EQUAL:
+                    {
+                        return_value.result = true;
+                        break;
+                    }
+                    case Token::Type::LOGIC_OR:
+                    case Token::Type::LOGIC_AND:
+                    {
+                        return_value.error_message = "Cannot perform a logical operation with null and bools";
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+
                 return return_value;
             }
-            else if(right_value.result.get_type() == Value::Type::FLOAT)
+            else if(right_value.result.get_type() == Value::Type::_NULL)
             {
-                return_value = perform_binary_operation(node->op_token, left_value.result.to_int(), right_value.result.to_float());
+                switch(node->op_token.type)
+                {
+                    case Token::Type::ADD:
+                    case Token::Type::SUB:
+                    case Token::Type::MUL:
+                    case Token::Type::DIV:
+                    case Token::Type::POW:
+                    {
+                        return_value.error_message = "Cannot perform an arithmetic operation with nulls";
+                        break;
+                    }
+                    case Token::Type::LESS_THAN:
+                    case Token::Type::GREATER_THAN:
+                    case Token::Type::LESS_EQUAL:
+                    case Token::Type::GREATER_EQUAL:
+                    {
+                        return_value.error_message = "Cannot perform this comparison operation with nulls";
+                        break;
+                    }
+                    case Token::Type::EQUAL:
+                    {
+                        return_value.result = true;
+                        break;
+                    }
+                    case Token::Type::NOT_EQUAL:
+                    {
+                        return_value.result = false;
+                        break;
+                    }
+                    case Token::Type::LOGIC_OR:
+                    case Token::Type::LOGIC_AND:
+                    {
+                        return_value.error_message = "Cannot perform a logical operation with nulls";
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+
                 return return_value;
             }
         }
-        else if(left_value.result.get_type() == Value::Type::FLOAT)
-        {
-            if(right_value.result.get_type() == Value::Type::INT)
-            {
-                return_value = perform_binary_operation(node->op_token, left_value.result.to_float(), right_value.result.to_int());
-                return return_value;
-            }
-            else if(right_value.result.get_type() == Value::Type::FLOAT)
-            {
-                return_value = perform_binary_operation(node->op_token, left_value.result.to_float(), right_value.result.to_float());
-                return return_value;
-            }
-        }
-        return_value.error_message = "Expected a numeric type";
+
         return return_value;
     }
 
@@ -214,16 +620,16 @@ namespace sourdo
                 return_value = visit_var_access_node(data, std::static_pointer_cast<VarAccessNode>(node));
                 break;
             }
-            case Node::Type::INT_VALUE_NODE:
+            case Node::Type::NUMBER_VALUE_NODE:
             {
-                auto int_node = std::static_pointer_cast<IntValueNode>(node);
-                return_value.result = std::stoi(int_node->value.value);
+                auto number_node = std::static_pointer_cast<NumberValueNode>(node);
+                return_value.result = std::stod(number_node->value.value);
                 break;
             }
-            case Node::Type::FLOAT_VALUE_NODE:
+            case Node::Type::BOOL_VALUE_NODE:
             {
-                auto float_node = std::static_pointer_cast<IntValueNode>(node);
-                return_value.result = std::stof(float_node->value.value);
+                auto bool_node = std::static_pointer_cast<BoolValueNode>(node);
+                return_value.result = bool_node->value.value == "true";
                 break;
             }
             case Node::Type::NULL_VALUE_NODE:

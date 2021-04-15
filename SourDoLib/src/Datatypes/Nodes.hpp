@@ -15,8 +15,8 @@ namespace sourdo
     struct ExpressionNode;
     struct BinaryOpNode;
     struct UnaryOpNode;
-    struct IntValueNode;
-    struct FloatValueNode;
+    struct NumberValueNode;
+    struct BoolValueNode;
     struct NullValueNode;
 
     struct Node 
@@ -31,8 +31,8 @@ namespace sourdo
             VAR_ACCESS_NODE,
             BINARY_OP_NODE,
             UNARY_OP_NODE,
-            INT_VALUE_NODE,
-            FLOAT_VALUE_NODE,
+            NUMBER_VALUE_NODE,
+            BOOL_VALUE_NODE,
             NULL_VALUE_NODE,
         };
         Type type = Type::NONE;
@@ -149,15 +149,15 @@ namespace sourdo
         }
     };
 
-    struct IntValueNode : public ExpressionNode
+    struct NumberValueNode : public ExpressionNode
     {
-        IntValueNode(const Token& value)
+        NumberValueNode(const Token& value)
             : value(value)
         {
-            type = Type::INT_VALUE_NODE;
+            type = Type::NUMBER_VALUE_NODE;
         }
 
-        virtual ~IntValueNode() = default;
+        virtual ~NumberValueNode() = default;
 
         Token value;
         
@@ -169,15 +169,15 @@ namespace sourdo
         }
     };
 
-    struct FloatValueNode : public ExpressionNode
+    struct BoolValueNode : public ExpressionNode
     {
-        FloatValueNode(const Token& value)
+        BoolValueNode(const Token& value)
             : value(value)
         {
-            type = Type::INT_VALUE_NODE;
+            type = Type::BOOL_VALUE_NODE;
         }
 
-        virtual ~FloatValueNode() = default;
+        virtual ~BoolValueNode() = default;
 
         Token value;
         

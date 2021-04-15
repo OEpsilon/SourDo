@@ -14,15 +14,15 @@ namespace sourdo
         value = new_value;
     }
 
-    Value::Value(int new_value)
+    Value::Value(double new_value)
     {
-        type = Type::INT;
+        type = Type::NUMBER;
         value = new_value;
     }
 
-    Value::Value(float new_value)
+    Value::Value(bool new_value)
     {
-        type = Type::FLOAT;
+        type = Type::BOOL;
         value = new_value;
     }
     
@@ -71,16 +71,16 @@ namespace sourdo
         return *this;
     }
     
-    Value& Value::operator=(int new_value)
+    Value& Value::operator=(double new_value)
     {
-        type = Type::INT;
+        type = Type::NUMBER;
         value = new_value;
         return *this;
     }
 
-    Value& Value::operator=(float new_value)
+    Value& Value::operator=(bool new_value)
     {
-        type = Type::FLOAT;
+        type = Type::BOOL;
         value = new_value;
         return *this;
     }

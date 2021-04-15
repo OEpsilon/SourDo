@@ -23,11 +23,11 @@ expression          := logic_or
 
 // This section shows expression precedence. Lower rules have higher precedence
 
-logic_or            := logic_and (<KEYWORD:or> logic_and)*
+logic_or            := logic_and (<LOGIC_OR> logic_and)*
 
-logic_and           := logic_not (<KEYWORD:and> logic_not)*
+logic_and           := logic_not (<LOGIC_AND> logic_not)*
 
-logic_not           := <KEYWORD:not> logic_not
+logic_not           := <LOGIC_NOT> logic_not
                     := comparison
 
 comparison          := add_expr (<LESS_THAN | GREATER_THAN | LESS_EQUAL | GREATER_EQUAL | EQUAL | NOT_EQUAL> add_expr)*
@@ -41,6 +41,6 @@ sign                := <ADD|SUB> sign
 
 power               := (factor <Power>) sign*
 
-factor              := <INT_LITERAL|FLOAT_LITERAL|IDENTIFIER>
+factor              := <INT_LITERAL|FLOAT_LITERAL|BOOL_LITERAL|IDENTIFIER>
                     := <LPAREN> expression <RPAREN>
                 

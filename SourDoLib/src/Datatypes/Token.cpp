@@ -12,8 +12,10 @@ namespace sourdo
             {   Token::Type::NONE,              "NONE"              },
             {   Token::Type::KEYWORD ,          "KEYWORD"           },
             {   Token::Type::IDENTIFIER ,       "IDENTIFIER"        },
-            {   Token::Type::INT_LITERAL,       "INT_LITERAL"       },
-            {   Token::Type::FLOAT_LITERAL,     "FLOAT_LITERAL"     },
+            {   Token::Type::NUMBER_LITERAL,    "NUMBER_LITERAL"    },
+            {   Token::Type::BOOL_LITERAL,      "BOOL_LITERAL"      },
+            {   Token::Type::NULL_LITERAL,      "NULL_LITERAL"      },
+
             {   Token::Type::ADD,               "ADD"               },
             {   Token::Type::SUB,               "SUB"               },
             {   Token::Type::MUL,               "MUL"               },
@@ -26,6 +28,10 @@ namespace sourdo
             {   Token::Type::GREATER_EQUAL,     "GREATER_EQUAL"     },
             {   Token::Type::EQUAL,             "EQUAL"             },
             {   Token::Type::NOT_EQUAL,         "NOT_EQUAL"         },
+
+            {   Token::Type::LOGIC_OR,          "LOGIC_OR"          },
+            {   Token::Type::LOGIC_AND,         "LOGIC_AND"         },
+            {   Token::Type::LOGIC_NOT,         "LOGIC_NOT"         },
 
             {   Token::Type::ASSIGN,            "ASSIGN"            },
 

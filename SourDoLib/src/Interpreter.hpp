@@ -41,10 +41,14 @@ namespace sourdo
         enum class ExprPrecedence
         {
             NONE            = 0,
-            ADD_EXPR        = 1,
-            MUL_EXPR        = 2,
-            POWER           = 3,
-            FACTOR          = 4,
+            LOGIC_OR        = 1,
+            LOGIC_AND       = 2,
+            LOGIC_NOT       = 3,
+            COMPARISON      = 4,
+            ADD_EXPR        = 5,
+            MUL_EXPR        = 6,
+            POWER           = 7,
+            FACTOR          = 8,
         };
 
         struct ParseExprRule 
@@ -69,6 +73,8 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> binary_op_right(std::shared_ptr<ExpressionNode> previous);
 
         std::shared_ptr<ExpressionNode> sign(std::shared_ptr<ExpressionNode> previous);
+        std::shared_ptr<ExpressionNode> logic_not(std::shared_ptr<ExpressionNode> previous);
+
         std::shared_ptr<ExpressionNode> factor(std::shared_ptr<ExpressionNode> previous);
 
         ParseExprRule& get_rule(const Token::Type& type);

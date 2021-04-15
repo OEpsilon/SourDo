@@ -7,7 +7,7 @@
 
 namespace sourdo
 {
-    static const std::vector<std::string> KEYWORDS = { "var", "and", "or", "not" };
+    static const std::vector<std::string> KEYWORDS = { "var" };
 
     TokenizerReturn tokenize_string(const std::string& string)
     {
@@ -24,7 +24,7 @@ namespace sourdo
             if(std::isdigit(current_char))
             {
                 std::string number_string;
-                bool is_float = false;
+                bool has_dot = false;
                 while(i < string.size() && (std::isdigit(current_char) || current_char == '.'))
                 {
                     if(std::isdigit(current_char))
@@ -33,22 +33,19 @@ namespace sourdo
                     }
                     else
                     {
+                        if(has_dot)
+                        {
+                            break;
+                        }
                         number_string += current_char;
-                        is_float = true;
+                        has_dot = true;
                     }
                     i++;
                     current_char = string[i]; 
                 }
                 i--;
                 
-                if(is_float)
-                {
-                    tokens.emplace_back(Token::Type::FLOAT_LITERAL, number_string);
-                }
-                else
-                {
-                    tokens.emplace_back(Token::Type::INT_LITERAL, number_string);
-                }
+                tokens.emplace_back(Token::Type::NUMBER_LITERAL, number_string);
             }
             else if(std::isalpha(current_char) || current_char == '_')
             {
@@ -61,7 +58,31 @@ namespace sourdo
                 }
                 i--;
 
-                if(std::find(KEYWORDS.begin(), KEYWORDS.end(), identifier_string) != KEYWORDS.end())
+                if(identifier_string == "or")
+                {
+                    tokens.emplace_back(Token::Type::LOGIC_OR);
+                }
+                else if(identifier_string == "and")
+                {
+                    tokens.emplace_back(Token::Type::LOGIC_AND);
+                }
+                else if(identifier_string == "not")
+                {
+                    tokens.emplace_back(Token::Type::LOGIC_NOT);
+                }
+                else if(identifier_string == "false")
+                {
+                    tokens.emplace_back(Token::Type::BOOL_LITERAL, "false");
+                }
+                else if(identifier_string == "true")
+                {
+                    tokens.emplace_back(Token::Type::BOOL_LITERAL, "true");
+                }
+                else if(identifier_string == "null")
+                {
+                    tokens.emplace_back(Token::Type::NULL_LITERAL);
+                }
+                else if(std::find(KEYWORDS.begin(), KEYWORDS.end(), identifier_string) != KEYWORDS.end())
                 {
                     tokens.emplace_back(Token::Type::KEYWORD, identifier_string);
                 }
@@ -147,11 +168,7 @@ namespace sourdo
                         }
                         i--;
 
-                        std::stringstream ss;
-                        ss << "Unexpected character: '" << current_char << "'. Did you mean '='?";
-
-                        return { {}, ss.str() };
-
+                        tokens.emplace_back(Token::Type::LOGIC_NOT);
                         break;
                     }
                     case ':':
