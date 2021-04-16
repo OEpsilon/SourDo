@@ -154,7 +154,16 @@ namespace sourdo
                     }
                     case '=':
                     {
-                        tokens.emplace_back(Token::Type::EQUAL);
+                        i++;
+                        current_char = string[i];
+                        if(current_char == '=')
+                        {
+                            tokens.emplace_back(Token::Type::EQUAL);
+                            break;
+                        }
+                        i--;
+
+                        tokens.emplace_back(Token::Type::ASSIGN);
                         break;
                     }
                     case '!':
@@ -169,23 +178,6 @@ namespace sourdo
                         i--;
 
                         tokens.emplace_back(Token::Type::LOGIC_NOT);
-                        break;
-                    }
-                    case ':':
-                    {
-                        i++;
-                        current_char = string[i];
-                        if(current_char == '=')
-                        {
-                            tokens.emplace_back(Token::Type::ASSIGN);
-                            break;
-                        }
-                        i--;
-
-                        std::stringstream ss;
-                        ss << "Unexpected character: '" << current_char << "'. Did you mean '='?";
-
-                        return { {}, ss.str() };
                         break;
                     }
                     case '(':

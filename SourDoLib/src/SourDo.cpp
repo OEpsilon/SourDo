@@ -133,12 +133,16 @@ extern "C" {
         return SOURDO_TRUE;
     }
 
+    void sourdo_set_global(sourdo_Data* data, const char* name)
+    {
+        data->symbol_table[name] = sourdo_index_stack(data, -1);
+    }
+
     void sourdo_pop(sourdo_Data* data)
     {
         SOURDO_DATA_NOT_NULL();
         data->stack.pop_back();
     }
-
 
     SourDoBool sourdo_do_string(sourdo_Data* data, const char* string)
     {

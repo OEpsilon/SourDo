@@ -26,6 +26,7 @@ void sourdo_push_string(sourdo_Data* data, const char* value);
 void sourdo_push_null(sourdo_Data* data);
 
 SourDoBool sourdo_get_global(sourdo_Data* data, const char* name);
+void sourdo_set_global(sourdo_Data* data, const char* name);
 
 void sourdo_pop(sourdo_Data* data);
 

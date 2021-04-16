@@ -1,1 +1,1 @@
-vendor/premake/bin/MacOS/premake5 filter=lfs diff=lfs merge=lfs -text
+vendor/premake/bin/MacOS/premake5 binary

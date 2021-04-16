@@ -7,6 +7,9 @@ int main()
 {
     sourdo_Data* module = sourdo_data_create();
 
+    sourdo_push_number(module, 40);
+    sourdo_set_global(module, "apple_count");
+
     bool running = true;
     while(running)
     {
@@ -37,6 +40,9 @@ int main()
                 std::cout << "null" << std::endl;
             }
             
+            sourdo_get_global(module, "apple_count");
+            std::cout << "There are " << sourdo_to_number(module, -1) << " apples." << std::endl;
+            sourdo_pop(module);
         }
     }
 
