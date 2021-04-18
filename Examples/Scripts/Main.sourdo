@@ -4,7 +4,3 @@ var oranges = 30
 if apples + oranges == 50 then
     apple_count = apples - oranges
 end
-
-if apple_count < 0 then
-    apple_count = 0
-end

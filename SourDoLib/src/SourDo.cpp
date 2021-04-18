@@ -121,24 +121,26 @@ extern "C" {
         data->stack.push_back(sourdo::Null());
     }
 
-    SourDoBool sourdo_get_global(sourdo_Data* data, const char* name)
+    SourDoBool sourdo_get_value(sourdo_Data* data, const char* name)
     {
         SOURDO_DATA_NOT_NULL();
-        if(data->symbol_table.find(name) == data->symbol_table.end())
+        sourdo::Value* value = sourdo_get_symbol(data, name);
+        if(value == nullptr)
         {
             std::stringstream ss;
             ss << sourdo::COLOR_RED << "Variable '" << name << "' is undefined" << sourdo::COLOR_DEFAULT << std::flush;
             sourdo_push_string(data, ss.str().c_str());
             return SOURDO_FALSE;
         }
-        data->stack.push_back(data->symbol_table[name]);
+
+        data->stack.push_back(*value);
         return SOURDO_TRUE;
     }
 
-    void sourdo_set_global(sourdo_Data* data, const char* name)
+    void sourdo_set_value(sourdo_Data* data, const char* name)
     {
         SOURDO_DATA_NOT_NULL();
-        data->symbol_table[name] = sourdo_index_stack(data, -1);
+        sourdo_set_symbol(data, name, sourdo_index_stack(data, -1));
     }
 
     void sourdo_pop(sourdo_Data* data)

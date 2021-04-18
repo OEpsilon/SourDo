@@ -41,7 +41,10 @@ namespace sourdo
             }
             if(condition.result.to_bool())
             {
-                VisitorReturn statements = visit_ast(data, if_case.statements);
+                sourdo_Data* if_scope = sourdo_data_create();
+                if_scope->parent = data;
+                VisitorReturn statements = visit_ast(if_scope, if_case.statements);
+                sourdo_data_destroy(if_scope);
                 return statements;
             }
         }
@@ -70,7 +73,7 @@ namespace sourdo
             return var_value;
         }
 
-        if(data->symbol_table.find(node->name_tok.value) != data->symbol_table.end())
+        if(sourdo_get_symbol(data, node->name_tok.value) != nullptr)
         {
             std::stringstream ss;
             ss << node->position << "Variable '" << node->name_tok.value << "' is already defined";
@@ -94,7 +97,7 @@ namespace sourdo
             return new_value;
         }
 
-        if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
+        if(sourdo_get_symbol(data, node->name_tok.value) == nullptr)
         {
             std::stringstream ss;
             ss << node->position << "Variable '" << node->name_tok.value << "' is not defined";
@@ -112,7 +115,9 @@ namespace sourdo
     static VisitorReturn visit_var_access_node(sourdo_Data* data, std::shared_ptr<VarAccessNode> node)
     {
         VisitorReturn return_value;
-        if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
+
+        sourdo::Value* var_value = sourdo_get_symbol(data, node->name_tok.value);
+        if(var_value == nullptr)
         {
             std::stringstream ss;
             ss << node->position << "Variable '" << node->name_tok.value << "' is not defined";
@@ -120,7 +125,7 @@ namespace sourdo
         }
         else
         {
-            return_value.result = data->symbol_table[node->name_tok.value];
+            return_value.result = *var_value;
         }
         return return_value;
     }
