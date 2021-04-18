@@ -9,17 +9,21 @@ namespace sourdo
 {
     static const std::vector<std::string> KEYWORDS = { "var", "if", "elif", "else", "then", "end" };
 
-    TokenizerReturn tokenize_string(const std::string& string)
+    TokenizerReturn tokenize_string(const std::string& text, const std::string& file_name)
     {
         std::vector<Token> tokens;
+        Position file_position = Position(1, 0, file_name);
         char current_char;
 
-        for(int i = 0; i < string.size(); i++)
+        for(int i = 0; i < text.size(); i++)
         {
-            current_char = string[i];
+            current_char = text[i];
+            file_position.column++;
             if(current_char == '\n')
             {
-                tokens.emplace_back(Token::Type::NEW_LINE);
+                tokens.emplace_back(Token::Type::NEW_LINE, file_position);
+                file_position.line++;
+                file_position.column = 0;
             }
             if(isspace(current_char))
             {
@@ -27,9 +31,10 @@ namespace sourdo
             }
             if(std::isdigit(current_char))
             {
+                Position saved_position = file_position;
                 std::string number_string;
                 bool has_dot = false;
-                while(i < string.size() && (std::isdigit(current_char) || current_char == '.'))
+                while(i < text.size() && (std::isdigit(current_char) || current_char == '.'))
                 {
                     if(std::isdigit(current_char))
                     {
@@ -45,54 +50,59 @@ namespace sourdo
                         has_dot = true;
                     }
                     i++;
-                    current_char = string[i]; 
+                    file_position.column++;
+                    current_char = text[i]; 
                 }
                 i--;
+                file_position.column--;
                 
-                tokens.emplace_back(Token::Type::NUMBER_LITERAL, number_string);
+                tokens.emplace_back(Token::Type::NUMBER_LITERAL, saved_position, number_string);
             }
             else if(std::isalpha(current_char) || current_char == '_')
             {
+                Position saved_position = file_position;
                 std::string identifier_string;
-                while(i < string.size() && (std::isalpha(current_char) || current_char == '_'))
+                while(i < text.size() && (std::isalpha(current_char) || current_char == '_'))
                 {
                     identifier_string += current_char;
                     i++;
-                    current_char = string[i];
+                    file_position.column++;
+                    current_char = text[i];
                 }
                 i--;
+                file_position.column--;
 
                 if(identifier_string == "or")
                 {
-                    tokens.emplace_back(Token::Type::LOGIC_OR);
+                    tokens.emplace_back(Token::Type::LOGIC_OR, saved_position);
                 }
                 else if(identifier_string == "and")
                 {
-                    tokens.emplace_back(Token::Type::LOGIC_AND);
+                    tokens.emplace_back(Token::Type::LOGIC_AND, saved_position);
                 }
                 else if(identifier_string == "not")
                 {
-                    tokens.emplace_back(Token::Type::LOGIC_NOT);
+                    tokens.emplace_back(Token::Type::LOGIC_NOT, saved_position);
                 }
                 else if(identifier_string == "false")
                 {
-                    tokens.emplace_back(Token::Type::BOOL_LITERAL, "false");
+                    tokens.emplace_back(Token::Type::BOOL_LITERAL, saved_position, "false");
                 }
                 else if(identifier_string == "true")
                 {
-                    tokens.emplace_back(Token::Type::BOOL_LITERAL, "true");
+                    tokens.emplace_back(Token::Type::BOOL_LITERAL, saved_position, "true");
                 }
                 else if(identifier_string == "null")
                 {
-                    tokens.emplace_back(Token::Type::NULL_LITERAL);
+                    tokens.emplace_back(Token::Type::NULL_LITERAL, saved_position);
                 }
                 else if(std::find(KEYWORDS.begin(), KEYWORDS.end(), identifier_string) != KEYWORDS.end())
                 {
-                    tokens.emplace_back(Token::Type::KEYWORD, identifier_string);
+                    tokens.emplace_back(Token::Type::KEYWORD, saved_position, identifier_string);
                 }
                 else
                 {
-                    tokens.emplace_back(Token::Type::IDENTIFIER, identifier_string);
+                    tokens.emplace_back(Token::Type::IDENTIFIER, saved_position, identifier_string);
                 }
             }
             else
@@ -101,103 +111,120 @@ namespace sourdo
                 {
                     case '+':
                     {
-                        tokens.emplace_back(Token::Type::ADD);
+                        tokens.emplace_back(Token::Type::ADD, file_position);
                         break;
                     }
                     case '-':
                     {
-                        tokens.emplace_back(Token::Type::SUB);
+                        tokens.emplace_back(Token::Type::SUB, file_position);
                         break;
                     }
                     case '*':
                     {
+                        Position saved_position = file_position;
                         i++;
-                        current_char = string[i];
+                        file_position.column++;
+                        current_char = text[i];
                         if(current_char == '*')
                         {
-                            tokens.emplace_back(Token::Type::POW);
+                            tokens.emplace_back(Token::Type::POW, saved_position);
                             break;
                         }
                         i--;
+                        file_position.column--;
 
-                        tokens.emplace_back(Token::Type::MUL);
+                        tokens.emplace_back(Token::Type::MUL, saved_position);
                         break;
                     }
                     case '/':
                     {
-                        tokens.emplace_back(Token::Type::DIV);
+                        tokens.emplace_back(Token::Type::DIV, file_position);
                         break;
                     }
                     case '>':
                     {
+                        Position saved_position = file_position;
                         i++;
-                        current_char = string[i];
+                        file_position.column++;
+
+                        current_char = text[i];
                         if(current_char == '=')
                         {
-                            tokens.emplace_back(Token::Type::GREATER_EQUAL);
+                            tokens.emplace_back(Token::Type::GREATER_EQUAL, saved_position);
                             break;
                         }
                         i--;
+                        file_position.column--;
 
-                        tokens.emplace_back(Token::Type::GREATER_THAN);
+                        tokens.emplace_back(Token::Type::GREATER_THAN, saved_position);
                         break;
                     }
                     case '<':
                     {
+                        Position saved_position = file_position;
                         i++;
-                        current_char = string[i];
+                        file_position.column++;
+
+                        current_char = text[i];
                         if(current_char == '=')
                         {
-                            tokens.emplace_back(Token::Type::LESS_EQUAL);
+                            tokens.emplace_back(Token::Type::LESS_EQUAL, saved_position);
                             break;
                         }
                         i--;
+                        file_position.column--;
 
-                        tokens.emplace_back(Token::Type::LESS_THAN);
+                        tokens.emplace_back(Token::Type::LESS_THAN, saved_position);
                         break;
                     }
                     case '=':
                     {
+                        Position saved_position = file_position;
                         i++;
-                        current_char = string[i];
+                        file_position.column++;
+                        current_char = text[i];
                         if(current_char == '=')
                         {
-                            tokens.emplace_back(Token::Type::EQUAL);
+                            tokens.emplace_back(Token::Type::EQUAL, saved_position);
                             break;
                         }
                         i--;
+                        file_position.column--;
 
-                        tokens.emplace_back(Token::Type::ASSIGN);
+                        tokens.emplace_back(Token::Type::ASSIGN, saved_position);
                         break;
                     }
                     case '!':
                     {
+                        Position saved_position = file_position;
                         i++;
-                        current_char = string[i];
+                        file_position.column++;
+                        current_char = text[i];
                         if(current_char == '=')
                         {
-                            tokens.emplace_back(Token::Type::NOT_EQUAL);
+                            tokens.emplace_back(Token::Type::NOT_EQUAL, saved_position);
                             break;
                         }
                         i--;
+                        file_position.column--;
 
-                        tokens.emplace_back(Token::Type::LOGIC_NOT);
+                        tokens.emplace_back(Token::Type::LOGIC_NOT, saved_position);
                         break;
                     }
                     case '(':
                     {
-                        tokens.emplace_back(Token::Type::LPAREN);
+                        tokens.emplace_back(Token::Type::LPAREN, file_position);
                         break;
                     }
                     case ')':
                     {
-                        tokens.emplace_back(Token::Type::RPAREN);
+                        tokens.emplace_back(Token::Type::RPAREN, file_position);
                         break;
                     }
                     default:
                     {
                         std::stringstream ss;
-                        ss << "Unexpected character: '" << current_char << "'";
+                        ss << file_position << " Unexpected character: '" << current_char << "'";
 
                         return { {}, ss.str()};
                         break;
@@ -206,7 +233,7 @@ namespace sourdo
             }
         }
 
-        tokens.emplace_back(Token::Type::TK_EOF);
+        tokens.emplace_back(Token::Type::TK_EOF, file_position);
 
         return { std::move(tokens), {}};
     }

@@ -150,7 +150,7 @@ extern "C" {
     SourDoBool sourdo_do_string(sourdo_Data* data, const char* string)
     {
         SOURDO_DATA_NOT_NULL();
-        auto[tokens, tok_error] = sourdo::tokenize_string(string);
+        auto[tokens, tok_error] = sourdo::tokenize_string(string, string);
         if(tok_error)
         {
             std::stringstream ss;
@@ -200,7 +200,37 @@ extern "C" {
 
         file.close();
 
-        return sourdo_do_string(data, file_text.str().c_str());
+
+        auto[tokens, tok_error] = sourdo::tokenize_string(file_text.str(), file_path);
+        if(tok_error)
+        {
+            std::stringstream ss;
+            ss << sourdo::COLOR_RED << tok_error.value() << sourdo::COLOR_DEFAULT << std::flush;
+            sourdo_push_string(data, ss.str().c_str());
+            return SOURDO_FALSE;
+        }
+
+        sourdo::Parser parser;
+        auto[ast, parse_error] = parser.parse_tokens(tokens);
+        if(parse_error)
+        {
+            std::stringstream ss;
+            ss << sourdo::COLOR_RED << parse_error.value() << sourdo::COLOR_DEFAULT << std::flush;
+            sourdo_push_string(data, ss.str().c_str());
+            return SOURDO_FALSE;
+        }
+
+        auto[result, visit_error] = sourdo::visit_ast(data, ast);
+        if(visit_error)
+        {
+            std::stringstream ss;
+            ss << sourdo::COLOR_RED << visit_error.value() << sourdo::COLOR_DEFAULT << std::flush;
+            sourdo_push_string(data, ss.str().c_str());
+            return SOURDO_FALSE;
+        }
+        data->stack.push_back(result);
+
+        return SOURDO_TRUE;
     }
 
 }

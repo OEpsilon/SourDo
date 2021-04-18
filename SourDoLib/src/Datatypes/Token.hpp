@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "Position.hpp"
+
 namespace sourdo
 {
     struct Token
@@ -21,9 +23,20 @@ namespace sourdo
             TK_EOF,
         };
 
-        Token(Type type = Type::NONE, const std::string& value = "")
-            : type(type), value(value)
+        Token(Type type, Position position = {}, const std::string& value = "")
+            : type(type), position(position), value(value)
         {
+        }
+
+        Token(Type type, const std::string& value)
+            : type(type), position(), value(value)
+        {
+        }
+
+        Token()
+            : type(Type::NONE), position(), value()
+        {
+
         }
 
         bool operator==(const Token& other)
@@ -37,6 +50,7 @@ namespace sourdo
         }
 
         Type type;
+        Position position;
         std::string value;
     };
 

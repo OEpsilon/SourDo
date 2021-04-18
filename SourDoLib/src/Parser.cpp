@@ -16,7 +16,9 @@ namespace sourdo
         
         if(!error && current_token.type != Token::Type::TK_EOF)
         {
-            return {nullptr, "Expected an operator"};
+            std::stringstream ss;
+            ss << current_token.position << "Expected an operator";
+            return {nullptr, ss.str()};
         }
 
         return {ast, error};
@@ -34,6 +36,7 @@ namespace sourdo
 
     std::shared_ptr<StatementListNode> Parser::statement_list()
     {
+        Position saved_position = current_token.position;
         std::vector<std::shared_ptr<Node>> statements;
 
         while(current_token.type == Token::Type::NEW_LINE)
@@ -64,24 +67,27 @@ namespace sourdo
                 break;
             }
         }
-        return std::make_shared<StatementListNode>(statements);
+        return std::make_shared<StatementListNode>(statements, saved_position);
     }
 
     std::shared_ptr<Node> Parser::statement()
     {
         if(current_token == Token(Token::Type::KEYWORD, "var"))
         {
+            Position saved_position = current_token.position;
             advance();
             if(current_token.type != Token::Type::IDENTIFIER)
             {
-                error = "Expected an identifier";
+                std::stringstream ss;
+                ss << current_token.position << "Expected an identifier";
+                error = ss.str();
                 return nullptr;
             }
             Token name_tok = current_token;
             advance();
             if(current_token.type != Token::Type::ASSIGN)
             {
-                return std::make_shared<VarDeclarationNode>(name_tok, std::make_shared<NullValueNode>());
+                return std::make_shared<VarDeclarationNode>(name_tok, nullptr, saved_position);
             }
             advance();
             std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::LOGIC_OR);
@@ -89,7 +95,7 @@ namespace sourdo
             {
                 return nullptr;
             }
-            return std::make_shared<VarDeclarationNode>(name_tok, expr);
+            return std::make_shared<VarDeclarationNode>(name_tok, expr, saved_position);
         }
         // Looking ahead at the next token probably isn't the best idea but it works for now.
         else if(current_token.type == Token::Type::IDENTIFIER && tokens[position + 1].type == Token::Type::ASSIGN)
@@ -106,6 +112,7 @@ namespace sourdo
         }
         else if(current_token == Token(Token::Type::KEYWORD, "if"))
         {
+            Position saved_position = current_token.position;
             std::vector<IfNode::IfBlock> cases;
             std::shared_ptr<StatementListNode> else_case;
             advance();
@@ -120,7 +127,9 @@ namespace sourdo
                 
                 if(current_token != Token(Token::Type::KEYWORD, "then"))
                 {
-                    error = "Expected 'then'";
+                    std::stringstream ss;
+                    ss << current_token.position << "Expected 'then'";
+                    error = ss.str();
                     return;
                 }
                 advance();
@@ -164,13 +173,15 @@ namespace sourdo
 
             if(current_token != Token(Token::Type::KEYWORD, "end"))
             {
-                error = "Expected 'end'";
+                std::stringstream ss;
+                ss << current_token.position << "Expected 'end'";
+                error = ss.str();
                 return nullptr;
             }
             advance();
 
 
-            return std::make_shared<IfNode>(cases, else_case);
+            return std::make_shared<IfNode>(cases, else_case, saved_position);
         }
 
         return expression(ExprPrecedence::LOGIC_OR);
@@ -188,7 +199,9 @@ namespace sourdo
             }
             if(current_token.type != Token::Type::RPAREN)
             {
-                error = "Expected a ')'";
+                std::stringstream ss;
+                ss << current_token.position << "Expected a ')'";
+                error = ss.str();
                 return nullptr;
             }
             advance();
@@ -198,7 +211,9 @@ namespace sourdo
         ParseExprFunc prefix_func = get_rule(current_token.type).prefix;
         if(prefix_func == nullptr)
         {
-            error = "Expected an expression";
+            std::stringstream ss;
+            ss << current_token.position << "Expected an expression";
+            error = ss.str();
             return nullptr;
         }
         std::shared_ptr<ExpressionNode> previous_operand = (this->*prefix_func)(nullptr);
@@ -281,9 +296,11 @@ namespace sourdo
         else if(tok.type == Token::Type::NULL_LITERAL)
         {
             advance();
-            return std::make_shared<NullValueNode>();
+            return std::make_shared<NullValueNode>(tok);
         }
-        error = "Expected an expression";
+        std::stringstream ss;
+        ss << current_token.position << "Expected an expression";
+        error = ss.str();
         return nullptr;
     }
 

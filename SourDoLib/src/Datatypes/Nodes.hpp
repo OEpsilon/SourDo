@@ -26,8 +26,6 @@ namespace sourdo
 
     struct Node 
     {
-        virtual ~Node() = default;
-        
         enum class Type
         {
             NONE = 0,
@@ -44,15 +42,25 @@ namespace sourdo
             BOOL_VALUE_NODE,
             NULL_VALUE_NODE,
         };
+
+        Node(const Position& position)
+            : position(position)
+        {
+
+        }
+
+        virtual ~Node() = default;
+
         Type type = Type::NONE;
+        Position position;
 
         virtual std::string to_string() = 0;
     };
 
     struct StatementListNode : public Node
     {
-        StatementListNode(std::vector<std::shared_ptr<Node>> statements)
-            : statements(statements)
+        StatementListNode(std::vector<std::shared_ptr<Node>> statements, const Position& position)
+            : Node(position), statements(statements)
         {
             type = Type::STATEMENT_LIST_NODE;
         }
@@ -93,8 +101,8 @@ namespace sourdo
             std::shared_ptr<StatementListNode> statements;
         };
 
-        IfNode(std::vector<IfBlock> cases, std::shared_ptr<StatementListNode> else_case)
-            : cases(cases), else_case(else_case)
+        IfNode(std::vector<IfBlock> cases, std::shared_ptr<StatementListNode> else_case, const Position& position)
+            : Node(position), cases(cases), else_case(else_case)
         {
             type = Type::IF_NODE;
         }
@@ -114,8 +122,8 @@ namespace sourdo
 
     struct VarDeclarationNode : public Node
     {
-        VarDeclarationNode(const Token& name_tok, std::shared_ptr<ExpressionNode> initializer)
-            : name_tok(name_tok), initializer(initializer)
+        VarDeclarationNode(const Token& name_tok, std::shared_ptr<ExpressionNode> initializer, const Position& position)
+            : Node(position), name_tok(name_tok), initializer(initializer)
         {
             type = Type::VAR_DECLARATION_NODE;
         }
@@ -133,7 +141,7 @@ namespace sourdo
     struct VarAssignmentNode : public Node
     {
         VarAssignmentNode(const Token& name_tok, std::shared_ptr<ExpressionNode> new_value)
-            : name_tok(name_tok), new_value(new_value)
+            : Node(name_tok.position), name_tok(name_tok), new_value(new_value)
         {
             type = Type::VAR_ASSIGNMENT_NODE;
         }
@@ -152,13 +160,16 @@ namespace sourdo
     {
         virtual ~ExpressionNode() = default;
     protected:
-        ExpressionNode() = default;
+        ExpressionNode(const Position& position)
+            : Node(position)
+        {
+        }
     };
 
     struct VarAccessNode : public ExpressionNode
     {
         VarAccessNode(const Token& name_tok)
-            : name_tok(name_tok)
+            : ExpressionNode(name_tok.position), name_tok(name_tok)
         {
             type = Type::VAR_ACCESS_NODE;
         }
@@ -179,7 +190,7 @@ namespace sourdo
     {
         BinaryOpNode(std::shared_ptr<ExpressionNode> left_operand, 
                 const Token& op_token, std::shared_ptr<ExpressionNode> right_operand)
-            : left_operand(left_operand), op_token(op_token), right_operand(right_operand)
+            : ExpressionNode(op_token.position), left_operand(left_operand), op_token(op_token), right_operand(right_operand)
         {
             type = Type::BINARY_OP_NODE;
         }
@@ -203,7 +214,7 @@ namespace sourdo
     struct UnaryOpNode : public ExpressionNode
     {
         UnaryOpNode(const Token& op_token, std::shared_ptr<ExpressionNode> operand)
-            : op_token(op_token), operand(operand)
+            : ExpressionNode(op_token.position), op_token(op_token), operand(operand)
         {
             type = Type::UNARY_OP_NODE;
         }
@@ -224,7 +235,7 @@ namespace sourdo
     struct NumberValueNode : public ExpressionNode
     {
         NumberValueNode(const Token& value)
-            : value(value)
+            : ExpressionNode(value.position), value(value)
         {
             type = Type::NUMBER_VALUE_NODE;
         }
@@ -244,7 +255,7 @@ namespace sourdo
     struct BoolValueNode : public ExpressionNode
     {
         BoolValueNode(const Token& value)
-            : value(value)
+            : ExpressionNode(value.position), value(value)
         {
             type = Type::BOOL_VALUE_NODE;
         }
@@ -263,12 +274,15 @@ namespace sourdo
 
     struct NullValueNode : public ExpressionNode
     {
-        NullValueNode()
+        NullValueNode(const Token& value)
+            : ExpressionNode(value.position), value(value)
         {
             type = Type::NULL_VALUE_NODE;
         }
 
         virtual ~NullValueNode() = default;
+
+        Token value;
         
         std::string to_string() final
         {

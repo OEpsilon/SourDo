@@ -29,7 +29,7 @@ namespace sourdo
         std::optional<std::string> error_message;
     };
 
-    TokenizerReturn tokenize_string(const std::string& string);
+    TokenizerReturn tokenize_string(const std::string& string, const std::string& file_name);
     VisitorReturn visit_ast(sourdo_Data* data, std::shared_ptr<Node>);
     class Parser
     {

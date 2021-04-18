@@ -1,7 +1,7 @@
 var apples = 20
 var oranges = 30
 
-if apples + oranges == 50 then 
+if apples + oranges == 50 then
     apple_count = apples - oranges
 end
 

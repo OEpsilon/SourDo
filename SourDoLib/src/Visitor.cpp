@@ -34,7 +34,9 @@ namespace sourdo
             }
             if(condition.result.get_type() != Value::Type::BOOL)
             {
-                return_value.error_message = "condition does not result in a bool";
+                std::stringstream ss;
+                ss << if_case.condition->position << "condition does not result in a bool";
+                return_value.error_message = ss.str();
                 return return_value;
             }
             if(condition.result.to_bool())
@@ -53,7 +55,16 @@ namespace sourdo
     static VisitorReturn visit_var_declaration_node(sourdo_Data* data, std::shared_ptr<VarDeclarationNode> node)
     {
         VisitorReturn return_value;
-        VisitorReturn var_value = visit_ast(data, node->initializer);
+        VisitorReturn var_value;
+        if(node->initializer)
+        {
+            var_value = visit_ast(data, node->initializer);
+        }
+        else
+        {
+            var_value.result = Null();
+        }
+        
         if(var_value.error_message)
         {
             return var_value;
@@ -62,7 +73,7 @@ namespace sourdo
         if(data->symbol_table.find(node->name_tok.value) != data->symbol_table.end())
         {
             std::stringstream ss;
-            ss << "Variable '" << node->name_tok.value << "' is already defined";
+            ss << node->position << "Variable '" << node->name_tok.value << "' is already defined";
             return_value.error_message = ss.str();
         }
         else
@@ -86,7 +97,7 @@ namespace sourdo
         if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
         {
             std::stringstream ss;
-            ss << "Variable '" << node->name_tok.value << "' is not defined";
+            ss << node->position << "Variable '" << node->name_tok.value << "' is not defined";
             return_value.error_message = ss.str();
         }
         else
@@ -104,7 +115,7 @@ namespace sourdo
         if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
         {
             std::stringstream ss;
-            ss << "Variable '" << node->name_tok.value << "' is not defined";
+            ss << node->position << "Variable '" << node->name_tok.value << "' is not defined";
             return_value.error_message = ss.str();
         }
         else
@@ -139,7 +150,9 @@ namespace sourdo
                 }
                 case Token::Type::LOGIC_NOT:
                 {
-                    return_value.error_message = "Cannot perform a logical operation on numbers";
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform a logical operation on numbers";
+                    return_value.error_message = ss.str();
                     break;
                 }
                 default:
@@ -155,7 +168,9 @@ namespace sourdo
                 case Token::Type::ADD:
                 case Token::Type::SUB:
                 {
-                    return_value.error_message = "Cannot perform an arithmetic operation on bools";
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform an arithmetic operation on bools";
+                    return_value.error_message = ss.str();
                     break;
                 }
                 case Token::Type::LOGIC_NOT:
@@ -176,12 +191,16 @@ namespace sourdo
                 case Token::Type::ADD:
                 case Token::Type::SUB:
                 {
-                    return_value.error_message = "Cannot perform an arithmetic operation on null";
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform an arithmetic operation on null";
+                    return_value.error_message = ss.str();
                     break;
                 }
                 case Token::Type::LOGIC_NOT:
                 {
-                    return_value.error_message = "Cannot perform a logical operation on null";
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform a logical operation on null";
+                    return_value.error_message = ss.str();
                     break;
                 }
                 default:
@@ -235,7 +254,9 @@ namespace sourdo
                     {
                         if(right == 0)
                         {
-                        return_value.error_message = "Cannot divide a number by zero";
+                            std::stringstream ss;
+                            ss << node->position << "Cannot divide a number by zero";
+                            return_value.error_message = ss.str();
                             break;
                         }
                         return_value.result = left / right;
@@ -279,7 +300,9 @@ namespace sourdo
                     case Token::Type::LOGIC_OR:
                     case Token::Type::LOGIC_AND:
                     {
-                        return_value.error_message = "Cannot perform a logical operation on numbers";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a logical operation on numbers";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     default:
@@ -301,7 +324,9 @@ namespace sourdo
                     case Token::Type::DIV:
                     case Token::Type::POW:
                     {
-                        return_value.error_message = "Cannot perform an arithmetic operation with numbers and bools";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform an arithmetic operation with numbers and bools";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LESS_THAN:
@@ -311,13 +336,17 @@ namespace sourdo
                     case Token::Type::EQUAL:
                     case Token::Type::NOT_EQUAL:
                     {
-                        return_value.error_message = "Cannot perform a comparison operation with numbers and bools";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a comparison operation with numbers and bools";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LOGIC_OR:
                     case Token::Type::LOGIC_AND:
                     {
-                        return_value.error_message = "Cannot perform a logical operation with numbers and bools";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a logical operation with numbers and bools";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     default:
@@ -336,7 +365,9 @@ namespace sourdo
                     case Token::Type::DIV:
                     case Token::Type::POW:
                     {
-                        return_value.error_message = "Cannot perform an arithmetic operation with number and null";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform an arithmetic operation with number and null";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LESS_THAN:
@@ -344,7 +375,9 @@ namespace sourdo
                     case Token::Type::LESS_EQUAL:
                     case Token::Type::GREATER_EQUAL:
                     {
-                        return_value.error_message = "Cannot perform this comparison operation with number and null";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform this comparison operation with number and null";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::EQUAL:
@@ -360,7 +393,9 @@ namespace sourdo
                     case Token::Type::LOGIC_OR:
                     case Token::Type::LOGIC_AND:
                     {
-                        return_value.error_message = "Cannot perform a logical operation with number and null";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a logical operation with number and null";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     default:
@@ -384,7 +419,9 @@ namespace sourdo
                     case Token::Type::DIV:
                     case Token::Type::POW:
                     {
-                        return_value.error_message = "Cannot perform an arithmetic operation with bools and numbers";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform an arithmetic operation with bools and numbers";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LESS_THAN:
@@ -394,13 +431,17 @@ namespace sourdo
                     case Token::Type::EQUAL:
                     case Token::Type::NOT_EQUAL:
                     {
-                        return_value.error_message = "Cannot perform a comparison operation with bools and numbers";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a comparison operation with bools and numbers";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LOGIC_OR:
                     case Token::Type::LOGIC_AND:
                     {
-                        return_value.error_message = "Cannot perform a logical operation with bools and numbers";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a logical operation with bools and numbers";
+                        return_value.error_message = ss.str();
                         break;
                     } 
                     default:
@@ -422,7 +463,9 @@ namespace sourdo
                     case Token::Type::DIV:
                     case Token::Type::POW:
                     {
-                        return_value.error_message = "Cannot perform an arithmetic operation with bools";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform an arithmetic operation with bools and numbers";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LESS_THAN:
@@ -430,7 +473,9 @@ namespace sourdo
                     case Token::Type::LESS_EQUAL:
                     case Token::Type::GREATER_EQUAL:
                     {
-                        return_value.error_message = "Cannot perform this comparison operation with bools";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform this comparison operation with bools and numbers";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::EQUAL:
@@ -469,7 +514,9 @@ namespace sourdo
                     case Token::Type::DIV:
                     case Token::Type::POW:
                     {
-                        return_value.error_message = "Cannot perform an arithmetic operation with bool and null";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform an arithmetic operation with bool and null";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LESS_THAN:
@@ -477,7 +524,9 @@ namespace sourdo
                     case Token::Type::LESS_EQUAL:
                     case Token::Type::GREATER_EQUAL:
                     {
-                        return_value.error_message = "Cannot perform this comparison operation with bool and null";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform this comparison operation with bool and null";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::EQUAL:
@@ -493,7 +542,9 @@ namespace sourdo
                     case Token::Type::LOGIC_OR:
                     case Token::Type::LOGIC_AND:
                     {
-                        return_value.error_message = "Cannot perform a logical operation with bool and null";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a logical operation with bool and null";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     default:
@@ -515,7 +566,9 @@ namespace sourdo
                     case Token::Type::DIV:
                     case Token::Type::POW:
                     {
-                        return_value.error_message = "Cannot perform an arithmetic operation with null and numbers";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform an arithmetic operation with null and numbers";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LESS_THAN:
@@ -523,7 +576,9 @@ namespace sourdo
                     case Token::Type::LESS_EQUAL:
                     case Token::Type::GREATER_EQUAL:
                     {
-                        return_value.error_message = "Cannot perform this comparison operation with bools";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform this comparison operation with bools";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::EQUAL:
@@ -539,7 +594,9 @@ namespace sourdo
                     case Token::Type::LOGIC_OR:
                     case Token::Type::LOGIC_AND:
                     {
-                        return_value.error_message = "Cannot perform a logical operation with null and numbers";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a logical operation with null and numbers";
+                        return_value.error_message = ss.str();
                         break;
                     } 
                     default:
@@ -558,7 +615,9 @@ namespace sourdo
                     case Token::Type::DIV:
                     case Token::Type::POW:
                     {
-                        return_value.error_message = "Cannot perform an arithmetic operation with bools";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform an arithmetic operation with bools";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LESS_THAN:
@@ -566,7 +625,9 @@ namespace sourdo
                     case Token::Type::LESS_EQUAL:
                     case Token::Type::GREATER_EQUAL:
                     {
-                        return_value.error_message = "Cannot perform this comparison operation with null and bools";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform this comparison operation with null and bools";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::EQUAL:
@@ -582,7 +643,9 @@ namespace sourdo
                     case Token::Type::LOGIC_OR:
                     case Token::Type::LOGIC_AND:
                     {
-                        return_value.error_message = "Cannot perform a logical operation with null and bools";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a logical operation with null and bools";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     default:
@@ -603,7 +666,9 @@ namespace sourdo
                     case Token::Type::DIV:
                     case Token::Type::POW:
                     {
-                        return_value.error_message = "Cannot perform an arithmetic operation with nulls";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform an arithmetic operation with nulls";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::LESS_THAN:
@@ -611,7 +676,9 @@ namespace sourdo
                     case Token::Type::LESS_EQUAL:
                     case Token::Type::GREATER_EQUAL:
                     {
-                        return_value.error_message = "Cannot perform this comparison operation with nulls";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform this comparison operation with nulls";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     case Token::Type::EQUAL:
@@ -627,7 +694,9 @@ namespace sourdo
                     case Token::Type::LOGIC_OR:
                     case Token::Type::LOGIC_AND:
                     {
-                        return_value.error_message = "Cannot perform a logical operation with nulls";
+                        std::stringstream ss;
+                        ss << node->position << "Cannot perform a logical operation with nulls";
+                        return_value.error_message = ss.str();
                         break;
                     }
                     default:
