@@ -17,6 +17,7 @@ namespace sourdo
             LOGIC_OR, LOGIC_AND, LOGIC_NOT,
             ASSIGN,
             LPAREN, RPAREN,
+            NEW_LINE, 
             TK_EOF,
         };
 
@@ -32,7 +33,7 @@ namespace sourdo
 
         bool operator!=(const Token& other)
         {
-            return type != other.type && value != other.value;
+            return !(*this == other);
         }
 
         Type type;

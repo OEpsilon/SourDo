@@ -14,9 +14,16 @@
 /* They get called.                                 */
 /*--------------------------------------------------*/
 
+statement_list      := (<NEW_LINE>)* (statement (<NEW_LINE>)+)*
+
 statement           := <KEYWORD:var> <IDENTIFIER> <ASSIGN> expression
                     := <KEYWORD:var> <IDENTIFIER> expression
                     := <IDENTIFIER> <ASSIGN> expression
+                    := <KEYWORD:if> expression <KEYWORD:then> statement_list
+                            (<KEYWORD:elif> expression <KEYWORD:then> statement_list)*
+                            (<KEYWORD:else> statement_list)?
+                            <KEYWORD:end>
+
                     := expression
 
 expression          := logic_or

@@ -65,6 +65,8 @@ namespace sourdo
 
         Token advance();
 
+        std::shared_ptr<StatementListNode> statement_list();
+
         std::shared_ptr<Node> statement();
 
         std::shared_ptr<ExpressionNode> expression(ExprPrecedence precedence);

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cmath>
 
@@ -122,6 +123,7 @@ extern "C" {
 
     SourDoBool sourdo_get_global(sourdo_Data* data, const char* name)
     {
+        SOURDO_DATA_NOT_NULL();
         if(data->symbol_table.find(name) == data->symbol_table.end())
         {
             std::stringstream ss;
@@ -135,6 +137,7 @@ extern "C" {
 
     void sourdo_set_global(sourdo_Data* data, const char* name)
     {
+        SOURDO_DATA_NOT_NULL();
         data->symbol_table[name] = sourdo_index_stack(data, -1);
     }
 
@@ -146,6 +149,7 @@ extern "C" {
 
     SourDoBool sourdo_do_string(sourdo_Data* data, const char* string)
     {
+        SOURDO_DATA_NOT_NULL();
         auto[tokens, tok_error] = sourdo::tokenize_string(string);
         if(tok_error)
         {
@@ -154,7 +158,7 @@ extern "C" {
             sourdo_push_string(data, ss.str().c_str());
             return SOURDO_FALSE;
         }
-        //std::cout << tokens << std::endl;
+
         sourdo::Parser parser;
         auto[ast, parse_error] = parser.parse_tokens(tokens);
         if(parse_error)
@@ -164,7 +168,7 @@ extern "C" {
             sourdo_push_string(data, ss.str().c_str());
             return SOURDO_FALSE;
         }
-        //std::cout << ast << std::endl;
+
         auto[result, visit_error] = sourdo::visit_ast(data, ast);
         if(visit_error)
         {
@@ -176,6 +180,27 @@ extern "C" {
         data->stack.push_back(result);
 
         return SOURDO_TRUE;
+    }
+    
+    SourDoBool sourdo_do_file(sourdo_Data* data, const char* file_path)
+    {
+        SOURDO_DATA_NOT_NULL();
+        std::ifstream file;
+        file.open(file_path);
+        if(!file.is_open())
+        {
+            std::stringstream ss;
+            ss << "Could not open file '" << file_path << "'";
+            sourdo_push_string(data, ss.str().c_str());
+            return SOURDO_FALSE;
+        }
+
+        std::stringstream file_text;
+        file_text << file.rdbuf();
+
+        file.close();
+
+        return sourdo_do_string(data, file_text.str().c_str());
     }
 
 }

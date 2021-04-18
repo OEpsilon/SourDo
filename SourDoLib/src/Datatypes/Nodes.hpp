@@ -3,15 +3,20 @@
 #include <string>
 #include <memory>
 #include <sstream>
+#include <optional>
 
 #include "Token.hpp"
 
 namespace sourdo
 {
     struct Node;
+    struct StatementListNode;
+    struct IfNode;
+    
     struct VarDeclarationNode;
     struct VarAssignmentNode;
     struct VarAccessNode;
+    
     struct ExpressionNode;
     struct BinaryOpNode;
     struct UnaryOpNode;
@@ -26,9 +31,13 @@ namespace sourdo
         enum class Type
         {
             NONE = 0,
+            STATEMENT_LIST_NODE,
+            IF_NODE,
+
             VAR_DECLARATION_NODE,
             VAR_ASSIGNMENT_NODE,
             VAR_ACCESS_NODE,
+
             BINARY_OP_NODE,
             UNARY_OP_NODE,
             NUMBER_VALUE_NODE,
@@ -38,6 +47,69 @@ namespace sourdo
         Type type = Type::NONE;
 
         virtual std::string to_string() = 0;
+    };
+
+    struct StatementListNode : public Node
+    {
+        StatementListNode(std::vector<std::shared_ptr<Node>> statements)
+            : statements(statements)
+        {
+            type = Type::STATEMENT_LIST_NODE;
+        }
+
+        std::vector<std::shared_ptr<Node>> statements;
+
+        virtual ~StatementListNode() = default;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << "(";
+            int i = 0;
+            for(auto& statement : statements)
+            {
+                ss << statement->to_string();
+                if(i < statements.size() - 1)
+                {
+                    ss << ", ";
+                }
+                i++;
+            }
+            ss << ")";
+            return ss.str();
+        }
+    };
+
+    struct IfNode : public Node
+    {
+        struct IfBlock
+        {
+            IfBlock(std::shared_ptr<ExpressionNode> condition, std::shared_ptr<StatementListNode> statements)
+                : condition(condition), statements(statements)
+            {
+            }
+            
+            std::shared_ptr<ExpressionNode> condition;
+            std::shared_ptr<StatementListNode> statements;
+        };
+
+        IfNode(std::vector<IfBlock> cases, std::shared_ptr<StatementListNode> else_case)
+            : cases(cases), else_case(else_case)
+        {
+            type = Type::IF_NODE;
+        }
+
+        virtual ~IfNode() = default;
+        
+        std::vector<IfBlock> cases;
+        std::shared_ptr<StatementListNode> else_case;
+
+        std::string to_string() final
+        {
+            // I'll deal with this later
+            std::stringstream ss;
+            return ss.str();
+        }
     };
 
     struct VarDeclarationNode : public Node

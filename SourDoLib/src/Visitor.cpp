@@ -8,6 +8,112 @@
 
 namespace sourdo
 {
+    static VisitorReturn visit_statement_list_node(sourdo_Data* data, std::shared_ptr<StatementListNode> node)
+    {
+        VisitorReturn return_value;
+        for(auto& stmt : node->statements)
+        {
+            VisitorReturn stmt_return = visit_ast(data, stmt);
+            if(stmt_return.error_message)
+            {
+                return stmt_return;
+            }
+        }
+        return return_value;
+    }
+
+    static VisitorReturn visit_if_node(sourdo_Data* data, std::shared_ptr<IfNode> node)
+    {
+        VisitorReturn return_value;
+        for(auto& if_case : node->cases)
+        {
+            VisitorReturn condition = visit_ast(data, if_case.condition);
+            if(condition.error_message)
+            {
+                return condition;
+            }
+            if(condition.result.get_type() != Value::Type::BOOL)
+            {
+                return_value.error_message = "condition does not result in a bool";
+                return return_value;
+            }
+            if(condition.result.to_bool())
+            {
+                VisitorReturn statements = visit_ast(data, if_case.statements);
+                return statements;
+            }
+        }
+        if(node->else_case)
+        {
+            VisitorReturn statements = visit_ast(data, node->else_case);
+        }
+        return return_value;
+    }
+
+    static VisitorReturn visit_var_declaration_node(sourdo_Data* data, std::shared_ptr<VarDeclarationNode> node)
+    {
+        VisitorReturn return_value;
+        VisitorReturn var_value = visit_ast(data, node->initializer);
+        if(var_value.error_message)
+        {
+            return var_value;
+        }
+
+        if(data->symbol_table.find(node->name_tok.value) != data->symbol_table.end())
+        {
+            std::stringstream ss;
+            ss << "Variable '" << node->name_tok.value << "' is already defined";
+            return_value.error_message = ss.str();
+        }
+        else
+        {
+            data->symbol_table[node->name_tok.value] = var_value.result;
+            return_value.result = var_value.result;
+        }
+
+        return return_value;
+    }
+
+    static VisitorReturn visit_var_assignment_node(sourdo_Data* data, std::shared_ptr<VarAssignmentNode> node)
+    {
+        VisitorReturn return_value;
+        VisitorReturn new_value = visit_ast(data, node->new_value);
+        if(new_value.error_message)
+        {
+            return new_value;
+        }
+
+        if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
+        {
+            std::stringstream ss;
+            ss << "Variable '" << node->name_tok.value << "' is not defined";
+            return_value.error_message = ss.str();
+        }
+        else
+        {
+            data->symbol_table[node->name_tok.value] = new_value.result;
+            return_value.result = data->symbol_table[node->name_tok.value];
+        }
+
+        return return_value;
+    }
+
+    static VisitorReturn visit_var_access_node(sourdo_Data* data, std::shared_ptr<VarAccessNode> node)
+    {
+        VisitorReturn return_value;
+        if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
+        {
+            std::stringstream ss;
+            ss << "Variable '" << node->name_tok.value << "' is not defined";
+            return_value.error_message = ss.str();
+        }
+        else
+        {
+            return_value.result = data->symbol_table[node->name_tok.value];
+        }
+        return return_value;
+    }
+
     static VisitorReturn visit_unary_op_node(sourdo_Data* data, std::shared_ptr<UnaryOpNode> node)
     {
         VisitorReturn return_value;
@@ -537,75 +643,21 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_var_declaration_node(sourdo_Data* data, std::shared_ptr<VarDeclarationNode> node)
-    {
-        VisitorReturn return_value;
-        VisitorReturn var_value = visit_ast(data, node->initializer);
-        if(var_value.error_message)
-        {
-            return var_value;
-        }
-
-        if(data->symbol_table.find(node->name_tok.value) != data->symbol_table.end())
-        {
-            std::stringstream ss;
-            ss << "Variable '" << node->name_tok.value << "' is already defined";
-            return_value.error_message = ss.str();
-        }
-        else
-        {
-            data->symbol_table[node->name_tok.value] = var_value.result;
-            return_value.result = var_value.result;
-        }
-
-        return return_value;
-    }
-
-    static VisitorReturn visit_var_assignment_node(sourdo_Data* data, std::shared_ptr<VarAssignmentNode> node)
-    {
-        VisitorReturn return_value;
-        VisitorReturn new_value = visit_ast(data, node->new_value);
-        if(new_value.error_message)
-        {
-            return new_value;
-        }
-
-        if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
-        {
-            std::stringstream ss;
-            ss << "Variable '" << node->name_tok.value << "' is not defined";
-            return_value.error_message = ss.str();
-        }
-        else
-        {
-            data->symbol_table[node->name_tok.value] = new_value.result;
-            return_value.result = data->symbol_table[node->name_tok.value];
-        }
-
-        return return_value;
-    }
-
-    static VisitorReturn visit_var_access_node(sourdo_Data* data, std::shared_ptr<VarAccessNode> node)
-    {
-        VisitorReturn return_value;
-        if(data->symbol_table.find(node->name_tok.value) == data->symbol_table.end())
-        {
-            std::stringstream ss;
-            ss << "Variable '" << node->name_tok.value << "' is not defined";
-            return_value.error_message = ss.str();
-        }
-        else
-        {
-            return_value.result = data->symbol_table[node->name_tok.value];
-        }
-        return return_value;
-    }
-
     VisitorReturn visit_ast(sourdo_Data* data, std::shared_ptr<Node> node)
     {
         VisitorReturn return_value;
         switch(node->type)
         {
+            case Node::Type::STATEMENT_LIST_NODE:
+            {
+                return_value = visit_statement_list_node(data, std::static_pointer_cast<StatementListNode>(node));
+                break;
+            }
+            case Node::Type::IF_NODE:
+            {
+                return_value = visit_if_node(data, std::static_pointer_cast<IfNode>(node));
+                break;
+            }
             case Node::Type::VAR_DECLARATION_NODE:
             {
                 return_value = visit_var_declaration_node(data, std::static_pointer_cast<VarDeclarationNode>(node));

@@ -31,3 +31,4 @@ void sourdo_set_global(sourdo_Data* data, const char* name);
 void sourdo_pop(sourdo_Data* data);
 
 SourDoBool sourdo_do_string(sourdo_Data* data, const char* string);
+SourDoBool sourdo_do_file(sourdo_Data* data, const char* file_path);

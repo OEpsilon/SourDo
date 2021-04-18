@@ -7,7 +7,7 @@
 
 namespace sourdo
 {
-    static const std::vector<std::string> KEYWORDS = { "var" };
+    static const std::vector<std::string> KEYWORDS = { "var", "if", "elif", "else", "then", "end" };
 
     TokenizerReturn tokenize_string(const std::string& string)
     {
@@ -17,6 +17,10 @@ namespace sourdo
         for(int i = 0; i < string.size(); i++)
         {
             current_char = string[i];
+            if(current_char == '\n')
+            {
+                tokens.emplace_back(Token::Type::NEW_LINE);
+            }
             if(isspace(current_char))
             {
                 continue;

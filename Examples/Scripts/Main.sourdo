@@ -1,3 +1,10 @@
-import "BluePrinting.sourdo"
+var apples = 20
+var oranges = 30
 
-print_line_in_blue("Hello world!")
+if apples + oranges == 50 then 
+    apple_count = apples - oranges
+end
+
+if apple_count < 0 then
+    apple_count = 0
+end

@@ -12,7 +12,7 @@ namespace sourdo
         this->tokens = tokens;
         position = 0;
         current_token = tokens[position];
-        std::shared_ptr<Node> ast = statement();
+        std::shared_ptr<Node> ast = statement_list();
         
         if(!error && current_token.type != Token::Type::TK_EOF)
         {
@@ -32,6 +32,41 @@ namespace sourdo
         return current_token;
     }
 
+    std::shared_ptr<StatementListNode> Parser::statement_list()
+    {
+        std::vector<std::shared_ptr<Node>> statements;
+
+        while(current_token.type == Token::Type::NEW_LINE)
+        {
+            advance();
+        }
+
+        while(current_token != Token(Token::Type::KEYWORD, "end") &&
+                current_token != Token(Token::Type::KEYWORD, "elif") &&
+                current_token != Token(Token::Type::KEYWORD, "else") &&
+                current_token.type != Token::Type::TK_EOF)
+        {
+            std::shared_ptr<Node> stmt = statement();
+            if(error)
+            {
+                return nullptr;
+            }
+            statements.emplace_back(stmt);
+
+            uint32_t new_line_count = 0;
+            while(current_token.type == Token::Type::NEW_LINE)
+            {
+                advance();
+                new_line_count++;
+            }
+            if(new_line_count == 0)
+            {
+                break;
+            }
+        }
+        return std::make_shared<StatementListNode>(statements);
+    }
+
     std::shared_ptr<Node> Parser::statement()
     {
         if(current_token == Token(Token::Type::KEYWORD, "var"))
@@ -49,7 +84,7 @@ namespace sourdo
                 return std::make_shared<VarDeclarationNode>(name_tok, std::make_shared<NullValueNode>());
             }
             advance();
-            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::ADD_EXPR);
+            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::LOGIC_OR);
             if(error)
             {
                 return nullptr;
@@ -62,12 +97,80 @@ namespace sourdo
             Token name_tok = current_token;
             advance();
             advance();
-            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::ADD_EXPR);
+            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::LOGIC_OR);
             if(error)
             {
                 return nullptr;
             }
             return std::make_shared<VarAssignmentNode>(name_tok, expr);
+        }
+        else if(current_token == Token(Token::Type::KEYWORD, "if"))
+        {
+            std::vector<IfNode::IfBlock> cases;
+            std::shared_ptr<StatementListNode> else_case;
+            advance();
+            
+            auto if_expr_case = [&]() -> void
+            {
+                std::shared_ptr<ExpressionNode> condition = expression(ExprPrecedence::LOGIC_OR);
+                if(error)
+                {
+                    return;
+                }
+                
+                if(current_token != Token(Token::Type::KEYWORD, "then"))
+                {
+                    error = "Expected 'then'";
+                    return;
+                }
+                advance();
+
+                std::shared_ptr<StatementListNode> statements = statement_list();
+                if(error)
+                {
+                    return;
+                }
+
+                cases.emplace_back(condition, statements);
+            };
+
+            if_expr_case();
+            if(error)
+            {
+                return nullptr;
+            }
+
+            while(current_token == Token(Token::Type::KEYWORD, "elif"))
+            {
+                advance();
+
+                if_expr_case();
+                if(error)
+                {
+                    return nullptr;
+                }
+            }
+
+            if(current_token == Token(Token::Type::KEYWORD, "else"))
+            {
+                advance();
+
+                else_case = statement_list();
+                if(error)
+                {
+                    return nullptr;
+                }
+            }
+
+            if(current_token != Token(Token::Type::KEYWORD, "end"))
+            {
+                error = "Expected 'end'";
+                return nullptr;
+            }
+            advance();
+
+
+            return std::make_shared<IfNode>(cases, else_case);
         }
 
         return expression(ExprPrecedence::LOGIC_OR);
@@ -98,7 +201,7 @@ namespace sourdo
             error = "Expected an expression";
             return nullptr;
         }
-        std::shared_ptr<ExpressionNode> previous_operand = std::invoke(prefix_func, this, nullptr);
+        std::shared_ptr<ExpressionNode> previous_operand = (this->*prefix_func)(nullptr);
         if(error)
         {
             return nullptr;
@@ -112,7 +215,7 @@ namespace sourdo
         while(precedence <= get_rule(current_token.type).precedence)
         {
             ParseExprFunc infix_func = get_rule(current_token.type).infix;
-            previous_operand = std::invoke(infix_func, this, previous_operand);
+            previous_operand = (this->*infix_func)(previous_operand);
             if(error)
             {
                 return nullptr;
