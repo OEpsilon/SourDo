@@ -8,7 +8,7 @@
             "name": "Debug SourDo",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/macosx/Debug-x86_64/SourDo/SourDo",
+            "program": "${workspaceFolder}/bin/macosx/Debug-x86_64/Sandbox/Sandbox",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

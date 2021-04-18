@@ -27,13 +27,14 @@ endif
 ifeq ($(origin AR), default)
   AR = ar
 endif
-DEFINES +=
-INCLUDES += -isystem ../SourDoLib/include
+INCLUDES += -isystem include
 FORCE_INCLUDE +=
 ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
 ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
+LIBS +=
+LDDEPS +=
 ALL_LDFLAGS += $(LDFLAGS) -m64
-LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
+LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
 define PREBUILDCMDS
 endef
 define PRELINKCMDS
@@ -43,21 +44,19 @@ endef
 
 ifeq ($(config),debug)
 TARGETDIR = ../bin/macosx/Debug-x86_64/SourDo
-TARGET = $(TARGETDIR)/SourDo
+TARGET = $(TARGETDIR)/libSourDo.a
 OBJDIR = ../bin-int/macosx/Debug-x86_64/SourDo
+DEFINES += -DSOURDO_DEBUG
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O0 -g
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O0 -g -std=c++17
-LIBS += ../bin/macosx/Debug-x86_64/SourDoLib/libSourDoLib.a
-LDDEPS += ../bin/macosx/Debug-x86_64/SourDoLib/libSourDoLib.a
 
 else ifeq ($(config),release)
 TARGETDIR = ../bin/macosx/Release-x86_64/SourDo
-TARGET = $(TARGETDIR)/SourDo
+TARGET = $(TARGETDIR)/libSourDo.a
 OBJDIR = ../bin-int/macosx/Release-x86_64/SourDo
+DEFINES += -DSOURDO_RELEASE
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O2
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -std=c++17
-LIBS += ../bin/macosx/Release-x86_64/SourDoLib/libSourDoLib.a
-LDDEPS += ../bin/macosx/Release-x86_64/SourDoLib/libSourDoLib.a
 
 endif
 
@@ -71,8 +70,18 @@ endif
 GENERATED :=
 OBJECTS :=
 
-GENERATED += $(OBJDIR)/Main.o
-OBJECTS += $(OBJDIR)/Main.o
+GENERATED += $(OBJDIR)/Parser.o
+GENERATED += $(OBJDIR)/SourDo.o
+GENERATED += $(OBJDIR)/Token.o
+GENERATED += $(OBJDIR)/Tokenizer.o
+GENERATED += $(OBJDIR)/Value.o
+GENERATED += $(OBJDIR)/Visitor.o
+OBJECTS += $(OBJDIR)/Parser.o
+OBJECTS += $(OBJDIR)/SourDo.o
+OBJECTS += $(OBJDIR)/Token.o
+OBJECTS += $(OBJDIR)/Tokenizer.o
+OBJECTS += $(OBJDIR)/Value.o
+OBJECTS += $(OBJDIR)/Visitor.o
 
 # Rules
 # #############################################
@@ -136,7 +145,22 @@ endif
 # File Rules
 # #############################################
 
-$(OBJDIR)/Main.o: src/Main.cpp
+$(OBJDIR)/Token.o: src/Datatypes/Token.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Value.o: src/Datatypes/Value.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Parser.o: src/Parser.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/SourDo.o: src/SourDo.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Tokenizer.o: src/Tokenizer.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Visitor.o: src/Visitor.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

@@ -27,14 +27,13 @@ endif
 ifeq ($(origin AR), default)
   AR = ar
 endif
-INCLUDES += -isystem include
+DEFINES +=
+INCLUDES += -isystem ../SourDo/include
 FORCE_INCLUDE +=
 ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
 ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-LIBS +=
-LDDEPS +=
 ALL_LDFLAGS += $(LDFLAGS) -m64
-LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
+LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
 define PREBUILDCMDS
 endef
 define PRELINKCMDS
@@ -43,20 +42,22 @@ define POSTBUILDCMDS
 endef
 
 ifeq ($(config),debug)
-TARGETDIR = ../bin/macosx/Debug-x86_64/SourDoLib
-TARGET = $(TARGETDIR)/libSourDoLib.a
-OBJDIR = ../bin-int/macosx/Debug-x86_64/SourDoLib
-DEFINES += -DSOURDO_DEBUG
+TARGETDIR = ../bin/macosx/Debug-x86_64/Sandbox
+TARGET = $(TARGETDIR)/Sandbox
+OBJDIR = ../bin-int/macosx/Debug-x86_64/Sandbox
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O0 -g
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O0 -g -std=c++17
+LIBS += ../bin/macosx/Debug-x86_64/SourDo/libSourDo.a
+LDDEPS += ../bin/macosx/Debug-x86_64/SourDo/libSourDo.a
 
 else ifeq ($(config),release)
-TARGETDIR = ../bin/macosx/Release-x86_64/SourDoLib
-TARGET = $(TARGETDIR)/libSourDoLib.a
-OBJDIR = ../bin-int/macosx/Release-x86_64/SourDoLib
-DEFINES += -DSOURDO_RELEASE
+TARGETDIR = ../bin/macosx/Release-x86_64/Sandbox
+TARGET = $(TARGETDIR)/Sandbox
+OBJDIR = ../bin-int/macosx/Release-x86_64/Sandbox
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O2
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -std=c++17
+LIBS += ../bin/macosx/Release-x86_64/SourDo/libSourDo.a
+LDDEPS += ../bin/macosx/Release-x86_64/SourDo/libSourDo.a
 
 endif
 
@@ -70,18 +71,8 @@ endif
 GENERATED :=
 OBJECTS :=
 
-GENERATED += $(OBJDIR)/Parser.o
-GENERATED += $(OBJDIR)/SourDo.o
-GENERATED += $(OBJDIR)/Token.o
-GENERATED += $(OBJDIR)/Tokenizer.o
-GENERATED += $(OBJDIR)/Value.o
-GENERATED += $(OBJDIR)/Visitor.o
-OBJECTS += $(OBJDIR)/Parser.o
-OBJECTS += $(OBJDIR)/SourDo.o
-OBJECTS += $(OBJDIR)/Token.o
-OBJECTS += $(OBJDIR)/Tokenizer.o
-OBJECTS += $(OBJDIR)/Value.o
-OBJECTS += $(OBJDIR)/Visitor.o
+GENERATED += $(OBJDIR)/Main.o
+OBJECTS += $(OBJDIR)/Main.o
 
 # Rules
 # #############################################
@@ -91,7 +82,7 @@ all: $(TARGET)
 
 $(TARGET): $(GENERATED) $(OBJECTS) $(LDDEPS) | $(TARGETDIR)
 	$(PRELINKCMDS)
-	@echo Linking SourDoLib
+	@echo Linking Sandbox
 	$(SILENT) $(LINKCMD)
 	$(POSTBUILDCMDS)
 
@@ -112,7 +103,7 @@ else
 endif
 
 clean:
-	@echo Cleaning SourDoLib
+	@echo Cleaning Sandbox
 ifeq (posix,$(SHELLTYPE))
 	$(SILENT) rm -f  $(TARGET)
 	$(SILENT) rm -rf $(GENERATED)
@@ -145,22 +136,7 @@ endif
 # File Rules
 # #############################################
 
-$(OBJDIR)/Token.o: src/Datatypes/Token.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/Value.o: src/Datatypes/Value.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/Parser.o: src/Parser.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/SourDo.o: src/SourDo.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/Tokenizer.o: src/Tokenizer.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/Visitor.o: src/Visitor.cpp
+$(OBJDIR)/Main.o: src/Main.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

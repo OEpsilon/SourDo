@@ -4,11 +4,11 @@ workspace("OrbitEngine")
 
 outputdir = "%{cfg.system}/%{cfg.buildcfg}-%{cfg.architecture}"
 
-project("SourDoLib")
+project("SourDo")
     kind("StaticLib")
     language("C++")
     cppdialect("C++17")
-    location("SourDoLib")
+    location("SourDo")
 
     targetdir("bin/" .. outputdir .. "/%{prj.name}")
     objdir("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -35,11 +35,11 @@ project("SourDoLib")
         runtime("Release")
         optimize("On")
 
-project("SourDo")
+project("Sandbox")
     kind("ConsoleApp")
     language("C++")
     cppdialect("C++17")
-    location("SourDo")
+    location("Sandbox")
     
     targetdir("bin/" .. outputdir .. "/%{prj.name}")
     objdir("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -50,11 +50,11 @@ project("SourDo")
     })
 
     sysincludedirs({
-        "SourDoLib/include",
+        "SourDo/include",
     })
 
     links({
-        "SourDoLib"
+        "SourDo"
     })
     
     filter("configurations:Debug")

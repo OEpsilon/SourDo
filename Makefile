@@ -9,38 +9,38 @@ ifndef verbose
 endif
 
 ifeq ($(config),debug)
-  SourDoLib_config = debug
   SourDo_config = debug
+  Sandbox_config = debug
 
 else ifeq ($(config),release)
-  SourDoLib_config = release
   SourDo_config = release
+  Sandbox_config = release
 
 else
   $(error "invalid configuration $(config)")
 endif
 
-PROJECTS := SourDoLib SourDo
+PROJECTS := SourDo Sandbox
 
 .PHONY: all clean help $(PROJECTS) 
 
 all: $(PROJECTS)
 
-SourDoLib:
-ifneq (,$(SourDoLib_config))
-	@echo "==== Building SourDoLib ($(SourDoLib_config)) ===="
-	@${MAKE} --no-print-directory -C SourDoLib -f Makefile config=$(SourDoLib_config)
-endif
-
-SourDo: SourDoLib
+SourDo:
 ifneq (,$(SourDo_config))
 	@echo "==== Building SourDo ($(SourDo_config)) ===="
 	@${MAKE} --no-print-directory -C SourDo -f Makefile config=$(SourDo_config)
 endif
 
+Sandbox: SourDo
+ifneq (,$(Sandbox_config))
+	@echo "==== Building Sandbox ($(Sandbox_config)) ===="
+	@${MAKE} --no-print-directory -C Sandbox -f Makefile config=$(Sandbox_config)
+endif
+
 clean:
-	@${MAKE} --no-print-directory -C SourDoLib -f Makefile clean
 	@${MAKE} --no-print-directory -C SourDo -f Makefile clean
+	@${MAKE} --no-print-directory -C Sandbox -f Makefile clean
 
 help:
 	@echo "Usage: make [config=name] [target]"
@@ -52,7 +52,7 @@ help:
 	@echo "TARGETS:"
 	@echo "   all (default)"
 	@echo "   clean"
-	@echo "   SourDoLib"
 	@echo "   SourDo"
+	@echo "   Sandbox"
 	@echo ""
 	@echo "For more information, see https://github.com/premake/premake-core/wiki"
