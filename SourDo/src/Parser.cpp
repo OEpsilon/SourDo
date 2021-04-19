@@ -187,12 +187,13 @@ namespace sourdo
         return expression(ExprPrecedence::LOGIC_OR);
     }
 
-    std::shared_ptr<ExpressionNode> Parser::expression(ExprPrecedence precedence)
+    std::shared_ptr<ExpressionNode> Parser::expression(ExprPrecedence precedence, bool multiline_mode)
     {
         if(current_token.type == Token::Type::LPAREN)
         {
             advance();
-            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::LOGIC_OR);
+
+            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::LOGIC_OR, true);
             if(error)
             {
                 return nullptr;
@@ -208,6 +209,17 @@ namespace sourdo
             return expr;
         }
 
+        #define IGNORE_NEW_LINE_IF_MULTILINE()                              \
+        if(multiline_mode)                                                  \
+        {                                                                   \
+            while(current_token.type == Token::Type::NEW_LINE)              \
+            {                                                               \
+                advance();                                                  \
+            }                                                               \
+        }
+
+        IGNORE_NEW_LINE_IF_MULTILINE();
+
         ParseExprFunc prefix_func = get_rule(current_token.type).prefix;
         if(prefix_func == nullptr)
         {
@@ -216,11 +228,13 @@ namespace sourdo
             error = ss.str();
             return nullptr;
         }
-        std::shared_ptr<ExpressionNode> previous_operand = (this->*prefix_func)(nullptr);
+        std::shared_ptr<ExpressionNode> previous_operand = (this->*prefix_func)(nullptr, multiline_mode);
         if(error)
         {
             return nullptr;
         }
+
+        IGNORE_NEW_LINE_IF_MULTILINE();
 
         if(get_rule(current_token.type).infix == nullptr)
         {
@@ -229,53 +243,58 @@ namespace sourdo
 
         while(precedence <= get_rule(current_token.type).precedence)
         {
+            IGNORE_NEW_LINE_IF_MULTILINE();
+
             ParseExprFunc infix_func = get_rule(current_token.type).infix;
-            previous_operand = (this->*infix_func)(previous_operand);
+            previous_operand = (this->*infix_func)(previous_operand, multiline_mode);
             if(error)
             {
                 return nullptr;
             }
         }
+        IGNORE_NEW_LINE_IF_MULTILINE();
+        #undef IGNORE_NEW_LINE_IF_MULTILINE
+
         return previous_operand;
     }
 
-    std::shared_ptr<ExpressionNode> Parser::binary_op_left(std::shared_ptr<ExpressionNode> previous)
+    std::shared_ptr<ExpressionNode> Parser::binary_op_left(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         Token op_token = current_token;
         advance();
         ExprPrecedence precedence = static_cast<ExprPrecedence>(
                 static_cast<int>(get_rule(op_token.type).precedence) + 1);
-        std::shared_ptr<ExpressionNode> right = expression(precedence);
+        std::shared_ptr<ExpressionNode> right = expression(precedence, multiline_mode);
         return std::make_shared<BinaryOpNode>(previous, op_token, right);
     }
 
-    std::shared_ptr<ExpressionNode> Parser::binary_op_right(std::shared_ptr<ExpressionNode> previous)
+    std::shared_ptr<ExpressionNode> Parser::binary_op_right(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         Token op_token = current_token;
         advance();
         ExprPrecedence precedence = static_cast<ExprPrecedence>(
                 static_cast<int>(get_rule(op_token.type).precedence));
-        std::shared_ptr<ExpressionNode> right = expression(precedence);
+        std::shared_ptr<ExpressionNode> right = expression(precedence, multiline_mode);
         return std::make_shared<BinaryOpNode>(previous, op_token, right);
     }
 
-    std::shared_ptr<ExpressionNode> Parser::sign(std::shared_ptr<ExpressionNode> previous)
+    std::shared_ptr<ExpressionNode> Parser::sign(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         Token op_token = current_token;
         advance();
-        std::shared_ptr<ExpressionNode> operand = expression(ExprPrecedence::POWER);
+        std::shared_ptr<ExpressionNode> operand = expression(ExprPrecedence::POWER, multiline_mode);
         return std::make_shared<UnaryOpNode>(op_token, operand);
     }
 
-    std::shared_ptr<ExpressionNode> Parser::logic_not(std::shared_ptr<ExpressionNode> previous)
+    std::shared_ptr<ExpressionNode> Parser::logic_not(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         Token op_token = current_token;
         advance();
-        std::shared_ptr<ExpressionNode> operand = expression(ExprPrecedence::COMPARISON);
+        std::shared_ptr<ExpressionNode> operand = expression(ExprPrecedence::COMPARISON, multiline_mode);
         return std::make_shared<UnaryOpNode>(op_token, operand);
     }
 
-    std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous)
+    std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         Token tok = current_token;
         if(tok.type == Token::Type::IDENTIFIER)

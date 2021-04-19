@@ -31,12 +31,13 @@ namespace sourdo
 
     TokenizerReturn tokenize_string(const std::string& string, const std::string& file_name);
     VisitorReturn visit_ast(sourdo_Data* data, std::shared_ptr<Node>);
+
     class Parser
     {
     public:
         ParserReturn parse_tokens(const std::vector<Token>& tokens);
     private:
-        typedef std::shared_ptr<ExpressionNode> (Parser::*ParseExprFunc)(std::shared_ptr<ExpressionNode>);
+        typedef std::shared_ptr<ExpressionNode> (Parser::*ParseExprFunc)(std::shared_ptr<ExpressionNode>, bool);
 
         enum class ExprPrecedence
         {
@@ -69,15 +70,15 @@ namespace sourdo
 
         std::shared_ptr<Node> statement();
 
-        std::shared_ptr<ExpressionNode> expression(ExprPrecedence precedence);
+        std::shared_ptr<ExpressionNode> expression(ExprPrecedence precedence, bool multiline_mode = false);
 
-        std::shared_ptr<ExpressionNode> binary_op_left(std::shared_ptr<ExpressionNode> previous);
-        std::shared_ptr<ExpressionNode> binary_op_right(std::shared_ptr<ExpressionNode> previous);
+        std::shared_ptr<ExpressionNode> binary_op_left(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
+        std::shared_ptr<ExpressionNode> binary_op_right(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
-        std::shared_ptr<ExpressionNode> sign(std::shared_ptr<ExpressionNode> previous);
-        std::shared_ptr<ExpressionNode> logic_not(std::shared_ptr<ExpressionNode> previous);
+        std::shared_ptr<ExpressionNode> sign(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
+        std::shared_ptr<ExpressionNode> logic_not(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
-        std::shared_ptr<ExpressionNode> factor(std::shared_ptr<ExpressionNode> previous);
+        std::shared_ptr<ExpressionNode> factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
         ParseExprRule& get_rule(const Token::Type& type);
     };
