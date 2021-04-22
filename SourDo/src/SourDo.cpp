@@ -171,15 +171,15 @@ extern "C" {
             return SOURDO_FALSE;
         }
 
-        auto[result, visit_error] = sourdo::visit_ast(data, ast);
-        if(visit_error)
+        sourdo::VisitorReturn result = sourdo::visit_ast(data, ast);
+        if(result.error_message)
         {
             std::stringstream ss;
-            ss << sourdo::COLOR_RED << visit_error.value() << sourdo::COLOR_DEFAULT << std::flush;
+            ss << sourdo::COLOR_RED << result.error_message.value() << sourdo::COLOR_DEFAULT << std::flush;
             sourdo_push_string(data, ss.str().c_str());
             return SOURDO_FALSE;
         }
-        data->stack.push_back(result);
+        data->stack.push_back(result.result);
 
         return SOURDO_TRUE;
     }
@@ -222,15 +222,14 @@ extern "C" {
             return SOURDO_FALSE;
         }
 
-        auto[result, visit_error] = sourdo::visit_ast(data, ast);
-        if(visit_error)
+        sourdo::VisitorReturn result = sourdo::visit_ast(data, ast);
+        if(result.error_message)
         {
             std::stringstream ss;
-            ss << sourdo::COLOR_RED << visit_error.value() << sourdo::COLOR_DEFAULT << std::flush;
+            ss << sourdo::COLOR_RED << result.error_message.value() << sourdo::COLOR_DEFAULT << std::flush;
             sourdo_push_string(data, ss.str().c_str());
             return SOURDO_FALSE;
         }
-        data->stack.push_back(result);
 
         return SOURDO_TRUE;
     }

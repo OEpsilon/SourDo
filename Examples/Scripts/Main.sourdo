@@ -1,8 +1,19 @@
+func set_apple_count(new_apple_count)
+    if new_apple_count < 0 then
+        apple_count = 0
+    else
+        apple_count = new_apple_count
+    end
+end
+
+func factorial(value)
+    if value <= 1 then
+        return 1
+    end
+    return value * factorial(value - 1)
+end
+
 var apples = 20
 var oranges = 30
 
-if apples + oranges == 50 then
-    apple_count = apples - oranges
-end
-
-var i = 0
+set_apple_count(factorial(4))

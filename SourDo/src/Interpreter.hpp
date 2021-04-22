@@ -27,6 +27,7 @@ namespace sourdo
     {
         Value result;
         std::optional<std::string> error_message;
+        bool is_function_return = false;
     };
 
     TokenizerReturn tokenize_string(const std::string& string, const std::string& file_name);
@@ -48,8 +49,10 @@ namespace sourdo
             COMPARISON      = 4,
             ADD_EXPR        = 5,
             MUL_EXPR        = 6,
-            POWER           = 7,
-            FACTOR          = 8,
+            SIGN            = 7,
+            POWER           = 8,
+            CALL            = 9,
+            FACTOR          = 10,
         };
 
         struct ParseExprRule 
@@ -72,11 +75,14 @@ namespace sourdo
 
         std::shared_ptr<ExpressionNode> expression(ExprPrecedence precedence, bool multiline_mode = false);
 
+        std::shared_ptr<ExpressionNode> grouping(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
+
         std::shared_ptr<ExpressionNode> binary_op_left(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
         std::shared_ptr<ExpressionNode> binary_op_right(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
-        std::shared_ptr<ExpressionNode> sign(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
-        std::shared_ptr<ExpressionNode> logic_not(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
+        std::shared_ptr<ExpressionNode> unary_op(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
+
+        std::shared_ptr<ExpressionNode> call(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
         std::shared_ptr<ExpressionNode> factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 

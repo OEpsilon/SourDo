@@ -21,11 +21,6 @@ extern "C" {
 
     inline void sourdo_set_symbol(sourdo_Data* data, const std::string& index, const sourdo::Value& value)
     {
-        /*if(data->symbol_table.find(index) == data->symbol_table.end() && data->parent)
-        {
-            sourdo_set_symbol(data->parent, index, value);
-            return;
-        }*/
         if(data->symbol_table.find(index) == data->symbol_table.end())
         {
             sourdo_Data* parent = data->parent;
@@ -35,6 +30,7 @@ extern "C" {
                 {
                     parent->symbol_table[index] = value;
                 }
+                parent = parent->parent;
             }
         }
         data->symbol_table[index] = value;

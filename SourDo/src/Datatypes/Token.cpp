@@ -33,6 +33,7 @@ namespace sourdo
             {   Token::Type::LOGIC_AND,         "LOGIC_AND"         },
             {   Token::Type::LOGIC_NOT,         "LOGIC_NOT"         },
 
+            {   Token::Type::COMMA,             "COMMA"             },
             {   Token::Type::ASSIGN,            "ASSIGN"            },
 
             {   Token::Type::LPAREN,            "LPAREN"            },

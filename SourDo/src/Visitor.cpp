@@ -14,7 +14,7 @@ namespace sourdo
         for(auto& stmt : node->statements)
         {
             VisitorReturn stmt_return = visit_ast(data, stmt);
-            if(stmt_return.error_message)
+            if(stmt_return.error_message || stmt_return.is_function_return)
             {
                 return stmt_return;
             }
@@ -50,7 +50,10 @@ namespace sourdo
         }
         if(node->else_case)
         {
-            VisitorReturn statements = visit_ast(data, node->else_case);
+            sourdo_Data* else_scope = sourdo_data_create();
+            else_scope->parent = data;
+            return_value = visit_ast(else_scope, node->else_case);
+            sourdo_data_destroy(else_scope);
         }
         return return_value;
     }
@@ -76,7 +79,7 @@ namespace sourdo
         if(sourdo_get_symbol(data, node->name_tok.value) != nullptr)
         {
             std::stringstream ss;
-            ss << node->position << "Variable '" << node->name_tok.value << "' is already defined";
+            ss << node->position << "'" << node->name_tok.value << "' is already defined";
             return_value.error_message = ss.str();
         }
         else
@@ -100,14 +103,61 @@ namespace sourdo
         if(sourdo_get_symbol(data, node->name_tok.value) == nullptr)
         {
             std::stringstream ss;
-            ss << node->position << "Variable '" << node->name_tok.value << "' is not defined";
+            ss << node->position << "'" << node->name_tok.value << "' is not defined";
             return_value.error_message = ss.str();
         }
         else
         {
-            data->symbol_table[node->name_tok.value] = new_value.result;
+            sourdo_set_symbol(data, node->name_tok.value, new_value.result);
             return_value.result = data->symbol_table[node->name_tok.value];
         }
+
+        return return_value;
+    }
+
+    static VisitorReturn visit_func_declaration_node(sourdo_Data* data, std::shared_ptr<FuncDeclarationNode> node)
+    {
+        VisitorReturn return_value;
+        
+        if(sourdo_get_symbol(data, node->name.value) != nullptr)
+        {
+            std::stringstream ss;
+            ss << node->position << "'" << node->name.value << "' is already defined";
+            return_value.error_message = ss.str();
+        }
+        else
+        {
+            std::vector<std::string> parameters;
+            parameters.reserve(node->parameters.size());
+            for(auto& param : node->parameters)
+            {
+                if(sourdo_get_symbol(data, param.value) != nullptr)
+                {
+                    std::stringstream ss;
+                    ss << node->position << "A value called '" << param.value << "' is already defined outside of the function";
+                    return_value.error_message = ss.str();
+                    return return_value;
+                }
+                if(std::find(parameters.begin(), parameters.end(), param.value) != parameters.end())
+                {
+                    std::stringstream ss;
+                    ss << node->position << "A parameter called '" << param.value << "' is already defined in this function";
+                    return_value.error_message = ss.str();
+                    return return_value;
+                }
+                parameters.emplace_back(param.value);
+            }
+
+            data->symbol_table[node->name.value] = std::make_shared<SourDoFunction>(parameters, node->statements);
+        }
+
+        return return_value;
+    }
+
+    static VisitorReturn visit_return_node(sourdo_Data* data, std::shared_ptr<ReturnNode> node)
+    {
+        VisitorReturn return_value = visit_ast(data, node->return_value);
+        return_value.is_function_return = true;
 
         return return_value;
     }
@@ -120,7 +170,7 @@ namespace sourdo
         if(var_value == nullptr)
         {
             std::stringstream ss;
-            ss << node->position << "Variable '" << node->name_tok.value << "' is not defined";
+            ss << node->position << "'" << node->name_tok.value << "' is not defined";
             return_value.error_message = ss.str();
         }
         else
@@ -218,6 +268,7 @@ namespace sourdo
         return return_value;
     }
     static VisitorReturn visit_binary_op_node(sourdo_Data* data, std::shared_ptr<BinaryOpNode> node)
+
     {
         VisitorReturn return_value;
         VisitorReturn left_value = visit_ast(data, node->left_operand);
@@ -717,6 +768,76 @@ namespace sourdo
         return return_value;
     }
 
+    static VisitorReturn visit_call_node(sourdo_Data* data, std::shared_ptr<CallNode> node)
+    {
+        VisitorReturn return_value;
+        VisitorReturn callee = visit_ast(data, node->callee);
+        if(callee.error_message)
+        {
+            return callee;
+        }
+
+        if(callee.result.get_type() == Value::Type::SOURDO_FUNCTION)
+        {
+            std::shared_ptr<SourDoFunction> func_value = callee.result.to_sourdo_function();
+            if(node->arguments.size() != func_value->parameters.size())
+            {
+                std::stringstream ss;
+                ss << node->position << "Function being called expected " 
+                            << func_value->parameters.size(); 
+                // Grammar!
+                if(func_value->parameters.size() == 1)
+                {
+                    ss << " argument but ";
+                }
+                else
+                {
+                    ss << " arguments but ";
+                }
+
+                ss << node->arguments.size();
+
+                // More Grammar!
+                if(node->arguments.size() == 1)
+                {
+                    ss << " was given";
+                }
+                else
+                {
+                    ss << " were given";
+                }
+                return_value.error_message = ss.str();
+                return return_value;
+            }
+
+            sourdo_Data* func_scope = sourdo_data_create();
+            func_scope->parent = data;
+            
+            for(int i = 0; i < func_value->parameters.size(); i++)
+            {
+                VisitorReturn arg = visit_ast(data, node->arguments[i]);
+                if(arg.error_message)
+                {
+                    return arg;
+                }
+
+                func_scope->symbol_table[func_value->parameters[i]] = arg.result;
+            }
+
+            return_value = visit_ast(func_scope, func_value->statements);
+
+            sourdo_data_destroy(func_scope);
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << node->position << "Value being called is not a function";
+            return_value.error_message = ss.str();
+        }
+        
+        return return_value;
+    }
+
     VisitorReturn visit_ast(sourdo_Data* data, std::shared_ptr<Node> node)
     {
         VisitorReturn return_value;
@@ -742,9 +863,24 @@ namespace sourdo
                 return_value = visit_var_assignment_node(data, std::static_pointer_cast<VarAssignmentNode>(node));
                 break;
             }
+            case Node::Type::FUNC_DECLARATION_NODE:
+            {
+                return_value = visit_func_declaration_node(data, std::static_pointer_cast<FuncDeclarationNode>(node));
+                break;
+            }
+            case Node::Type::RETURN_NODE:
+            {
+                return_value = visit_return_node(data, std::static_pointer_cast<ReturnNode>(node));
+                break;
+            }
             case Node::Type::VAR_ACCESS_NODE:
             {
                 return_value = visit_var_access_node(data, std::static_pointer_cast<VarAccessNode>(node));
+                break;
+            }
+            case Node::Type::CALL_NODE:
+            {
+                return_value = visit_call_node(data, std::static_pointer_cast<CallNode>(node));
                 break;
             }
             case Node::Type::NUMBER_VALUE_NODE:

@@ -15,11 +15,16 @@ namespace sourdo
     
     struct VarDeclarationNode;
     struct VarAssignmentNode;
-    struct VarAccessNode;
+    struct FuncDeclarationNode;
+
+    struct ReturnNode;
     
     struct ExpressionNode;
+    struct VarAccessNode;
     struct BinaryOpNode;
     struct UnaryOpNode;
+    struct CallNode;
+
     struct NumberValueNode;
     struct BoolValueNode;
     struct NullValueNode;
@@ -34,10 +39,15 @@ namespace sourdo
 
             VAR_DECLARATION_NODE,
             VAR_ASSIGNMENT_NODE,
-            VAR_ACCESS_NODE,
+            FUNC_DECLARATION_NODE,
 
+            RETURN_NODE,
+            
+            VAR_ACCESS_NODE,
             BINARY_OP_NODE,
             UNARY_OP_NODE,
+            CALL_NODE,
+
             NUMBER_VALUE_NODE,
             BOOL_VALUE_NODE,
             NULL_VALUE_NODE,
@@ -59,7 +69,7 @@ namespace sourdo
 
     struct StatementListNode : public Node
     {
-        StatementListNode(std::vector<std::shared_ptr<Node>> statements, const Position& position)
+        StatementListNode(const std::vector<std::shared_ptr<Node>>& statements, const Position& position)
             : Node(position), statements(statements)
         {
             type = Type::STATEMENT_LIST_NODE;
@@ -101,7 +111,7 @@ namespace sourdo
             std::shared_ptr<StatementListNode> statements;
         };
 
-        IfNode(std::vector<IfBlock> cases, std::shared_ptr<StatementListNode> else_case, const Position& position)
+        IfNode(const std::vector<IfBlock>& cases, std::shared_ptr<StatementListNode> else_case, const Position& position)
             : Node(position), cases(cases), else_case(else_case)
         {
             type = Type::IF_NODE;
@@ -156,6 +166,28 @@ namespace sourdo
         }
     };
 
+    struct FuncDeclarationNode : public Node
+    {
+        FuncDeclarationNode(const Token& name, const std::vector<Token>& parameters, std::shared_ptr<StatementListNode> statements, const Position& position)
+            : Node(position), name(name), parameters(parameters), statements(statements)
+        {
+            type = Type::FUNC_DECLARATION_NODE;
+        }
+
+        virtual ~FuncDeclarationNode() = default;
+
+        Token name;
+        std::vector<Token> parameters;
+        std::shared_ptr<StatementListNode> statements;
+
+        std::string to_string() final
+        {
+            // implement later
+            std::stringstream ss;
+            return ss.str();
+        }
+    };
+
     struct ExpressionNode : public Node
     {
         virtual ~ExpressionNode() = default;
@@ -166,6 +198,26 @@ namespace sourdo
         }
     };
 
+    struct ReturnNode : public Node
+    {
+        ReturnNode(std::shared_ptr<ExpressionNode> return_value, const Position& position)
+            : Node(position), return_value(return_value)
+        {
+            type = Type::RETURN_NODE;
+        }
+
+        std::shared_ptr<ExpressionNode> return_value;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << "return " << return_value->to_string();
+            return ss.str();
+        }
+
+        virtual ~ReturnNode() = default;
+    };
+    
     struct VarAccessNode : public ExpressionNode
     {
         VarAccessNode(const Token& name_tok)
@@ -228,6 +280,34 @@ namespace sourdo
         {
             std::stringstream ss;
             ss << "(" << op_token << ", " << operand->to_string() << ")";
+            return ss.str();
+        }
+    };
+
+    struct CallNode : public ExpressionNode
+    {
+        CallNode(std::shared_ptr<ExpressionNode> callee, const std::vector<std::shared_ptr<ExpressionNode>>& arguments)
+            : ExpressionNode(callee->position), callee(callee), arguments(arguments)
+        {
+            type = Type::CALL_NODE;
+        }
+
+        std::shared_ptr<ExpressionNode> callee; 
+        std::vector<std::shared_ptr<ExpressionNode>> arguments;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << "(" << callee->to_string() << ", ";
+            for(int i = 0; i < arguments.size(); i++)
+            {
+                ss << arguments[i]->to_string();
+                if(i <= arguments.size() - 1)
+                {
+                    ss << ", ";
+                }
+            }
+            ss << ")";
             return ss.str();
         }
     };

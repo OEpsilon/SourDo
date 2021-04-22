@@ -7,6 +7,7 @@ typedef double SourDoNumber;
 #define SOURDO_FALSE 0
 
 struct sourdo_Data;
+struct SourDoFunction;
 
 sourdo_Data* sourdo_data_create();
 void sourdo_data_destroy(sourdo_Data* data);

@@ -32,6 +32,12 @@ namespace sourdo
         value = new_value;
     }
 
+    Value::Value(std::shared_ptr<SourDoFunction> new_value)
+    {
+        type = Type::SOURDO_FUNCTION;
+        value = new_value;
+    }
+
     Value::Value(const Value& new_value)
     {
         type = new_value.type;
@@ -88,6 +94,13 @@ namespace sourdo
     Value& Value::operator=(const std::string& new_value)
     {
         type = Type::STRING;
+        value = new_value;
+        return *this;
+    }
+
+    Value& Value::operator=(std::shared_ptr<SourDoFunction> new_value)
+    {
+        type = Type::SOURDO_FUNCTION;
         value = new_value;
         return *this;
     }

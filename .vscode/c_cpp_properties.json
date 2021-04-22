@@ -3,7 +3,7 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/SourDoLib/include"
+                "${workspaceFolder}/SourDo/include"
             ],
             "defines": [],
             "macFrameworkPath": [

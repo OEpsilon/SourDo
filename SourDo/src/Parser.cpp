@@ -110,6 +110,91 @@ namespace sourdo
             }
             return std::make_shared<VarAssignmentNode>(name_tok, expr);
         }
+        else if(current_token == Token(Token::Type::KEYWORD, "func"))
+        {
+            Position saved_position = current_token.position;
+            advance();
+            if(current_token.type != Token::Type::IDENTIFIER)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Expected an identifier";
+                error = ss.str();
+                return nullptr;
+            }
+            Token name = current_token;
+            advance();
+
+            if(current_token.type != Token::Type::LPAREN)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Expected a '('";
+                error = ss.str();
+                return nullptr;
+            }
+            advance();
+            std::vector<Token> paramaters;
+            if(current_token.type != Token::Type::RPAREN)
+            {
+                if(current_token.type != Token::Type::IDENTIFIER)
+                {
+                    std::stringstream ss;
+                    ss << current_token.position << "Expected an identifier";
+                    error = ss.str();
+                    return nullptr;
+                }
+                paramaters.push_back(current_token);
+                advance();
+
+                while(current_token.type == Token::Type::COMMA)
+                {
+                    advance();
+                    if(current_token.type != Token::Type::IDENTIFIER)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected an identifier";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    paramaters.push_back(current_token);
+                    advance();
+                }
+                
+                if(current_token.type != Token::Type::RPAREN)
+                {
+                    std::stringstream ss;
+                    ss << current_token.position << "Expected a ')'";
+                    error = ss.str();
+                    return nullptr;
+                }
+            }
+            advance();
+
+            std::shared_ptr<StatementListNode> statements = statement_list();
+            if(error)
+            {
+                return nullptr;
+            }
+            if(current_token != Token(Token::Type::KEYWORD, "end"))
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Expected 'end'";
+                error = ss.str();
+                return nullptr;
+            }
+            advance();
+            return std::make_shared<FuncDeclarationNode>(name, paramaters, statements, saved_position);
+        }
+        else if(current_token == Token(Token::Type::KEYWORD, "return"))
+        {
+            Position saved_position = current_token.position;
+            advance();
+            std::shared_ptr<ExpressionNode> return_value = expression(ExprPrecedence::LOGIC_OR);
+            if(error)
+            {
+                return nullptr;
+            }
+            return std::make_shared<ReturnNode>(return_value, saved_position);
+        }
         else if(current_token == Token(Token::Type::KEYWORD, "if"))
         {
             Position saved_position = current_token.position;
@@ -189,26 +274,6 @@ namespace sourdo
 
     std::shared_ptr<ExpressionNode> Parser::expression(ExprPrecedence precedence, bool multiline_mode)
     {
-        if(current_token.type == Token::Type::LPAREN)
-        {
-            advance();
-
-            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::LOGIC_OR, true);
-            if(error)
-            {
-                return nullptr;
-            }
-            if(current_token.type != Token::Type::RPAREN)
-            {
-                std::stringstream ss;
-                ss << current_token.position << "Expected a ')'";
-                error = ss.str();
-                return nullptr;
-            }
-            advance();
-            return expr;
-        }
-
         #define IGNORE_NEW_LINE_IF_MULTILINE()                              \
         if(multiline_mode)                                                  \
         {                                                                   \
@@ -258,6 +323,25 @@ namespace sourdo
         return previous_operand;
     }
 
+    std::shared_ptr<ExpressionNode> Parser::grouping(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
+    {
+        advance();
+        std::shared_ptr<ExpressionNode> grouped = expression(Parser::ExprPrecedence::LOGIC_OR, true);
+        if(error)
+        {
+            return nullptr;
+        }
+        if(current_token.type != Token::Type::RPAREN)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected a ')'";
+            error = ss.str();
+            return nullptr;
+        }
+        advance();
+        return grouped;
+    }
+
     std::shared_ptr<ExpressionNode> Parser::binary_op_left(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         Token op_token = current_token;
@@ -278,20 +362,67 @@ namespace sourdo
         return std::make_shared<BinaryOpNode>(previous, op_token, right);
     }
 
-    std::shared_ptr<ExpressionNode> Parser::sign(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
+    std::shared_ptr<ExpressionNode> Parser::unary_op(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         Token op_token = current_token;
         advance();
-        std::shared_ptr<ExpressionNode> operand = expression(ExprPrecedence::POWER, multiline_mode);
+        std::shared_ptr<ExpressionNode> operand;
+        
+        switch(op_token.type)
+        {
+            case Token::Type::ADD:
+            case Token::Type::SUB:
+            {
+                operand = expression(ExprPrecedence::SIGN, multiline_mode);
+                break;
+            }
+            case Token::Type::LOGIC_NOT:
+            {
+                operand = expression(ExprPrecedence::LOGIC_NOT, multiline_mode);
+                break;
+            }
+            default:
+            {
+                return nullptr;
+            }
+        }
         return std::make_shared<UnaryOpNode>(op_token, operand);
     }
 
-    std::shared_ptr<ExpressionNode> Parser::logic_not(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
+    std::shared_ptr<ExpressionNode> Parser::call(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
-        Token op_token = current_token;
         advance();
-        std::shared_ptr<ExpressionNode> operand = expression(ExprPrecedence::COMPARISON, multiline_mode);
-        return std::make_shared<UnaryOpNode>(op_token, operand);
+        std::vector<std::shared_ptr<ExpressionNode>> arguments;
+        if(current_token.type != Token::Type::RPAREN)
+        {
+            std::shared_ptr<ExpressionNode> arg = expression(ExprPrecedence::LOGIC_OR);
+            if(error)
+            {
+                return nullptr;
+            }
+            arguments.push_back(arg);
+
+            while(current_token.type == Token::Type::COMMA)
+            {
+                advance();
+                std::shared_ptr<ExpressionNode> arg = expression(ExprPrecedence::LOGIC_OR);
+                if(error)
+                {
+                    return nullptr;
+                }
+                arguments.push_back(arg);
+            }
+
+            if(current_token.type != Token::Type::RPAREN)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Expected a ')'";
+                error = ss.str();
+                return nullptr;
+            }
+        }
+        advance();
+        return std::make_shared<CallNode>(previous, arguments);
     }
 
     std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
@@ -334,8 +465,8 @@ namespace sourdo
             {Token::Type::BOOL_LITERAL,     {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::NULL_LITERAL,     {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
 
-            {Token::Type::ADD,              {&Parser::sign,         &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
-            {Token::Type::SUB,              {&Parser::sign,         &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::ADD,              {&Parser::unary_op,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::SUB,              {&Parser::unary_op,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
             {Token::Type::MUL,              {nullptr,               &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
             {Token::Type::DIV,              {nullptr,               &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
             {Token::Type::POW,              {nullptr,               &Parser::binary_op_right,   ExprPrecedence::POWER       }},
@@ -349,7 +480,9 @@ namespace sourdo
 
             {Token::Type::LOGIC_OR,         {nullptr,               &Parser::binary_op_left,    ExprPrecedence::LOGIC_OR    }},
             {Token::Type::LOGIC_AND,        {nullptr,               &Parser::binary_op_left,    ExprPrecedence::LOGIC_AND   }},
-            {Token::Type::LOGIC_NOT,        {&Parser::logic_not,    nullptr,                    ExprPrecedence::LOGIC_NOT   }},
+            {Token::Type::LOGIC_NOT,        {&Parser::unary_op,     nullptr,                    ExprPrecedence::NONE        }},
+
+            {Token::Type::LPAREN,           {&Parser::grouping,     &Parser::call,              ExprPrecedence::CALL        }},
             
             {Token::Type::TK_EOF,           {nullptr,               nullptr,                    ExprPrecedence::NONE        }},
         };

@@ -1,7 +1,7 @@
 #include <string>
 #include <iostream>
 
-#include "SourDo/SourDo.hpp"
+#include <SourDo/SourDo.hpp>
 
 int main()
 {

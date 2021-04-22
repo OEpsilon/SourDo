@@ -7,7 +7,13 @@
 
 namespace sourdo
 {
-    static const std::vector<std::string> KEYWORDS = { "var", "if", "elif", "else", "then", "end" };
+    static const std::vector<std::string> KEYWORDS = 
+    {
+        "var", "func",
+        "return",
+        "if", "elif", "else", 
+        "then", "end" 
+    };
 
     TokenizerReturn tokenize_string(const std::string& text, const std::string& file_name)
     {
@@ -141,6 +147,11 @@ namespace sourdo
                         tokens.emplace_back(Token::Type::DIV, file_position);
                         break;
                     }
+                    case ',':
+                    {
+                        tokens.emplace_back(Token::Type::COMMA, file_position);
+                        break;
+                    }
                     case '>':
                     {
                         Position saved_position = file_position;
@@ -206,9 +217,11 @@ namespace sourdo
                             break;
                         }
                         i--;
-                        file_position.column--;
 
-                        tokens.emplace_back(Token::Type::LOGIC_NOT, saved_position);
+                        std::stringstream ss;
+                        ss << file_position << " Unexpected character: '" << current_char << "'";
+
+                        return { {}, ss.str()};
                         break;
                     }
                     case '(':

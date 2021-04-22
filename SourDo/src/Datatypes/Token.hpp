@@ -17,6 +17,7 @@ namespace sourdo
             ADD, SUB, MUL, DIV, POW,
             LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, EQUAL, NOT_EQUAL,
             LOGIC_OR, LOGIC_AND, LOGIC_NOT,
+            COMMA,
             ASSIGN,
             LPAREN, RPAREN,
             NEW_LINE, 

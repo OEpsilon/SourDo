@@ -26,6 +26,9 @@ statement           := <KEYWORD:var> <IDENTIFIER> <ASSIGN> expression
 
                     := expression
 
+func_def            := <KEYWORD:func> <IDENTIFIER> <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> 
+                            <KEYWORD:then> statement_list <KEYWORD:end>
+
 expression          := logic_or
 
 // This section shows expression precedence. Lower rules have higher precedence
@@ -46,7 +49,9 @@ mul_expr            := sign (<MUL|DIV> sign)*
 sign                := <ADD|SUB> sign
                     := power
 
-power               := (factor <Power>) sign*
+power               := call (<Power> sign)*
+
+call                := factor (<LPAREN> (expression (<COMMA> expression)*)? <RPAREN>)?
 
 factor              := <INT_LITERAL|FLOAT_LITERAL|BOOL_LITERAL|IDENTIFIER>
                     := <LPAREN> expression <RPAREN>
