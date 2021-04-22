@@ -13,7 +13,4 @@ func factorial(value)
     return value * factorial(value - 1)
 end
 
-var apples = 20
-var oranges = 30
-
 set_apple_count(factorial(4))

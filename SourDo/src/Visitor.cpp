@@ -8,6 +8,29 @@
 
 namespace sourdo
 {
+    static std::ostream& operator<<(std::ostream& os, const Value::Type& type)
+    {
+        switch(type)
+        {
+            case Value::Type::NUMBER:
+                os << "Number";
+                break;
+            case Value::Type::BOOL:
+                os << "Bool";
+                break;
+            case Value::Type::STRING:
+                os << "String";
+                break;
+            case Value::Type::SOURDO_FUNCTION:
+                os << "Function";
+                break;
+            case Value::Type::_NULL:
+                os << "Null";
+                break;
+        }
+        return os;
+    }
+
     static VisitorReturn visit_statement_list_node(sourdo_Data* data, std::shared_ptr<StatementListNode> node)
     {
         VisitorReturn return_value;
@@ -189,86 +212,63 @@ namespace sourdo
             return return_value;
         }
 
-        if(operand_value.result.get_type() == Value::Type::NUMBER)
+        switch(node->op_token.type)
         {
-            switch(node->op_token.type)
+            case Token::Type::ADD:
             {
-                case Token::Type::ADD:
+                if(operand_value.result.get_type() == Value::Type::NUMBER)
                 {
                     return_value.result = operand_value.result.to_number();
-                    break;
                 }
-                case Token::Type::SUB:
-                {
-                    return_value.result = -(operand_value.result.to_number());
-                    break;
-                }
-                case Token::Type::LOGIC_NOT:
+                else
                 {
                     std::stringstream ss;
-                    ss << node->position << "Cannot perform a logical operation on numbers";
+                    ss << node->position << "Cannot perform unary '+' operation with type " << operand_value.result.get_type();
                     return_value.error_message = ss.str();
-                    break;
                 }
-                default:
-                {
-                    break;
-                }
+                
+                break;
             }
-        }
-        else if(operand_value.result.get_type() == Value::Type::BOOL)
-        {
-            switch(node->op_token.type)
+            case Token::Type::SUB:
             {
-                case Token::Type::ADD:
-                case Token::Type::SUB:
+                if(operand_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    return_value.result = -operand_value.result.to_number();
+                }
+                else
                 {
                     std::stringstream ss;
-                    ss << node->position << "Cannot perform an arithmetic operation on bools";
+                    ss << node->position << "Cannot perform unary '-' operation with type " << operand_value.result.get_type();
                     return_value.error_message = ss.str();
-                    break;
                 }
-                case Token::Type::LOGIC_NOT:
-                {
-                    return_value.result = !(operand_value.result.to_bool());
-                    break;
-                }
-                default:
-                {
-                    break;
-                }
+                
+                break;
             }
-        }
-        else if(operand_value.result.get_type() == Value::Type::_NULL)
-        {
-            switch(node->op_token.type)
+            case Token::Type::LOGIC_NOT:
             {
-                case Token::Type::ADD:
-                case Token::Type::SUB:
+                if(operand_value.result.get_type() == Value::Type::BOOL)
+                {
+                    return_value.result = !operand_value.result.to_bool();
+                }
+                else
                 {
                     std::stringstream ss;
-                    ss << node->position << "Cannot perform an arithmetic operation on null";
+                    ss << node->position << "Cannot perform logical negation with type " << operand_value.result.get_type();
                     return_value.error_message = ss.str();
-                    break;
                 }
-                case Token::Type::LOGIC_NOT:
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform a logical operation on null";
-                    return_value.error_message = ss.str();
-                    break;
-                }
-                default:
-                {
-                    break;
-                }
+                
+                break;
+            }
+            default:
+            {
+                break;
             }
         }
 
         return return_value;
     }
+    
     static VisitorReturn visit_binary_op_node(sourdo_Data* data, std::shared_ptr<BinaryOpNode> node)
-
     {
         VisitorReturn return_value;
         VisitorReturn left_value = visit_ast(data, node->left_operand);
@@ -283,485 +283,306 @@ namespace sourdo
             return right_value;
         }
 
-        if(left_value.result.get_type() == Value::Type::NUMBER)
+        switch(node->op_token.type)
         {
-            if(right_value.result.get_type() == Value::Type::NUMBER)
+            case Token::Type::ADD:
             {
-                double left = left_value.result.to_number();
-                double right = right_value.result.to_number();
-                switch(node->op_token.type)
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
                 {
-                    case Token::Type::ADD:
+                    return_value.result = left_value.result.to_number() + right_value.result.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform addition with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+                
+                break;
+            }
+            case Token::Type::SUB:
+            {   
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    return_value.result = left_value.result.to_number() - right_value.result.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform subtraction with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+                
+                break;
+            }
+            case Token::Type::MUL:
+            {
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    return_value.result = left_value.result.to_number() * right_value.result.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform multiplication with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+                
+                break;
+            }
+            case Token::Type::DIV:
+            {
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    if(right_value.result.to_number() == 0)
                     {
-                        return_value.result = left + right;
+                        std::stringstream ss;
+                        ss << node->position << "Cannot divide a number by zero";
+                        return_value.error_message = ss.str();
                         break;
                     }
-                    case Token::Type::SUB:
-                    {   
-                        return_value.result = left - right;
-                        break;
-                    }
-                    case Token::Type::MUL:
+                    return_value.result = left_value.result.to_number() / right_value.result.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform division with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+                
+                break;
+            }
+            case Token::Type::POW:
+            {
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    return_value.result = std::pow(left_value.result.to_number(), right_value.result.to_number());
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform exponentiation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::LESS_THAN:
+            {
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    return_value.result = left_value.result.to_number() < right_value.result.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::GREATER_THAN:
+            {
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    return_value.result = left_value.result.to_number() > right_value.result.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::LESS_EQUAL:
+            {
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    return_value.result = left_value.result.to_number() <= right_value.result.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::GREATER_EQUAL:
+            {
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    return_value.result = left_value.result.to_number() >= right_value.result.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::EQUAL:
+            {
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
+                {
+                    return_value.result = left_value.result.to_number() == right_value.result.to_number();
+                }
+                else if(left_value.result.get_type() == Value::Type::BOOL 
+                        && right_value.result.get_type() == Value::Type::BOOL)
+                {
+                    return_value.result = left_value.result.to_bool() == right_value.result.to_bool();
+                }
+                else if(left_value.result.get_type() == Value::Type::STRING 
+                        && right_value.result.get_type() == Value::Type::STRING)
+                {
+                    return_value.result = left_value.result.to_string() == right_value.result.to_string();
+                }
+                else if(left_value.result.get_type() == Value::Type::_NULL)
+                {
+                    switch(right_value.result.get_type())
                     {
-                        return_value.result = left * right;
-                        break;
-                    }
-                    case Token::Type::DIV:
-                    {
-                        if(right == 0)
-                        {
-                            std::stringstream ss;
-                            ss << node->position << "Cannot divide a number by zero";
-                            return_value.error_message = ss.str();
+                        case Value::Type::NUMBER:
+                        case Value::Type::BOOL:
+                        case Value::Type::STRING:
+                        case Value::Type::SOURDO_FUNCTION:
+                            return_value.result = false;
                             break;
-                        }
-                        return_value.result = left / right;
-                        break;
-                    }
-                    case Token::Type::POW:
-                    {
-                        return_value.result = std::pow(left, right);
-                        break;
-                    }
-                    case Token::Type::LESS_THAN:
-                    {
-                        return_value.result = left < right;
-                        break;
-                    }
-                    case Token::Type::GREATER_THAN:
-                    {
-                        return_value.result = left > right;
-                        break;
-                    }
-                    case Token::Type::LESS_EQUAL:
-                    {
-                        return_value.result = left <= right;
-                        break;
-                    }
-                    case Token::Type::GREATER_EQUAL:
-                    {
-                        return_value.result = left >= right;
-                        break;
-                    }
-                    case Token::Type::EQUAL:
-                    {
-                        return_value.result = left == right;
-                        break;
-                    }
-                    case Token::Type::NOT_EQUAL:
-                    {
-                        return_value.result = left != right;
-                        break;
-                    }
-                    case Token::Type::LOGIC_OR:
-                    case Token::Type::LOGIC_AND:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a logical operation on numbers";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    default:
-                    {
-                        break;
+                        case Value::Type::_NULL:
+                            return_value.result = true;
+                            break;
                     }
                 }
-            }
-            else if(right_value.result.get_type() == Value::Type::BOOL)
-            {
-                double left = left_value.result.to_number();
-                bool right = right_value.result.to_bool();
-
-                switch(node->op_token.type)
+                else if(right_value.result.get_type() == Value::Type::_NULL)
                 {
-                    case Token::Type::ADD:
-                    case Token::Type::SUB:
-                    case Token::Type::MUL:
-                    case Token::Type::DIV:
-                    case Token::Type::POW:
+                    switch(left_value.result.get_type())
                     {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform an arithmetic operation with numbers and bools";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LESS_THAN:
-                    case Token::Type::GREATER_THAN:
-                    case Token::Type::LESS_EQUAL:
-                    case Token::Type::GREATER_EQUAL:
-                    case Token::Type::EQUAL:
-                    case Token::Type::NOT_EQUAL:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a comparison operation with numbers and bools";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LOGIC_OR:
-                    case Token::Type::LOGIC_AND:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a logical operation with numbers and bools";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    default:
-                    {
-                        break;
+                        case Value::Type::NUMBER:
+                        case Value::Type::BOOL:
+                        case Value::Type::STRING:
+                        case Value::Type::SOURDO_FUNCTION:
+                            return_value.result = false;
+                            break;
+                        case Value::Type::_NULL:
+                            return_value.result = true;
+                            break;
                     }
                 }
-            }
-            else if(right_value.result.get_type() == Value::Type::_NULL)
-            {
-                switch(node->op_token.type)
+                else
                 {
-                    case Token::Type::ADD:
-                    case Token::Type::SUB:
-                    case Token::Type::MUL:
-                    case Token::Type::DIV:
-                    case Token::Type::POW:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform an arithmetic operation with number and null";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LESS_THAN:
-                    case Token::Type::GREATER_THAN:
-                    case Token::Type::LESS_EQUAL:
-                    case Token::Type::GREATER_EQUAL:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform this comparison operation with number and null";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::EQUAL:
-                    {
-                        return_value.result = false;
-                        break;
-                    }
-                    case Token::Type::NOT_EQUAL:
-                    {
-                        return_value.result = true;
-                        break;
-                    }
-                    case Token::Type::LOGIC_OR:
-                    case Token::Type::LOGIC_AND:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a logical operation with number and null";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    default:
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-        else if(left_value.result.get_type() == Value::Type::BOOL)
-        {
-            if(right_value.result.get_type() == Value::Type::NUMBER)
-            {
-                double left = left_value.result.to_bool();
-                double right = right_value.result.to_number();
-                switch(node->op_token.type)
-                {
-                    case Token::Type::ADD:
-                    case Token::Type::SUB:
-                    case Token::Type::MUL:
-                    case Token::Type::DIV:
-                    case Token::Type::POW:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform an arithmetic operation with bools and numbers";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LESS_THAN:
-                    case Token::Type::GREATER_THAN:
-                    case Token::Type::LESS_EQUAL:
-                    case Token::Type::GREATER_EQUAL:
-                    case Token::Type::EQUAL:
-                    case Token::Type::NOT_EQUAL:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a comparison operation with bools and numbers";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LOGIC_OR:
-                    case Token::Type::LOGIC_AND:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a logical operation with bools and numbers";
-                        return_value.error_message = ss.str();
-                        break;
-                    } 
-                    default:
-                    {
-                        break;
-                    }
-                }
-            }
-            else if(right_value.result.get_type() == Value::Type::BOOL)
-            {
-                bool left = left_value.result.to_bool();
-                bool right = right_value.result.to_bool();
-
-                switch(node->op_token.type)
-                {
-                    case Token::Type::ADD:
-                    case Token::Type::SUB:
-                    case Token::Type::MUL:
-                    case Token::Type::DIV:
-                    case Token::Type::POW:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform an arithmetic operation with bools and numbers";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LESS_THAN:
-                    case Token::Type::GREATER_THAN:
-                    case Token::Type::LESS_EQUAL:
-                    case Token::Type::GREATER_EQUAL:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform this comparison operation with bools and numbers";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::EQUAL:
-                    {
-                        return_value.result = left == right;
-                        break;
-                    }
-                    case Token::Type::NOT_EQUAL:
-                    {
-                        return_value.result = left != right;
-                        break;
-                    }
-                    case Token::Type::LOGIC_OR:
-                    {
-                        return_value.result = left || right;
-                        break;
-                    }
-                    case Token::Type::LOGIC_AND:
-                    {
-                        return_value.result = left && right;
-                        break;
-                    }
-                    default:
-                    {
-                        break;
-                    }
-                }
-            }
-            else if(right_value.result.get_type() == Value::Type::_NULL)
-            {
-                switch(node->op_token.type)
-                {
-                    case Token::Type::ADD:
-                    case Token::Type::SUB:
-                    case Token::Type::MUL:
-                    case Token::Type::DIV:
-                    case Token::Type::POW:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform an arithmetic operation with bool and null";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LESS_THAN:
-                    case Token::Type::GREATER_THAN:
-                    case Token::Type::LESS_EQUAL:
-                    case Token::Type::GREATER_EQUAL:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform this comparison operation with bool and null";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::EQUAL:
-                    {
-                        return_value.result = false;
-                        break;
-                    }
-                    case Token::Type::NOT_EQUAL:
-                    {
-                        return_value.result = true;
-                        break;
-                    }
-                    case Token::Type::LOGIC_OR:
-                    case Token::Type::LOGIC_AND:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a logical operation with bool and null";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    default:
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-        else if(left_value.result.get_type() == Value::Type::_NULL)
-        {
-            if(right_value.result.get_type() == Value::Type::NUMBER)
-            {
-                switch(node->op_token.type)
-                {
-                    case Token::Type::ADD:
-                    case Token::Type::SUB:
-                    case Token::Type::MUL:
-                    case Token::Type::DIV:
-                    case Token::Type::POW:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform an arithmetic operation with null and numbers";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LESS_THAN:
-                    case Token::Type::GREATER_THAN:
-                    case Token::Type::LESS_EQUAL:
-                    case Token::Type::GREATER_EQUAL:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform this comparison operation with bools";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::EQUAL:
-                    {
-                        return_value.result = false;
-                        break;
-                    }
-                    case Token::Type::NOT_EQUAL:
-                    {
-                        return_value.result = true;
-                        break;
-                    }
-                    case Token::Type::LOGIC_OR:
-                    case Token::Type::LOGIC_AND:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a logical operation with null and numbers";
-                        return_value.error_message = ss.str();
-                        break;
-                    } 
-                    default:
-                    {
-                        break;
-                    }
-                }
-            }
-            else if(right_value.result.get_type() == Value::Type::BOOL)
-            {
-                switch(node->op_token.type)
-                {
-                    case Token::Type::ADD:
-                    case Token::Type::SUB:
-                    case Token::Type::MUL:
-                    case Token::Type::DIV:
-                    case Token::Type::POW:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform an arithmetic operation with bools";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LESS_THAN:
-                    case Token::Type::GREATER_THAN:
-                    case Token::Type::LESS_EQUAL:
-                    case Token::Type::GREATER_EQUAL:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform this comparison operation with null and bools";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::EQUAL:
-                    {
-                        return_value.result = false;
-                        break;
-                    }
-                    case Token::Type::NOT_EQUAL:
-                    {
-                        return_value.result = true;
-                        break;
-                    }
-                    case Token::Type::LOGIC_OR:
-                    case Token::Type::LOGIC_AND:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a logical operation with null and bools";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    default:
-                    {
-                        break;
-                    }
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
                 }
 
-                return return_value;
+                break;
             }
-            else if(right_value.result.get_type() == Value::Type::_NULL)
+            case Token::Type::NOT_EQUAL:
             {
-                switch(node->op_token.type)
+                if(left_value.result.get_type() == Value::Type::NUMBER 
+                        && right_value.result.get_type() == Value::Type::NUMBER)
                 {
-                    case Token::Type::ADD:
-                    case Token::Type::SUB:
-                    case Token::Type::MUL:
-                    case Token::Type::DIV:
-                    case Token::Type::POW:
+                    return_value.result = left_value.result.to_number() != right_value.result.to_number();
+                }
+                else if(left_value.result.get_type() == Value::Type::BOOL 
+                        && right_value.result.get_type() == Value::Type::BOOL)
+                {
+                    return_value.result = left_value.result.to_bool() != right_value.result.to_bool();
+                }
+                else if(left_value.result.get_type() == Value::Type::STRING 
+                        && right_value.result.get_type() == Value::Type::STRING)
+                {
+                    return_value.result = left_value.result.to_string() != right_value.result.to_string();
+                }
+                else if(left_value.result.get_type() == Value::Type::_NULL)
+                {
+                    switch(right_value.result.get_type())
                     {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform an arithmetic operation with nulls";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::LESS_THAN:
-                    case Token::Type::GREATER_THAN:
-                    case Token::Type::LESS_EQUAL:
-                    case Token::Type::GREATER_EQUAL:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform this comparison operation with nulls";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    case Token::Type::EQUAL:
-                    {
-                        return_value.result = true;
-                        break;
-                    }
-                    case Token::Type::NOT_EQUAL:
-                    {
-                        return_value.result = false;
-                        break;
-                    }
-                    case Token::Type::LOGIC_OR:
-                    case Token::Type::LOGIC_AND:
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot perform a logical operation with nulls";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    default:
-                    {
-                        break;
+                        case Value::Type::NUMBER:
+                        case Value::Type::BOOL:
+                        case Value::Type::STRING:
+                        case Value::Type::SOURDO_FUNCTION:
+                            return_value.result = true;
+                            break;
+                        case Value::Type::_NULL:
+                            return_value.result = false;
+                            break;
                     }
                 }
+                else if(right_value.result.get_type() == Value::Type::_NULL)
+                {
+                    switch(left_value.result.get_type())
+                    {
+                        case Value::Type::NUMBER:
+                        case Value::Type::BOOL:
+                        case Value::Type::STRING:
+                        case Value::Type::SOURDO_FUNCTION:
+                            return_value.result = true;
+                            break;
+                        case Value::Type::_NULL:
+                            return_value.result = false;
+                            break;
+                    }
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
 
-                return return_value;
+                break;
+            }
+            case Token::Type::LOGIC_OR:
+            {
+                if(left_value.result.get_type() == Value::Type::BOOL 
+                        && right_value.result.get_type() == Value::Type::BOOL)
+                {
+                    return_value.result = left_value.result.to_bool() || right_value.result.to_bool();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform logical operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::LOGIC_AND:
+            {
+                if(left_value.result.get_type() == Value::Type::BOOL 
+                        && right_value.result.get_type() == Value::Type::BOOL)
+                {
+                    return_value.result = left_value.result.to_bool() && right_value.result.to_bool();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << node->position << "Cannot perform logical operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            default:
+            {
+                break;
             }
         }
 
