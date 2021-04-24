@@ -31,7 +31,7 @@ namespace sourdo
         return os;
     }
 
-    static VisitorReturn visit_statement_list_node(sourdo_Data* data, std::shared_ptr<StatementListNode> node)
+    static VisitorReturn visit_statement_list_node(Data::Impl* data, std::shared_ptr<StatementListNode> node)
     {
         VisitorReturn return_value;
         for(auto& stmt : node->statements)
@@ -45,7 +45,7 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_if_node(sourdo_Data* data, std::shared_ptr<IfNode> node)
+    static VisitorReturn visit_if_node(Data::Impl* data, std::shared_ptr<IfNode> node)
     {
         VisitorReturn return_value;
         for(auto& if_case : node->cases)
@@ -64,24 +64,22 @@ namespace sourdo
             }
             if(condition.result.to_bool())
             {
-                sourdo_Data* if_scope = sourdo_data_create();
-                if_scope->parent = data;
-                VisitorReturn statements = visit_ast(if_scope, if_case.statements);
-                sourdo_data_destroy(if_scope);
+                Data if_scope;
+                if_scope.get_impl()->parent = data;
+                VisitorReturn statements = visit_ast(if_scope.get_impl(), if_case.statements);
                 return statements;
             }
         }
         if(node->else_case)
         {
-            sourdo_Data* else_scope = sourdo_data_create();
-            else_scope->parent = data;
-            return_value = visit_ast(else_scope, node->else_case);
-            sourdo_data_destroy(else_scope);
+            Data else_scope;
+            else_scope.get_impl()->parent = data;
+            return_value = visit_ast(else_scope.get_impl(), node->else_case);
         }
         return return_value;
     }
 
-    static VisitorReturn visit_var_declaration_node(sourdo_Data* data, std::shared_ptr<VarDeclarationNode> node)
+    static VisitorReturn visit_var_declaration_node(Data::Impl* data, std::shared_ptr<VarDeclarationNode> node)
     {
         VisitorReturn return_value;
         VisitorReturn var_value;
@@ -99,7 +97,7 @@ namespace sourdo
             return var_value;
         }
 
-        if(sourdo_get_symbol(data, node->name_tok.value) != nullptr)
+        if(data->get_symbol(node->name_tok.value) != nullptr)
         {
             std::stringstream ss;
             ss << node->position << "'" << node->name_tok.value << "' is already defined";
@@ -114,7 +112,7 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_var_assignment_node(sourdo_Data* data, std::shared_ptr<VarAssignmentNode> node)
+    static VisitorReturn visit_var_assignment_node(Data::Impl* data, std::shared_ptr<VarAssignmentNode> node)
     {
         VisitorReturn return_value;
         VisitorReturn new_value = visit_ast(data, node->new_value);
@@ -123,7 +121,7 @@ namespace sourdo
             return new_value;
         }
 
-        if(sourdo_get_symbol(data, node->name_tok.value) == nullptr)
+        if(data->get_symbol(node->name_tok.value) == nullptr)
         {
             std::stringstream ss;
             ss << node->position << "'" << node->name_tok.value << "' is not defined";
@@ -131,18 +129,18 @@ namespace sourdo
         }
         else
         {
-            sourdo_set_symbol(data, node->name_tok.value, new_value.result);
+            data->set_symbol(node->name_tok.value, new_value.result);
             return_value.result = data->symbol_table[node->name_tok.value];
         }
 
         return return_value;
     }
 
-    static VisitorReturn visit_func_declaration_node(sourdo_Data* data, std::shared_ptr<FuncDeclarationNode> node)
+    static VisitorReturn visit_func_declaration_node(Data::Impl* data, std::shared_ptr<FuncDeclarationNode> node)
     {
         VisitorReturn return_value;
         
-        if(sourdo_get_symbol(data, node->name.value) != nullptr)
+        if(data->get_symbol(node->name.value) != nullptr)
         {
             std::stringstream ss;
             ss << node->position << "'" << node->name.value << "' is already defined";
@@ -154,7 +152,7 @@ namespace sourdo
             parameters.reserve(node->parameters.size());
             for(auto& param : node->parameters)
             {
-                if(sourdo_get_symbol(data, param.value) != nullptr)
+                if(data->get_symbol(param.value) != nullptr)
                 {
                     std::stringstream ss;
                     ss << node->position << "A value called '" << param.value << "' is already defined outside of the function";
@@ -177,7 +175,7 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_return_node(sourdo_Data* data, std::shared_ptr<ReturnNode> node)
+    static VisitorReturn visit_return_node(Data::Impl* data, std::shared_ptr<ReturnNode> node)
     {
         VisitorReturn return_value = visit_ast(data, node->return_value);
         return_value.is_function_return = true;
@@ -185,11 +183,11 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_var_access_node(sourdo_Data* data, std::shared_ptr<VarAccessNode> node)
+    static VisitorReturn visit_var_access_node(Data::Impl* data, std::shared_ptr<VarAccessNode> node)
     {
         VisitorReturn return_value;
 
-        sourdo::Value* var_value = sourdo_get_symbol(data, node->name_tok.value);
+        sourdo::Value* var_value = data->get_symbol(node->name_tok.value);
         if(var_value == nullptr)
         {
             std::stringstream ss;
@@ -203,7 +201,7 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_unary_op_node(sourdo_Data* data, std::shared_ptr<UnaryOpNode> node)
+    static VisitorReturn visit_unary_op_node(Data::Impl* data, std::shared_ptr<UnaryOpNode> node)
     {
         VisitorReturn return_value;
         VisitorReturn operand_value = visit_ast(data, node->operand);
@@ -268,7 +266,7 @@ namespace sourdo
         return return_value;
     }
     
-    static VisitorReturn visit_binary_op_node(sourdo_Data* data, std::shared_ptr<BinaryOpNode> node)
+    static VisitorReturn visit_binary_op_node(Data::Impl* data, std::shared_ptr<BinaryOpNode> node)
     {
         VisitorReturn return_value;
         VisitorReturn left_value = visit_ast(data, node->left_operand);
@@ -589,7 +587,7 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_call_node(sourdo_Data* data, std::shared_ptr<CallNode> node)
+    static VisitorReturn visit_call_node(Data::Impl* data, std::shared_ptr<CallNode> node)
     {
         VisitorReturn return_value;
         VisitorReturn callee = visit_ast(data, node->callee);
@@ -631,8 +629,8 @@ namespace sourdo
                 return return_value;
             }
 
-            sourdo_Data* func_scope = sourdo_data_create();
-            func_scope->parent = data;
+            Data func_scope;
+            func_scope.get_impl()->parent = data;
             
             for(int i = 0; i < func_value->parameters.size(); i++)
             {
@@ -642,12 +640,10 @@ namespace sourdo
                     return arg;
                 }
 
-                func_scope->symbol_table[func_value->parameters[i]] = arg.result;
+                func_scope.get_impl()->symbol_table[func_value->parameters[i]] = arg.result;
             }
 
-            return_value = visit_ast(func_scope, func_value->statements);
-
-            sourdo_data_destroy(func_scope);
+            return_value = visit_ast(func_scope.get_impl(), func_value->statements);
         }
         else
         {
@@ -659,7 +655,7 @@ namespace sourdo
         return return_value;
     }
 
-    VisitorReturn visit_ast(sourdo_Data* data, std::shared_ptr<Node> node)
+    VisitorReturn visit_ast(Data::Impl* data, std::shared_ptr<Node> node)
     {
         VisitorReturn return_value;
         switch(node->type)

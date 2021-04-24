@@ -13,4 +13,4 @@ func factorial(value)
     return value * factorial(value - 1)
 end
 
-set_apple_count(factorial(4))
+set_apple_count(-factorial(4))

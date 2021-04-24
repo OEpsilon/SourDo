@@ -9,43 +9,58 @@
 #include "ConsoleColors.hpp"
 #include "Datatypes/Value.hpp"
 
-extern "C" {
-    struct sourdo_Data
+namespace sourdo {
+    class Data::Impl
     {
-        sourdo_Data* parent = nullptr;
+    public:
+        Data::Impl* parent = nullptr;
+
         // Used to keep temporary values.
         std::vector<sourdo::Value> stack;
         // Used to store named values.
         std::map<std::string, sourdo::Value> symbol_table;
-    };
 
-    inline void sourdo_set_symbol(sourdo_Data* data, const std::string& index, const sourdo::Value& value)
-    {
-        if(data->symbol_table.find(index) == data->symbol_table.end())
+        void set_symbol(const std::string& index, const sourdo::Value& value)
         {
-            sourdo_Data* parent = data->parent;
-            while(parent != nullptr)
+            if(symbol_table.find(index) == symbol_table.end())
             {
-                if(parent->symbol_table.find(index) != parent->symbol_table.end())
+                Data::Impl* current_parent = parent;
+                while(current_parent != nullptr)
                 {
-                    parent->symbol_table[index] = value;
+                    if(current_parent->symbol_table.find(index) != parent->symbol_table.end())
+                    {
+                        current_parent->symbol_table[index] = value;
+                        return;
+                    }
+                    current_parent = parent->parent;
                 }
-                parent = parent->parent;
             }
+            symbol_table[index] = value;
         }
-        data->symbol_table[index] = value;
-    }
 
-    inline sourdo::Value* sourdo_get_symbol(sourdo_Data* data, const std::string& index)
-    {
-        if(data->symbol_table.find(index) == data->symbol_table.end())
+        Value* get_symbol(const std::string& index)
         {
-            if(data->parent)
+            if(symbol_table.find(index) == symbol_table.end())
             {
-                return sourdo_get_symbol(data->parent, index);
+                if(parent)
+                {
+                    return parent->get_symbol(index);
+                }
+                return nullptr;
             }
-            return nullptr;
+            return &(symbol_table[index]);
         }
-        return &(data->symbol_table[index]);
-    }
-}
+
+        sourdo::Value& index_stack(int index)
+        {
+            assert(index != 0);
+            assert(std::abs(index) <= stack.size());
+
+            if(index < 0)
+            {
+                return stack[stack.size() + index];
+            }
+            return stack[index - 1];
+        }
+    };
+} // namespace sourdo

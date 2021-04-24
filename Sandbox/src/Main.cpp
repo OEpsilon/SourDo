@@ -5,26 +5,24 @@
 
 int main()
 {
-    sourdo_Data* module = sourdo_data_create();
+    sourdo::Data test;
 
-    sourdo_push_number(module, 40);
-    sourdo_set_value(module, "apple_count");
+    test.push_number(40);
+    test.set_value("apple_count");
 
-    SourDoBool result = sourdo_do_file(module, "Examples/Scripts/Main.sourdo");
-    if(result)
+    sourdo::Result result = test.do_file("Examples/Scripts/Main.sourdo");
+    if(result == sourdo::Result::SUCCESS)
     {
-        sourdo_get_value(module, "apple_count");
-        if(sourdo_is_number(module, -1))
+        test.get_value("apple_count");
+        if(test.value_is_number(-1))
         {
-            std::cout << "There are " << sourdo_to_number(module, -1) << " apples.\n";
+            std::cout << "There are " << test.value_to_number(-1) << " apples." << std::endl;
         }
     }
     else
     {
-        std::string error = sourdo_to_string(module, -1);
+        std::string error = test.value_to_string(-1);
         std::cout << error << std::endl;
     }
-
-    sourdo_data_destroy(module);
     return 0;
 }

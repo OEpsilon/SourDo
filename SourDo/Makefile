@@ -71,13 +71,13 @@ GENERATED :=
 OBJECTS :=
 
 GENERATED += $(OBJDIR)/Parser.o
-GENERATED += $(OBJDIR)/SourDo.o
+GENERATED += $(OBJDIR)/SourDoData.o
 GENERATED += $(OBJDIR)/Token.o
 GENERATED += $(OBJDIR)/Tokenizer.o
 GENERATED += $(OBJDIR)/Value.o
 GENERATED += $(OBJDIR)/Visitor.o
 OBJECTS += $(OBJDIR)/Parser.o
-OBJECTS += $(OBJDIR)/SourDo.o
+OBJECTS += $(OBJDIR)/SourDoData.o
 OBJECTS += $(OBJDIR)/Token.o
 OBJECTS += $(OBJDIR)/Tokenizer.o
 OBJECTS += $(OBJDIR)/Value.o
@@ -154,7 +154,7 @@ $(OBJDIR)/Value.o: src/Datatypes/Value.cpp
 $(OBJDIR)/Parser.o: src/Parser.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/SourDo.o: src/SourDo.cpp
+$(OBJDIR)/SourDoData.o: src/SourDoData.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/Tokenizer.o: src/Tokenizer.cpp

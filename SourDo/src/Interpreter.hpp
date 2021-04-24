@@ -1,13 +1,13 @@
 #pragma once
 
+#include "SourDo/SourDo.hpp"
+
 #include <vector>
 #include <optional>  
 
 #include "Datatypes/Token.hpp"
 #include "Datatypes/Nodes.hpp"
 #include "Datatypes/Value.hpp"
-
-struct sourdo_Data;
 
 namespace sourdo
 {
@@ -31,7 +31,7 @@ namespace sourdo
     };
 
     TokenizerReturn tokenize_string(const std::string& string, const std::string& file_name);
-    VisitorReturn visit_ast(sourdo_Data* data, std::shared_ptr<Node>);
+    VisitorReturn visit_ast(Data::Impl* data, std::shared_ptr<Node> ast);
 
     class Parser
     {
