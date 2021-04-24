@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <functional>
 #include <exception>
 
 namespace sourdo
@@ -13,7 +14,20 @@ namespace sourdo
         RUNTIME_ERROR,
     };
 
+    enum class ValueType
+    {
+        _NULL,
+        NUMBER,
+        BOOL,
+        STRING,
+        SOURDO_FUNCTION,
+        CPP_FUNCTION,
+    };
+    
+    class Data;
+
     using Number = double;
+    using CppFunction = bool(*)(Data&);
     
     /**
      * @brief Represents and holds the data of a scope in a SourDo Program. 
@@ -31,18 +45,12 @@ namespace sourdo
         Result do_string(const std::string& string);
         Result do_file(const std::string& file_path);
 
-        bool value_is_number(int index);
-        bool value_is_bool(int index);
-        bool value_is_string(int index);
-
         /**
-         * @brief Checks if a value on the stack is null.
+         * @brief Gets the type of the value at the given index. 
          * 
          * @param index The index of the value on the stack to check.
-         * 
-         * @returns Returns true if the value is null.
          */
-        bool value_is_null(int index);
+        ValueType get_value_type(int index);
 
         /**
          * @brief Converts a value to a number.
@@ -81,9 +89,24 @@ namespace sourdo
         void push_string(const std::string& value);
 
         /**
+         * @brief Pushes 'value' onto the top of the stack.
+         */
+        void push_cppfunction(const CppFunction& value);
+
+        /**
          * @brief Pushes 'null' onto the top of the stack.
          */
         void push_null();
+
+        /**
+         * @brief Pops 'arg_count' number of values off the top of the stack and calls the function below the arguments while popping it from the stack.
+         * 
+         * @param arg_count The number of arguments that are passed to the function.
+         * @param protected_mode_enabled If true, returns an error code instead of throwing an exception.
+         * 
+         * @throws SourDoError Thrown if there is an error when calling the function and 'protected_mode_enabled' is false.
+         */
+        Result call_function(uint32_t arg_count, bool protected_mode_enabled = false);
 
         /**
          * @brief Pushes a value in the symbol table onto the top of the stack.
@@ -103,9 +126,24 @@ namespace sourdo
         void set_value(const std::string& name);
 
         /**
+         * @brief Returns the size of the stack.
+         */
+        uint32_t get_size();
+
+        /**
+         * @brief Removes the value at the given index
+         */
+        void remove(int index);
+
+        /**
          * @brief Pops the value on the top of the stack.
          */
         void pop();
+
+        /**
+         * @brief Equivalent to 'throw SourDoError(message)'.
+         */
+        void error(const std::string& message);
 
         /**
          * @brief Not for use outside of library code.

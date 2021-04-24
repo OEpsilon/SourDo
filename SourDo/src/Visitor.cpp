@@ -8,23 +8,26 @@
 
 namespace sourdo
 {
-    static std::ostream& operator<<(std::ostream& os, const Value::Type& type)
+    static std::ostream& operator<<(std::ostream& os, const ValueType& type)
     {
         switch(type)
         {
-            case Value::Type::NUMBER:
+            case ValueType::NUMBER:
                 os << "Number";
                 break;
-            case Value::Type::BOOL:
+            case ValueType::BOOL:
                 os << "Bool";
                 break;
-            case Value::Type::STRING:
+            case ValueType::STRING:
                 os << "String";
                 break;
-            case Value::Type::SOURDO_FUNCTION:
+            case ValueType::SOURDO_FUNCTION:
                 os << "Function";
                 break;
-            case Value::Type::_NULL:
+            case ValueType::CPP_FUNCTION:
+                os << "CppFunction";
+                break;
+            case ValueType::_NULL:
                 os << "Null";
                 break;
         }
@@ -55,7 +58,7 @@ namespace sourdo
             {
                 return condition;
             }
-            if(condition.result.get_type() != Value::Type::BOOL)
+            if(condition.result.get_type() != ValueType::BOOL)
             {
                 std::stringstream ss;
                 ss << if_case.condition->position << "condition does not result in a bool";
@@ -214,7 +217,7 @@ namespace sourdo
         {
             case Token::Type::ADD:
             {
-                if(operand_value.result.get_type() == Value::Type::NUMBER)
+                if(operand_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = operand_value.result.to_number();
                 }
@@ -229,7 +232,7 @@ namespace sourdo
             }
             case Token::Type::SUB:
             {
-                if(operand_value.result.get_type() == Value::Type::NUMBER)
+                if(operand_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = -operand_value.result.to_number();
                 }
@@ -244,7 +247,7 @@ namespace sourdo
             }
             case Token::Type::LOGIC_NOT:
             {
-                if(operand_value.result.get_type() == Value::Type::BOOL)
+                if(operand_value.result.get_type() == ValueType::BOOL)
                 {
                     return_value.result = !operand_value.result.to_bool();
                 }
@@ -285,8 +288,8 @@ namespace sourdo
         {
             case Token::Type::ADD:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.result.to_number() + right_value.result.to_number();
                 }
@@ -301,8 +304,8 @@ namespace sourdo
             }
             case Token::Type::SUB:
             {   
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.result.to_number() - right_value.result.to_number();
                 }
@@ -317,8 +320,8 @@ namespace sourdo
             }
             case Token::Type::MUL:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.result.to_number() * right_value.result.to_number();
                 }
@@ -333,8 +336,8 @@ namespace sourdo
             }
             case Token::Type::DIV:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     if(right_value.result.to_number() == 0)
                     {
@@ -356,8 +359,8 @@ namespace sourdo
             }
             case Token::Type::POW:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = std::pow(left_value.result.to_number(), right_value.result.to_number());
                 }
@@ -372,8 +375,8 @@ namespace sourdo
             }
             case Token::Type::LESS_THAN:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.result.to_number() < right_value.result.to_number();
                 }
@@ -388,8 +391,8 @@ namespace sourdo
             }
             case Token::Type::GREATER_THAN:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.result.to_number() > right_value.result.to_number();
                 }
@@ -404,8 +407,8 @@ namespace sourdo
             }
             case Token::Type::LESS_EQUAL:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.result.to_number() <= right_value.result.to_number();
                 }
@@ -420,8 +423,8 @@ namespace sourdo
             }
             case Token::Type::GREATER_EQUAL:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.result.to_number() >= right_value.result.to_number();
                 }
@@ -436,47 +439,59 @@ namespace sourdo
             }
             case Token::Type::EQUAL:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.result.to_number() == right_value.result.to_number();
                 }
-                else if(left_value.result.get_type() == Value::Type::BOOL 
-                        && right_value.result.get_type() == Value::Type::BOOL)
+                else if(left_value.result.get_type() == ValueType::BOOL 
+                        && right_value.result.get_type() == ValueType::BOOL)
                 {
                     return_value.result = left_value.result.to_bool() == right_value.result.to_bool();
                 }
-                else if(left_value.result.get_type() == Value::Type::STRING 
-                        && right_value.result.get_type() == Value::Type::STRING)
+                else if(left_value.result.get_type() == ValueType::STRING 
+                        && right_value.result.get_type() == ValueType::STRING)
                 {
                     return_value.result = left_value.result.to_string() == right_value.result.to_string();
                 }
-                else if(left_value.result.get_type() == Value::Type::_NULL)
+                else if(left_value.result.get_type() == ValueType::SOURDO_FUNCTION
+                        && right_value.result.get_type() == ValueType::SOURDO_FUNCTION)
+                {
+                    return_value.result = left_value.result.to_sourdo_function() == right_value.result.to_sourdo_function();
+                }
+                else if(left_value.result.get_type() == ValueType::CPP_FUNCTION
+                        && right_value.result.get_type() == ValueType::CPP_FUNCTION)
+                {
+                    return_value.result = left_value.result.to_cpp_function() == right_value.result.to_cpp_function();
+                }
+                else if(left_value.result.get_type() == ValueType::_NULL)
                 {
                     switch(right_value.result.get_type())
                     {
-                        case Value::Type::NUMBER:
-                        case Value::Type::BOOL:
-                        case Value::Type::STRING:
-                        case Value::Type::SOURDO_FUNCTION:
+                        case ValueType::NUMBER:
+                        case ValueType::BOOL:
+                        case ValueType::STRING:
+                        case ValueType::SOURDO_FUNCTION:
+                        case ValueType::CPP_FUNCTION:
                             return_value.result = false;
                             break;
-                        case Value::Type::_NULL:
+                        case ValueType::_NULL:
                             return_value.result = true;
                             break;
                     }
                 }
-                else if(right_value.result.get_type() == Value::Type::_NULL)
+                else if(right_value.result.get_type() == ValueType::_NULL)
                 {
                     switch(left_value.result.get_type())
                     {
-                        case Value::Type::NUMBER:
-                        case Value::Type::BOOL:
-                        case Value::Type::STRING:
-                        case Value::Type::SOURDO_FUNCTION:
+                        case ValueType::NUMBER:
+                        case ValueType::BOOL:
+                        case ValueType::STRING:
+                        case ValueType::SOURDO_FUNCTION:
+                        case ValueType::CPP_FUNCTION:
                             return_value.result = false;
                             break;
-                        case Value::Type::_NULL:
+                        case ValueType::_NULL:
                             return_value.result = true;
                             break;
                     }
@@ -492,47 +507,50 @@ namespace sourdo
             }
             case Token::Type::NOT_EQUAL:
             {
-                if(left_value.result.get_type() == Value::Type::NUMBER 
-                        && right_value.result.get_type() == Value::Type::NUMBER)
+                if(left_value.result.get_type() == ValueType::NUMBER 
+                        && right_value.result.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.result.to_number() != right_value.result.to_number();
                 }
-                else if(left_value.result.get_type() == Value::Type::BOOL 
-                        && right_value.result.get_type() == Value::Type::BOOL)
+                else if(left_value.result.get_type() == ValueType::BOOL 
+                        && right_value.result.get_type() == ValueType::BOOL)
                 {
                     return_value.result = left_value.result.to_bool() != right_value.result.to_bool();
                 }
-                else if(left_value.result.get_type() == Value::Type::STRING 
-                        && right_value.result.get_type() == Value::Type::STRING)
+                else if(left_value.result.get_type() == ValueType::STRING 
+                        && right_value.result.get_type() == ValueType::STRING)
                 {
                     return_value.result = left_value.result.to_string() != right_value.result.to_string();
                 }
-                else if(left_value.result.get_type() == Value::Type::_NULL)
+                else if(left_value.result.get_type() == ValueType::_NULL)
                 {
                     switch(right_value.result.get_type())
                     {
-                        case Value::Type::NUMBER:
-                        case Value::Type::BOOL:
-                        case Value::Type::STRING:
-                        case Value::Type::SOURDO_FUNCTION:
+                        case ValueType::NUMBER:
+                        case ValueType::BOOL:
+                        case ValueType::STRING:
+                        case ValueType::SOURDO_FUNCTION:
+                        case ValueType::CPP_FUNCTION:
                             return_value.result = true;
                             break;
-                        case Value::Type::_NULL:
+                        case ValueType::_NULL:
                             return_value.result = false;
                             break;
                     }
                 }
-                else if(right_value.result.get_type() == Value::Type::_NULL)
+                else if(right_value.result.get_type() == ValueType::_NULL)
                 {
                     switch(left_value.result.get_type())
                     {
-                        case Value::Type::NUMBER:
-                        case Value::Type::BOOL:
-                        case Value::Type::STRING:
-                        case Value::Type::SOURDO_FUNCTION:
+                        case ValueType::NUMBER:
+                        
+                        case ValueType::BOOL:
+                        case ValueType::STRING:
+                        case ValueType::SOURDO_FUNCTION:
+                        case ValueType::CPP_FUNCTION:
                             return_value.result = true;
                             break;
-                        case Value::Type::_NULL:
+                        case ValueType::_NULL:
                             return_value.result = false;
                             break;
                     }
@@ -548,8 +566,8 @@ namespace sourdo
             }
             case Token::Type::LOGIC_OR:
             {
-                if(left_value.result.get_type() == Value::Type::BOOL 
-                        && right_value.result.get_type() == Value::Type::BOOL)
+                if(left_value.result.get_type() == ValueType::BOOL 
+                        && right_value.result.get_type() == ValueType::BOOL)
                 {
                     return_value.result = left_value.result.to_bool() || right_value.result.to_bool();
                 }
@@ -564,8 +582,8 @@ namespace sourdo
             }
             case Token::Type::LOGIC_AND:
             {
-                if(left_value.result.get_type() == Value::Type::BOOL 
-                        && right_value.result.get_type() == Value::Type::BOOL)
+                if(left_value.result.get_type() == ValueType::BOOL 
+                        && right_value.result.get_type() == ValueType::BOOL)
                 {
                     return_value.result = left_value.result.to_bool() && right_value.result.to_bool();
                 }
@@ -596,7 +614,7 @@ namespace sourdo
             return callee;
         }
 
-        if(callee.result.get_type() == Value::Type::SOURDO_FUNCTION)
+        if(callee.result.get_type() == ValueType::SOURDO_FUNCTION)
         {
             std::shared_ptr<SourDoFunction> func_value = callee.result.to_sourdo_function();
             if(node->arguments.size() != func_value->parameters.size())
@@ -644,6 +662,44 @@ namespace sourdo
             }
 
             return_value = visit_ast(func_scope.get_impl(), func_value->statements);
+        }
+        else if(callee.result.get_type() == ValueType::CPP_FUNCTION)
+        {
+            CppFunction func_value = callee.result.to_cpp_function();
+
+            Data func_scope;
+            func_scope.get_impl()->parent = data;
+
+            func_scope.get_impl()->stack.reserve(node->arguments.size());
+            
+            for(int i = 0; i < node->arguments.size(); i++)
+            {
+                VisitorReturn arg = visit_ast(data, node->arguments[i]);
+                if(arg.error_message)
+                {
+                    return arg;
+                }
+
+                func_scope.get_impl()->stack.push_back(arg.result);
+            }
+
+            try
+            {
+                if(func_value(func_scope))
+                {
+                    return_value.result = func_scope.get_impl()->index_stack(-1);
+                }
+                else
+                {
+                    return_value.result = Null();
+                }
+            }
+            catch(const SourDoError& error)
+            {
+                std::stringstream ss;
+                ss << node->position << error.what();
+                return_value.error_message = ss.str();
+            }
         }
         else
         {

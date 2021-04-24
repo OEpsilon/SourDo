@@ -4,37 +4,43 @@ namespace sourdo
 {
     Value::Value()
     {
-        type = Type::_NULL;
+        type = ValueType::_NULL;
         value = Null();
     }
 
     Value::Value(Null new_value)
     {
-        type = Type::_NULL;
+        type = ValueType::_NULL;
         value = new_value;
     }
 
     Value::Value(double new_value)
     {
-        type = Type::NUMBER;
+        type = ValueType::NUMBER;
         value = new_value;
     }
 
     Value::Value(bool new_value)
     {
-        type = Type::BOOL;
+        type = ValueType::BOOL;
         value = new_value;
     }
     
     Value::Value(const std::string& new_value)
     {
-        type = Type::STRING;
+        type = ValueType::STRING;
         value = new_value;
     }
 
     Value::Value(std::shared_ptr<SourDoFunction> new_value)
     {
-        type = Type::SOURDO_FUNCTION;
+        type = ValueType::SOURDO_FUNCTION;
+        value = new_value;
+    }
+
+    Value::Value(const CppFunction& new_value)
+    {
+        type = ValueType::CPP_FUNCTION;
         value = new_value;
     }
 
@@ -49,7 +55,7 @@ namespace sourdo
         type = new_value.type;
         value = new_value.value;
 
-        new_value.type = Type::_NULL;
+        new_value.type = ValueType::_NULL;
         new_value.value = Null();
     }
 
@@ -65,47 +71,54 @@ namespace sourdo
         type = new_value.type;
         value = new_value.value;
 
-        new_value.type = Type::_NULL;
+        new_value.type = ValueType::_NULL;
         new_value.value = Null();
         return *this;
     }
 
     Value& Value::operator=(Null new_value)
     {
-        type = Type::_NULL;
+        type = ValueType::_NULL;
         value = new_value;
         return *this;
     }
     
     Value& Value::operator=(double new_value)
     {
-        type = Type::NUMBER;
+        type = ValueType::NUMBER;
         value = new_value;
         return *this;
     }
 
     Value& Value::operator=(bool new_value)
     {
-        type = Type::BOOL;
+        type = ValueType::BOOL;
         value = new_value;
         return *this;
     }
 
     Value& Value::operator=(const std::string& new_value)
     {
-        type = Type::STRING;
+        type = ValueType::STRING;
         value = new_value;
         return *this;
     }
 
     Value& Value::operator=(std::shared_ptr<SourDoFunction> new_value)
     {
-        type = Type::SOURDO_FUNCTION;
+        type = ValueType::SOURDO_FUNCTION;
+        value = new_value;
+        return *this;
+    }
+    
+    Value& Value::operator=(const CppFunction& new_value)
+    {
+        type = ValueType::CPP_FUNCTION;
         value = new_value;
         return *this;
     }
 
-    Value::Type Value::get_type()
+    ValueType Value::get_type()
     {
         return type;
     }

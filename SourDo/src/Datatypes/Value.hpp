@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SourDo/SourDo.hpp"
+
 #include <vector>
 #include <memory>
 #include <variant>
@@ -26,21 +28,13 @@ namespace sourdo
     class Value
     {
     public:
-        enum class Type
-        {
-            _NULL,
-            NUMBER,
-            BOOL,
-            STRING,
-            SOURDO_FUNCTION,
-        };
-
         Value();
         Value(Null new_value);
         Value(double new_value);
         Value(bool new_value);
         Value(const std::string& new_value);
         Value(std::shared_ptr<SourDoFunction> new_value);
+        Value(const CppFunction& new_value);
         
         Value(const Value& new_value);
         Value(Value&& new_value);
@@ -53,8 +47,9 @@ namespace sourdo
         Value& operator=(bool new_value);
         Value& operator=(const std::string& new_value);
         Value& operator=(std::shared_ptr<SourDoFunction> new_value);
+        Value& operator=(const CppFunction& new_value);
 
-        Type get_type();
+        ValueType get_type();
 
         double& to_number() 
         { 
@@ -68,7 +63,7 @@ namespace sourdo
 
         std::string& to_string() 
         { 
-            if(type == Type::NUMBER)
+            if(type == ValueType::NUMBER)
             {
                 value = std::to_string(std::get<double>(value));
                 return std::get<std::string>(value);
@@ -80,10 +75,15 @@ namespace sourdo
         {
             return std::get<std::shared_ptr<SourDoFunction>>(value);
         }
-    private:
-        Type type;
 
-        std::variant<Null, double, bool, std::string, std::shared_ptr<SourDoFunction>> value;
+        CppFunction& to_cpp_function()
+        {
+            return std::get<CppFunction>(value);
+        }
+    private:
+        ValueType type;
+
+        std::variant<Null, double, bool, std::string, std::shared_ptr<SourDoFunction>, CppFunction> value;
     };
 
 } // namespace SourDo
