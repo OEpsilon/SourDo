@@ -1,4 +1,5 @@
 #include "SourDo/SourDo.hpp"
+#include "SourDo/ConsoleColors.hpp"
 
 #include "SourDoData.hpp"
 #include "Interpreter.hpp"

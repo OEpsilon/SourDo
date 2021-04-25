@@ -35,6 +35,10 @@ namespace sourdo
 
             {   Token::Type::COMMA,             "COMMA"             },
             {   Token::Type::ASSIGN,            "ASSIGN"            },
+            {   Token::Type::ASSIGN_ADD,        "ASSIGN_ADD"        },
+            {   Token::Type::ASSIGN_SUB,        "ASSIGN_SUB"        },
+            {   Token::Type::ASSIGN_MUL,        "ASSIGN_MUL"        },
+            {   Token::Type::ASSIGN_DIV,        "ASSIGN_DIV"        },
 
             {   Token::Type::LPAREN,            "LPAREN"            },
             {   Token::Type::RPAREN,            "RPAREN"            },

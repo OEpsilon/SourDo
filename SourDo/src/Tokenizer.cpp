@@ -3,8 +3,6 @@
 #include <unordered_map>
 #include <sstream>
 
-#include "ConsoleColors.hpp"
-
 namespace sourdo
 {
     static const std::vector<std::string> KEYWORDS = 
@@ -117,12 +115,36 @@ namespace sourdo
                 {
                     case '+':
                     {
-                        tokens.emplace_back(Token::Type::ADD, file_position);
+                        Position saved_position = file_position;
+                        i++;
+                        file_position.column++;
+                        current_char = text[i];
+                        if(current_char == '=')
+                        {
+                            tokens.emplace_back(Token::Type::ASSIGN_ADD, saved_position);
+                            break;
+                        }
+                        i--;
+                        file_position.column--;
+                        
+                        tokens.emplace_back(Token::Type::ADD, saved_position);
                         break;
                     }
                     case '-':
                     {
-                        tokens.emplace_back(Token::Type::SUB, file_position);
+                        Position saved_position = file_position;
+                        i++;
+                        file_position.column++;
+                        current_char = text[i];
+                        if(current_char == '=')
+                        {
+                            tokens.emplace_back(Token::Type::ASSIGN_SUB, saved_position);
+                            break;
+                        }
+                        i--;
+                        file_position.column--;
+                        
+                        tokens.emplace_back(Token::Type::SUB, saved_position);
                         break;
                     }
                     case '*':
@@ -136,6 +158,11 @@ namespace sourdo
                             tokens.emplace_back(Token::Type::POW, saved_position);
                             break;
                         }
+                        else if(current_char == '=')
+                        {
+                            tokens.emplace_back(Token::Type::ASSIGN_MUL, saved_position);
+                            break;
+                        }
                         i--;
                         file_position.column--;
 
@@ -144,7 +171,19 @@ namespace sourdo
                     }
                     case '/':
                     {
-                        tokens.emplace_back(Token::Type::DIV, file_position);
+                        Position saved_position = file_position;
+                        i++;
+                        file_position.column++;
+                        current_char = text[i];
+                        if(current_char == '=')
+                        {
+                            tokens.emplace_back(Token::Type::ASSIGN_DIV, saved_position);
+                            break;
+                        }
+                        i--;
+                        file_position.column--;
+                        
+                        tokens.emplace_back(Token::Type::DIV, saved_position);
                         break;
                     }
                     case ',':

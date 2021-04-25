@@ -90,25 +90,12 @@ namespace sourdo
                 return std::make_shared<VarDeclarationNode>(name_tok, nullptr, saved_position);
             }
             advance();
-            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::LOGIC_OR);
+            std::shared_ptr<ExpressionNode> expr = expression();
             if(error)
             {
                 return nullptr;
             }
             return std::make_shared<VarDeclarationNode>(name_tok, expr, saved_position);
-        }
-        // Looking ahead at the next token probably isn't the best idea but it works for now.
-        else if(current_token.type == Token::Type::IDENTIFIER && tokens[position + 1].type == Token::Type::ASSIGN)
-        {
-            Token name_tok = current_token;
-            advance();
-            advance();
-            std::shared_ptr<ExpressionNode> expr = expression(ExprPrecedence::LOGIC_OR);
-            if(error)
-            {
-                return nullptr;
-            }
-            return std::make_shared<VarAssignmentNode>(name_tok, expr);
         }
         else if(current_token == Token(Token::Type::KEYWORD, "func"))
         {
@@ -188,7 +175,7 @@ namespace sourdo
         {
             Position saved_position = current_token.position;
             advance();
-            std::shared_ptr<ExpressionNode> return_value = expression(ExprPrecedence::LOGIC_OR);
+            std::shared_ptr<ExpressionNode> return_value = expression();
             if(error)
             {
                 return nullptr;
@@ -204,7 +191,7 @@ namespace sourdo
             
             auto if_expr_case = [&]() -> void
             {
-                std::shared_ptr<ExpressionNode> condition = expression(ExprPrecedence::LOGIC_OR);
+                std::shared_ptr<ExpressionNode> condition = expression();
                 if(error)
                 {
                     return;
@@ -268,11 +255,63 @@ namespace sourdo
 
             return std::make_shared<IfNode>(cases, else_case, saved_position);
         }
+        else if(current_token.type == Token::Type::IDENTIFIER)
+        {
+            auto do_assignment = [&](VarAssignmentNode::Operation op) -> std::shared_ptr<VarAssignmentNode>
+            {
+                Token name_tok = current_token;
+                advance();
+                Position saved_position = current_token.position;
+                advance();
+                std::shared_ptr<ExpressionNode> new_value = expression();
+                if(error)
+                {
+                    return nullptr;
+                }
+                return std::make_shared<VarAssignmentNode>(name_tok, op, new_value, saved_position);
+            };
 
-        return expression(ExprPrecedence::LOGIC_OR);
+            switch(tokens[position + 1].type)
+            {
+                case Token::Type::ASSIGN:
+                {
+                    return do_assignment(VarAssignmentNode::Operation::NONE);
+                    break;
+                }
+                case Token::Type::ASSIGN_ADD:
+                {
+                    return do_assignment(VarAssignmentNode::Operation::ADD);
+                    break;
+                }
+                case Token::Type::ASSIGN_SUB:
+                {
+                    return do_assignment(VarAssignmentNode::Operation::SUB);
+                    break;
+                }
+                case Token::Type::ASSIGN_MUL:
+                {
+                    return do_assignment(VarAssignmentNode::Operation::MUL);
+                    break;
+                }
+                case Token::Type::ASSIGN_DIV:
+                {
+                    return do_assignment(VarAssignmentNode::Operation::DIV);
+                    break;
+                }
+                default:
+                    break;
+            }
+            // If the next token is not an assignment, move on to expressions.
+        }
+        return expression();
     }
 
-    std::shared_ptr<ExpressionNode> Parser::expression(ExprPrecedence precedence, bool multiline_mode)
+    std::shared_ptr<ExpressionNode> Parser::expression(bool multiline_mode)
+    {
+        return expression_with_precedence(ExprPrecedence::LOGIC_OR, multiline_mode);
+    }
+
+    std::shared_ptr<ExpressionNode> Parser::expression_with_precedence(ExprPrecedence precedence, bool multiline_mode)
     {
         #define IGNORE_NEW_LINE_IF_MULTILINE()                              \
         if(multiline_mode)                                                  \
@@ -326,7 +365,7 @@ namespace sourdo
     std::shared_ptr<ExpressionNode> Parser::grouping(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         advance();
-        std::shared_ptr<ExpressionNode> grouped = expression(Parser::ExprPrecedence::LOGIC_OR, true);
+        std::shared_ptr<ExpressionNode> grouped = expression(true);
         if(error)
         {
             return nullptr;
@@ -348,7 +387,7 @@ namespace sourdo
         advance();
         ExprPrecedence precedence = static_cast<ExprPrecedence>(
                 static_cast<int>(get_rule(op_token.type).precedence) + 1);
-        std::shared_ptr<ExpressionNode> right = expression(precedence, multiline_mode);
+        std::shared_ptr<ExpressionNode> right = expression_with_precedence(precedence, multiline_mode);
         return std::make_shared<BinaryOpNode>(previous, op_token, right);
     }
 
@@ -358,7 +397,7 @@ namespace sourdo
         advance();
         ExprPrecedence precedence = static_cast<ExprPrecedence>(
                 static_cast<int>(get_rule(op_token.type).precedence));
-        std::shared_ptr<ExpressionNode> right = expression(precedence, multiline_mode);
+        std::shared_ptr<ExpressionNode> right = expression_with_precedence(precedence, multiline_mode);
         return std::make_shared<BinaryOpNode>(previous, op_token, right);
     }
 
@@ -373,12 +412,12 @@ namespace sourdo
             case Token::Type::ADD:
             case Token::Type::SUB:
             {
-                operand = expression(ExprPrecedence::SIGN, multiline_mode);
+                operand = expression_with_precedence(ExprPrecedence::SIGN, multiline_mode);
                 break;
             }
             case Token::Type::LOGIC_NOT:
             {
-                operand = expression(ExprPrecedence::LOGIC_NOT, multiline_mode);
+                operand = expression_with_precedence(ExprPrecedence::LOGIC_NOT, multiline_mode);
                 break;
             }
             default:
@@ -395,7 +434,7 @@ namespace sourdo
         std::vector<std::shared_ptr<ExpressionNode>> arguments;
         if(current_token.type != Token::Type::RPAREN)
         {
-            std::shared_ptr<ExpressionNode> arg = expression(ExprPrecedence::LOGIC_OR);
+            std::shared_ptr<ExpressionNode> arg = expression();
             if(error)
             {
                 return nullptr;
@@ -405,7 +444,7 @@ namespace sourdo
             while(current_token.type == Token::Type::COMMA)
             {
                 advance();
-                std::shared_ptr<ExpressionNode> arg = expression(ExprPrecedence::LOGIC_OR);
+                std::shared_ptr<ExpressionNode> arg = expression();
                 if(error)
                 {
                     return nullptr;

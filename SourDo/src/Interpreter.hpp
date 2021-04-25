@@ -42,17 +42,17 @@ namespace sourdo
 
         enum class ExprPrecedence
         {
-            NONE            = 0,
-            LOGIC_OR        = 1,
-            LOGIC_AND       = 2,
-            LOGIC_NOT       = 3,
-            COMPARISON      = 4,
-            ADD_EXPR        = 5,
-            MUL_EXPR        = 6,
-            SIGN            = 7,
-            POWER           = 8,
-            CALL            = 9,
-            FACTOR          = 10,
+            NONE = 0,
+            LOGIC_OR,
+            LOGIC_AND,
+            LOGIC_NOT,
+            COMPARISON,
+            ADD_EXPR,
+            MUL_EXPR,
+            SIGN,
+            POWER,
+            CALL,
+            FACTOR,
         };
 
         struct ParseExprRule 
@@ -73,7 +73,8 @@ namespace sourdo
 
         std::shared_ptr<Node> statement();
 
-        std::shared_ptr<ExpressionNode> expression(ExprPrecedence precedence, bool multiline_mode = false);
+        std::shared_ptr<ExpressionNode> expression(bool multiline_mode = false);
+        std::shared_ptr<ExpressionNode> expression_with_precedence(ExprPrecedence precedence, bool multiline_mode = false);
 
         std::shared_ptr<ExpressionNode> grouping(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 

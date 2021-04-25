@@ -5,4 +5,7 @@ func factorial(value)
     return value * factorial(value - 1)
 end
 
-print(factorial(4) )
+var value = 290
+
+value += 20
+print(value)

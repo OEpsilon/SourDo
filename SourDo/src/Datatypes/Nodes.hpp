@@ -148,24 +148,6 @@ namespace sourdo
         }
     };
 
-    struct VarAssignmentNode : public Node
-    {
-        VarAssignmentNode(const Token& name_tok, std::shared_ptr<ExpressionNode> new_value)
-            : Node(name_tok.position), name_tok(name_tok), new_value(new_value)
-        {
-            type = Type::VAR_ASSIGNMENT_NODE;
-        }
-        Token name_tok;
-        std::shared_ptr<ExpressionNode> new_value;
-
-        std::string to_string() final
-        {
-            std::stringstream ss;
-            ss << "(" << name_tok << ", " << new_value << ")";
-            return ss.str();
-        }
-    };
-
     struct FuncDeclarationNode : public Node
     {
         FuncDeclarationNode(const Token& name, const std::vector<Token>& parameters, std::shared_ptr<StatementListNode> statements, const Position& position)
@@ -195,6 +177,34 @@ namespace sourdo
         ExpressionNode(const Position& position)
             : Node(position)
         {
+        }
+    };
+
+    struct VarAssignmentNode : public ExpressionNode
+    {
+        enum class Operation
+        {
+            NONE,
+            ADD, 
+            SUB, 
+            MUL, 
+            DIV,
+        };
+        
+        VarAssignmentNode(Token name_tok, Operation op, std::shared_ptr<ExpressionNode> new_value, const Position& position)
+            : ExpressionNode(position), name_tok(name_tok), op(op), new_value(new_value)
+        {
+            type = Type::VAR_ASSIGNMENT_NODE;
+        }
+        Token name_tok;
+        Operation op;
+        std::shared_ptr<ExpressionNode> new_value;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << "(" << name_tok << ", " << new_value << ")";
+            return ss.str();
         }
     };
 

@@ -34,6 +34,329 @@ namespace sourdo
         return os;
     }
 
+    static VisitorReturn perform_binary_operation(Value& left_value, Value& right_value, Token::Type operation, const Position& position)
+    {
+        VisitorReturn return_value;
+        switch(operation)
+        {
+            case Token::Type::ADD:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = left_value.to_number() + right_value.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform addition with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+                
+                break;
+            }
+            case Token::Type::SUB:
+            {   
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = left_value.to_number() - right_value.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform subtraction with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+                
+                break;
+            }
+            case Token::Type::MUL:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = left_value.to_number() * right_value.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform multiplication with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+                
+                break;
+            }
+            case Token::Type::DIV:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    if(right_value.to_number() == 0)
+                    {
+                        std::stringstream ss;
+                        ss << position << "Cannot divide a number by zero";
+                        return_value.error_message = ss.str();
+                        break;
+                    }
+                    return_value.result = left_value.to_number() / right_value.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform division with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+                
+                break;
+            }
+            case Token::Type::POW:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = std::pow(left_value.to_number(), right_value.to_number());
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform exponentiation with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::LESS_THAN:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = left_value.to_number() < right_value.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform comparison operation with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::GREATER_THAN:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = left_value.to_number() > right_value.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform comparison operation with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::LESS_EQUAL:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = left_value.to_number() <= right_value.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform comparison operation with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::GREATER_EQUAL:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = left_value.to_number() >= right_value.to_number();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform comparison operation with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::EQUAL:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = left_value.to_number() == right_value.to_number();
+                }
+                else if(left_value.get_type() == ValueType::BOOL 
+                        && right_value.get_type() == ValueType::BOOL)
+                {
+                    return_value.result = left_value.to_bool() == right_value.to_bool();
+                }
+                else if(left_value.get_type() == ValueType::STRING 
+                        && right_value.get_type() == ValueType::STRING)
+                {
+                    return_value.result = left_value.to_string() == right_value.to_string();
+                }
+                else if(left_value.get_type() == ValueType::SOURDO_FUNCTION
+                        && right_value.get_type() == ValueType::SOURDO_FUNCTION)
+                {
+                    return_value.result = left_value.to_sourdo_function() == right_value.to_sourdo_function();
+                }
+                else if(left_value.get_type() == ValueType::CPP_FUNCTION
+                        && right_value.get_type() == ValueType::CPP_FUNCTION)
+                {
+                    return_value.result = left_value.to_cpp_function() == right_value.to_cpp_function();
+                }
+                else if(left_value.get_type() == ValueType::_NULL)
+                {
+                    switch(right_value.get_type())
+                    {
+                        case ValueType::NUMBER:
+                        case ValueType::BOOL:
+                        case ValueType::STRING:
+                        case ValueType::SOURDO_FUNCTION:
+                        case ValueType::CPP_FUNCTION:
+                            return_value.result = false;
+                            break;
+                        case ValueType::_NULL:
+                            return_value.result = true;
+                            break;
+                    }
+                }
+                else if(right_value.get_type() == ValueType::_NULL)
+                {
+                    switch(left_value.get_type())
+                    {
+                        case ValueType::NUMBER:
+                        case ValueType::BOOL:
+                        case ValueType::STRING:
+                        case ValueType::SOURDO_FUNCTION:
+                        case ValueType::CPP_FUNCTION:
+                            return_value.result = false;
+                            break;
+                        case ValueType::_NULL:
+                            return_value.result = true;
+                            break;
+                    }
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform comparison operation with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::NOT_EQUAL:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    return_value.result = left_value.to_number() != right_value.to_number();
+                }
+                else if(left_value.get_type() == ValueType::BOOL 
+                        && right_value.get_type() == ValueType::BOOL)
+                {
+                    return_value.result = left_value.to_bool() != right_value.to_bool();
+                }
+                else if(left_value.get_type() == ValueType::STRING 
+                        && right_value.get_type() == ValueType::STRING)
+                {
+                    return_value.result = left_value.to_string() != right_value.to_string();
+                }
+                else if(left_value.get_type() == ValueType::_NULL)
+                {
+                    switch(right_value.get_type())
+                    {
+                        case ValueType::NUMBER:
+                        case ValueType::BOOL:
+                        case ValueType::STRING:
+                        case ValueType::SOURDO_FUNCTION:
+                        case ValueType::CPP_FUNCTION:
+                            return_value.result = true;
+                            break;
+                        case ValueType::_NULL:
+                            return_value.result = false;
+                            break;
+                    }
+                }
+                else if(right_value.get_type() == ValueType::_NULL)
+                {
+                    switch(left_value.get_type())
+                    {
+                        case ValueType::NUMBER:
+                        
+                        case ValueType::BOOL:
+                        case ValueType::STRING:
+                        case ValueType::SOURDO_FUNCTION:
+                        case ValueType::CPP_FUNCTION:
+                            return_value.result = true;
+                            break;
+                        case ValueType::_NULL:
+                            return_value.result = false;
+                            break;
+                    }
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform comparison operation with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::LOGIC_OR:
+            {
+                if(left_value.get_type() == ValueType::BOOL 
+                        && right_value.get_type() == ValueType::BOOL)
+                {
+                    return_value.result = left_value.to_bool() || right_value.to_bool();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform logical operation with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            case Token::Type::LOGIC_AND:
+            {
+                if(left_value.get_type() == ValueType::BOOL 
+                        && right_value.get_type() == ValueType::BOOL)
+                {
+                    return_value.result = left_value.to_bool() && right_value.to_bool();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform logical operation with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+        return return_value;
+    }
+
     static VisitorReturn visit_statement_list_node(Data::Impl* data, std::shared_ptr<StatementListNode> node)
     {
         VisitorReturn return_value;
@@ -127,13 +450,45 @@ namespace sourdo
         if(data->get_symbol(node->name_tok.value) == nullptr)
         {
             std::stringstream ss;
-            ss << node->position << "'" << node->name_tok.value << "' is not defined";
+            ss << node->name_tok.position << "'" << node->name_tok.value << "' is not defined";
             return_value.error_message = ss.str();
         }
         else
         {
-            data->set_symbol(node->name_tok.value, new_value.result);
-            return_value.result = data->symbol_table[node->name_tok.value];
+            Value initial_value = *(data->get_symbol(node->name_tok.value));
+            switch(node->op)
+            {
+                case VarAssignmentNode::Operation::NONE:
+                {
+                    return_value.result = new_value.result;
+                    break;
+                }
+                case VarAssignmentNode::Operation::ADD:
+                {
+                    return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::ADD, node->position);
+                    break;
+                }
+                case VarAssignmentNode::Operation::SUB:
+                {
+                    return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::SUB, node->position);
+                    break;
+                }
+                case VarAssignmentNode::Operation::MUL:
+                {
+                    return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::MUL, node->position);
+                    break;
+                }
+                case VarAssignmentNode::Operation::DIV:
+                {
+                    return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::DIV, node->position);
+                    break;
+                }
+            }
+            if(return_value.error_message)
+            {
+                return return_value;
+            }
+            data->set_symbol(node->name_tok.value, return_value.result);
         }
 
         return return_value;
@@ -284,323 +639,7 @@ namespace sourdo
             return right_value;
         }
 
-        switch(node->op_token.type)
-        {
-            case Token::Type::ADD:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = left_value.result.to_number() + right_value.result.to_number();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform addition with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-                
-                break;
-            }
-            case Token::Type::SUB:
-            {   
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = left_value.result.to_number() - right_value.result.to_number();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform subtraction with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-                
-                break;
-            }
-            case Token::Type::MUL:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = left_value.result.to_number() * right_value.result.to_number();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform multiplication with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-                
-                break;
-            }
-            case Token::Type::DIV:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    if(right_value.result.to_number() == 0)
-                    {
-                        std::stringstream ss;
-                        ss << node->position << "Cannot divide a number by zero";
-                        return_value.error_message = ss.str();
-                        break;
-                    }
-                    return_value.result = left_value.result.to_number() / right_value.result.to_number();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform division with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-                
-                break;
-            }
-            case Token::Type::POW:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = std::pow(left_value.result.to_number(), right_value.result.to_number());
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform exponentiation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-
-                break;
-            }
-            case Token::Type::LESS_THAN:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = left_value.result.to_number() < right_value.result.to_number();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-
-                break;
-            }
-            case Token::Type::GREATER_THAN:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = left_value.result.to_number() > right_value.result.to_number();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-
-                break;
-            }
-            case Token::Type::LESS_EQUAL:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = left_value.result.to_number() <= right_value.result.to_number();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-
-                break;
-            }
-            case Token::Type::GREATER_EQUAL:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = left_value.result.to_number() >= right_value.result.to_number();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-
-                break;
-            }
-            case Token::Type::EQUAL:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = left_value.result.to_number() == right_value.result.to_number();
-                }
-                else if(left_value.result.get_type() == ValueType::BOOL 
-                        && right_value.result.get_type() == ValueType::BOOL)
-                {
-                    return_value.result = left_value.result.to_bool() == right_value.result.to_bool();
-                }
-                else if(left_value.result.get_type() == ValueType::STRING 
-                        && right_value.result.get_type() == ValueType::STRING)
-                {
-                    return_value.result = left_value.result.to_string() == right_value.result.to_string();
-                }
-                else if(left_value.result.get_type() == ValueType::SOURDO_FUNCTION
-                        && right_value.result.get_type() == ValueType::SOURDO_FUNCTION)
-                {
-                    return_value.result = left_value.result.to_sourdo_function() == right_value.result.to_sourdo_function();
-                }
-                else if(left_value.result.get_type() == ValueType::CPP_FUNCTION
-                        && right_value.result.get_type() == ValueType::CPP_FUNCTION)
-                {
-                    return_value.result = left_value.result.to_cpp_function() == right_value.result.to_cpp_function();
-                }
-                else if(left_value.result.get_type() == ValueType::_NULL)
-                {
-                    switch(right_value.result.get_type())
-                    {
-                        case ValueType::NUMBER:
-                        case ValueType::BOOL:
-                        case ValueType::STRING:
-                        case ValueType::SOURDO_FUNCTION:
-                        case ValueType::CPP_FUNCTION:
-                            return_value.result = false;
-                            break;
-                        case ValueType::_NULL:
-                            return_value.result = true;
-                            break;
-                    }
-                }
-                else if(right_value.result.get_type() == ValueType::_NULL)
-                {
-                    switch(left_value.result.get_type())
-                    {
-                        case ValueType::NUMBER:
-                        case ValueType::BOOL:
-                        case ValueType::STRING:
-                        case ValueType::SOURDO_FUNCTION:
-                        case ValueType::CPP_FUNCTION:
-                            return_value.result = false;
-                            break;
-                        case ValueType::_NULL:
-                            return_value.result = true;
-                            break;
-                    }
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-
-                break;
-            }
-            case Token::Type::NOT_EQUAL:
-            {
-                if(left_value.result.get_type() == ValueType::NUMBER 
-                        && right_value.result.get_type() == ValueType::NUMBER)
-                {
-                    return_value.result = left_value.result.to_number() != right_value.result.to_number();
-                }
-                else if(left_value.result.get_type() == ValueType::BOOL 
-                        && right_value.result.get_type() == ValueType::BOOL)
-                {
-                    return_value.result = left_value.result.to_bool() != right_value.result.to_bool();
-                }
-                else if(left_value.result.get_type() == ValueType::STRING 
-                        && right_value.result.get_type() == ValueType::STRING)
-                {
-                    return_value.result = left_value.result.to_string() != right_value.result.to_string();
-                }
-                else if(left_value.result.get_type() == ValueType::_NULL)
-                {
-                    switch(right_value.result.get_type())
-                    {
-                        case ValueType::NUMBER:
-                        case ValueType::BOOL:
-                        case ValueType::STRING:
-                        case ValueType::SOURDO_FUNCTION:
-                        case ValueType::CPP_FUNCTION:
-                            return_value.result = true;
-                            break;
-                        case ValueType::_NULL:
-                            return_value.result = false;
-                            break;
-                    }
-                }
-                else if(right_value.result.get_type() == ValueType::_NULL)
-                {
-                    switch(left_value.result.get_type())
-                    {
-                        case ValueType::NUMBER:
-                        
-                        case ValueType::BOOL:
-                        case ValueType::STRING:
-                        case ValueType::SOURDO_FUNCTION:
-                        case ValueType::CPP_FUNCTION:
-                            return_value.result = true;
-                            break;
-                        case ValueType::_NULL:
-                            return_value.result = false;
-                            break;
-                    }
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform comparison operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-
-                break;
-            }
-            case Token::Type::LOGIC_OR:
-            {
-                if(left_value.result.get_type() == ValueType::BOOL 
-                        && right_value.result.get_type() == ValueType::BOOL)
-                {
-                    return_value.result = left_value.result.to_bool() || right_value.result.to_bool();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform logical operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-
-                break;
-            }
-            case Token::Type::LOGIC_AND:
-            {
-                if(left_value.result.get_type() == ValueType::BOOL 
-                        && right_value.result.get_type() == ValueType::BOOL)
-                {
-                    return_value.result = left_value.result.to_bool() && right_value.result.to_bool();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << node->position << "Cannot perform logical operation with types " << left_value.result.get_type() << " and " << right_value.result.get_type();
-                    return_value.error_message = ss.str();
-                }
-
-                break;
-            }
-            default:
-            {
-                break;
-            }
-        }
+        return_value = perform_binary_operation(left_value.result, right_value.result, node->op_token.type, node->position);
 
         return return_value;
     }

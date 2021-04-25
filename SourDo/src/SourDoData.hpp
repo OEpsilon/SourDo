@@ -6,7 +6,6 @@
 #include <map>
 #include <sstream>
 
-#include "ConsoleColors.hpp"
 #include "Datatypes/Value.hpp"
 
 namespace sourdo {
