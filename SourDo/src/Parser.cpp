@@ -467,25 +467,40 @@ namespace sourdo
     std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         Token tok = current_token;
-        if(tok.type == Token::Type::IDENTIFIER)
+        switch(tok.type)
         {
-            advance();
-            return std::make_shared<VarAccessNode>(tok);
-        }
-        else if(tok.type == Token::Type::NUMBER_LITERAL)
-        {
-            advance();
-            return std::make_shared<NumberValueNode>(tok);
-        }
-        else if(tok.type == Token::Type::BOOL_LITERAL)
-        {
-            advance();
-            return std::make_shared<BoolValueNode>(tok);
-        }
-        else if(tok.type == Token::Type::NULL_LITERAL)
-        {
-            advance();
-            return std::make_shared<NullValueNode>(tok);
+            case Token::Type::NUMBER_LITERAL:
+            {
+                advance();
+                return std::make_shared<NumberNode>(tok);
+                break;
+            }
+            case Token::Type::STRING_LITERAL:
+            {
+                advance();
+                return std::make_shared<StringNode>(tok);
+                break;
+            }
+            case Token::Type::BOOL_LITERAL:
+            {
+                advance();
+                return std::make_shared<BoolNode>(tok);
+                break;
+            }
+            case Token::Type::NULL_LITERAL:
+            {
+                advance();
+                return std::make_shared<NullNode>(tok);
+                break;
+            }
+            case Token::Type::IDENTIFIER:
+            {
+                advance();
+                return std::make_shared<IdentifierNode>(tok);
+                break;
+            }
+            default:
+                break;
         }
         std::stringstream ss;
         ss << current_token.position << "Expected an expression";
@@ -499,10 +514,11 @@ namespace sourdo
         {
             //                              Prefix                  Infix                       Precedence
             {Token::Type::NONE,             {nullptr,               nullptr,                    ExprPrecedence::NONE        }},
-            {Token::Type::IDENTIFIER,       {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::NUMBER_LITERAL,   {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::STRING_LITERAL,   {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::BOOL_LITERAL,     {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::NULL_LITERAL,     {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::IDENTIFIER,       {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
 
             {Token::Type::ADD,              {&Parser::unary_op,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
             {Token::Type::SUB,              {&Parser::unary_op,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},

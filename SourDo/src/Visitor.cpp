@@ -46,6 +46,11 @@ namespace sourdo
                 {
                     return_value.result = left_value.to_number() + right_value.to_number();
                 }
+                if(left_value.get_type() == ValueType::STRING 
+                        && right_value.get_type() == ValueType::STRING)
+                {
+                    return_value.result = left_value.to_string() + right_value.to_string();
+                }
                 else
                 {
                     std::stringstream ss;
@@ -423,7 +428,7 @@ namespace sourdo
             return var_value;
         }
 
-        if(data->get_symbol(node->name_tok.value) != nullptr)
+        if(data->symbol_table.find(node->name_tok.value) != data->symbol_table.end())
         {
             std::stringstream ss;
             ss << node->position << "'" << node->name_tok.value << "' is already defined";
@@ -541,7 +546,7 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_var_access_node(Data::Impl* data, std::shared_ptr<VarAccessNode> node)
+    static VisitorReturn visit_identifier_node(Data::Impl* data, std::shared_ptr<IdentifierNode> node)
     {
         VisitorReturn return_value;
 
@@ -785,31 +790,9 @@ namespace sourdo
                 return_value = visit_return_node(data, std::static_pointer_cast<ReturnNode>(node));
                 break;
             }
-            case Node::Type::VAR_ACCESS_NODE:
-            {
-                return_value = visit_var_access_node(data, std::static_pointer_cast<VarAccessNode>(node));
-                break;
-            }
             case Node::Type::CALL_NODE:
             {
                 return_value = visit_call_node(data, std::static_pointer_cast<CallNode>(node));
-                break;
-            }
-            case Node::Type::NUMBER_VALUE_NODE:
-            {
-                auto number_node = std::static_pointer_cast<NumberValueNode>(node);
-                return_value.result = std::stod(number_node->value.value);
-                break;
-            }
-            case Node::Type::BOOL_VALUE_NODE:
-            {
-                auto bool_node = std::static_pointer_cast<BoolValueNode>(node);
-                return_value.result = bool_node->value.value == "true";
-                break;
-            }
-            case Node::Type::NULL_VALUE_NODE:
-            {
-                return_value.result = Null(); 
                 break;
             }
             case Node::Type::UNARY_OP_NODE:
@@ -820,6 +803,34 @@ namespace sourdo
             case Node::Type::BINARY_OP_NODE:
             {
                 return_value = visit_binary_op_node(data, std::static_pointer_cast<BinaryOpNode>(node));
+                break;
+            }
+            case Node::Type::NUMBER_NODE:
+            {
+                auto number_node = std::static_pointer_cast<NumberNode>(node);
+                return_value.result = std::stod(number_node->value.value);
+                break;
+            }
+            case Node::Type::STRING_NODE:
+            {
+                auto string_node = std::static_pointer_cast<StringNode>(node);
+                return_value.result = string_node->value.value;
+                break;
+            }
+            case Node::Type::BOOL_NODE:
+            {
+                auto bool_node = std::static_pointer_cast<BoolNode>(node);
+                return_value.result = bool_node->value.value == "true";
+                break;
+            }
+            case Node::Type::NULL_NODE:
+            {
+                return_value.result = Null(); 
+                break;
+            }
+            case Node::Type::IDENTIFIER_NODE:
+            {
+                return_value = visit_identifier_node(data, std::static_pointer_cast<IdentifierNode>(node));
                 break;
             }
             default:

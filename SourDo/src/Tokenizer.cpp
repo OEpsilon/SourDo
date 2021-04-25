@@ -113,6 +113,37 @@ namespace sourdo
             {
                 switch(current_char)
                 {
+                    case '"':
+                    {
+                        Position saved_position = file_position;
+                        i++;
+                        file_position.column++;
+                        current_char = text[i];
+                        std::string str;
+                        while(i < text.size() && current_char != '"' && current_char != '\n')
+                        {
+                            str += current_char;
+                            i++;
+                            file_position.column++;
+                            current_char = text[i];
+                        }
+                        if(current_char == '\n')
+                        {
+                            std::stringstream ss;
+                            ss << file_position << "Strings cannot be multiline";
+                            return {{}, ss.str()};
+                        }
+                        else if(current_char != '"')
+                        {
+                            std::stringstream ss;
+                            ss << file_position << "Expected '\"' to close the string that was begun at "
+                                    << "(Ln " << saved_position.line << ", Col " << saved_position.column << ")";
+                            return {{}, ss.str()};
+                        }
+                        
+                        tokens.emplace_back(Token::Type::STRING_LITERAL, str);
+                        break;
+                    }
                     case '+':
                     {
                         Position saved_position = file_position;

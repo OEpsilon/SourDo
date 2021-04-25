@@ -16,18 +16,18 @@ namespace sourdo
     struct VarDeclarationNode;
     struct VarAssignmentNode;
     struct FuncDeclarationNode;
-
     struct ReturnNode;
     
     struct ExpressionNode;
-    struct VarAccessNode;
     struct BinaryOpNode;
     struct UnaryOpNode;
     struct CallNode;
 
-    struct NumberValueNode;
-    struct BoolValueNode;
-    struct NullValueNode;
+    struct NumberNode;
+    struct StringNode;
+    struct BoolNode;
+    struct NullNode;
+    struct IdentifierNode;
 
     struct Node 
     {
@@ -40,17 +40,17 @@ namespace sourdo
             VAR_DECLARATION_NODE,
             VAR_ASSIGNMENT_NODE,
             FUNC_DECLARATION_NODE,
-
             RETURN_NODE,
             
-            VAR_ACCESS_NODE,
             BINARY_OP_NODE,
             UNARY_OP_NODE,
             CALL_NODE,
 
-            NUMBER_VALUE_NODE,
-            BOOL_VALUE_NODE,
-            NULL_VALUE_NODE,
+            NUMBER_NODE,
+            STRING_NODE,
+            BOOL_NODE,
+            NULL_NODE,
+            IDENTIFIER_NODE,
         };
 
         Node(const Position& position)
@@ -227,26 +227,6 @@ namespace sourdo
 
         virtual ~ReturnNode() = default;
     };
-    
-    struct VarAccessNode : public ExpressionNode
-    {
-        VarAccessNode(const Token& name_tok)
-            : ExpressionNode(name_tok.position), name_tok(name_tok)
-        {
-            type = Type::VAR_ACCESS_NODE;
-        }
-
-        virtual ~VarAccessNode() = default;
-        
-        Token name_tok;
-
-        std::string to_string() final
-        {
-            std::stringstream ss;
-            ss << name_tok;
-            return ss.str();
-        }
-    };
 
     struct BinaryOpNode : public ExpressionNode
     {
@@ -322,15 +302,15 @@ namespace sourdo
         }
     };
 
-    struct NumberValueNode : public ExpressionNode
+    struct NumberNode : public ExpressionNode
     {
-        NumberValueNode(const Token& value)
+        NumberNode(const Token& value)
             : ExpressionNode(value.position), value(value)
         {
-            type = Type::NUMBER_VALUE_NODE;
+            type = Type::NUMBER_NODE;
         }
 
-        virtual ~NumberValueNode() = default;
+        virtual ~NumberNode() = default;
 
         Token value;
         
@@ -342,15 +322,15 @@ namespace sourdo
         }
     };
 
-    struct BoolValueNode : public ExpressionNode
+    struct StringNode : public ExpressionNode
     {
-        BoolValueNode(const Token& value)
+        StringNode(const Token& value)
             : ExpressionNode(value.position), value(value)
         {
-            type = Type::BOOL_VALUE_NODE;
+            type = Type::STRING_NODE;
         }
 
-        virtual ~BoolValueNode() = default;
+        virtual ~StringNode() = default;
 
         Token value;
         
@@ -362,15 +342,35 @@ namespace sourdo
         }
     };
 
-    struct NullValueNode : public ExpressionNode
+    struct BoolNode : public ExpressionNode
     {
-        NullValueNode(const Token& value)
+        BoolNode(const Token& value)
             : ExpressionNode(value.position), value(value)
         {
-            type = Type::NULL_VALUE_NODE;
+            type = Type::BOOL_NODE;
         }
 
-        virtual ~NullValueNode() = default;
+        virtual ~BoolNode() = default;
+
+        Token value;
+        
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << value;
+            return ss.str();
+        }
+    };
+
+    struct NullNode : public ExpressionNode
+    {
+        NullNode(const Token& value)
+            : ExpressionNode(value.position), value(value)
+        {
+            type = Type::NULL_NODE;
+        }
+
+        virtual ~NullNode() = default;
 
         Token value;
         
@@ -378,6 +378,26 @@ namespace sourdo
         {
             std::stringstream ss;
             ss << "null";
+            return ss.str();
+        }
+    };
+
+    struct IdentifierNode : public ExpressionNode
+    {
+        IdentifierNode(const Token& name_tok)
+            : ExpressionNode(name_tok.position), name_tok(name_tok)
+        {
+            type = Type::IDENTIFIER_NODE;
+        }
+
+        virtual ~IdentifierNode() = default;
+        
+        Token name_tok;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << name_tok;
             return ss.str();
         }
     };

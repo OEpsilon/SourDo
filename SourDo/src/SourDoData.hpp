@@ -19,7 +19,7 @@ namespace sourdo {
         // Used to store named values.
         std::map<std::string, sourdo::Value> symbol_table;
 
-        void set_symbol(const std::string& index, const sourdo::Value& value)
+        bool set_symbol(const std::string& index, const sourdo::Value& value)
         {
             if(symbol_table.find(index) == symbol_table.end())
             {
@@ -29,12 +29,14 @@ namespace sourdo {
                     if(current_parent->symbol_table.find(index) != parent->symbol_table.end())
                     {
                         current_parent->symbol_table[index] = value;
-                        return;
+                        return true;
                     }
                     current_parent = parent->parent;
                 }
+                return false;
             }
             symbol_table[index] = value;
+            return true;
         }
 
         Value* get_symbol(const std::string& index)

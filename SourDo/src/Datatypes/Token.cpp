@@ -13,6 +13,7 @@ namespace sourdo
             {   Token::Type::KEYWORD ,          "KEYWORD"           },
             {   Token::Type::IDENTIFIER ,       "IDENTIFIER"        },
             {   Token::Type::NUMBER_LITERAL,    "NUMBER_LITERAL"    },
+            {   Token::Type::STRING_LITERAL,    "STRING_LITERAL"    },
             {   Token::Type::BOOL_LITERAL,      "BOOL_LITERAL"      },
             {   Token::Type::NULL_LITERAL,      "NULL_LITERAL"      },
 

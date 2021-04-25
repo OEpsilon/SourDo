@@ -18,7 +18,7 @@ statement_list      := (<NEW_LINE>)* (statement (<NEW_LINE>)+)*
 
 statement           := <KEYWORD:var> <IDENTIFIER> <ASSIGN> expression
                     := <KEYWORD:var> <IDENTIFIER> expression
-                    := <IDENTIFIER> <ASSIGN> expression
+                    := <IDENTIFIER> <ASSIGN|ASSIGN_ADD|ASSIGN_SUB|ASSIGN_MUL|ASSIGN_DIV> expression
                     := <KEYWORD:if> expression <KEYWORD:then> statement_list
                             (<KEYWORD:elif> expression <KEYWORD:then> statement_list)*
                             (<KEYWORD:else> statement_list)?
@@ -53,6 +53,6 @@ power               := call (<Power> sign)*
 
 call                := factor (<LPAREN> (expression (<COMMA> expression)*)? <RPAREN>)?
 
-factor              := <INT_LITERAL|FLOAT_LITERAL|BOOL_LITERAL|IDENTIFIER>
+factor              := <NUMBER_LITERAL|STRING_LITERAL|BOOL_LITERAL|NULL_LITERAL|IDENTIFIER>
                     := <LPAREN> expression <RPAREN>
                 

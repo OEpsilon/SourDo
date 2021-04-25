@@ -25,13 +25,13 @@ int main()
                     ss << "null";
                     break;
                 case sourdo::ValueType::NUMBER:
-                    ss << data.value_to_number(1);
+                    ss << data.value_to_number(i);
                     break;
                 case sourdo::ValueType::BOOL:
-                    ss << data.value_to_bool(1);
+                    ss << data.value_to_bool(i);
                     break;
                 case sourdo::ValueType::STRING:
-                    ss << data.value_to_string(1);
+                    ss << data.value_to_string(i);
                     break;
                 case sourdo::ValueType::SOURDO_FUNCTION:
                     ss << "[SourdoFunction]";
@@ -49,6 +49,7 @@ int main()
         std::cout << ss.str();
         return false;
     });
+    test.create_value("print");
     test.set_value("print");
 
     auto begin = std::chrono::high_resolution_clock::now();

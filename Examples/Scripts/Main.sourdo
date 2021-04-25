@@ -5,7 +5,7 @@ func factorial(value)
     return value * factorial(value - 1)
 end
 
-var value = 290
+var message = "Hello "
 
-value += 20
-print(value)
+message += "World!"
+print(message)

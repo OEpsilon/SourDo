@@ -114,6 +114,16 @@ namespace sourdo
          * @param name The name of the value to be returned.
          * @param protected_mode_enabled If true, returns an error code instead of throwing an exception.
          * 
+         * @throws SourDoError Thrown if 'name' is already in the symbol table and 'protected_mode_enabled' is false.
+         */
+        Result create_value(const std::string& name, bool protected_mode_enabled = false);
+
+        /**
+         * @brief Pushes a value in the symbol table onto the top of the stack.
+         * 
+         * @param name The name of the value to be returned.
+         * @param protected_mode_enabled If true, returns an error code instead of throwing an exception.
+         * 
          * @throws SourDoError Thrown if 'name' is not in the symbol table and 'protected_mode_enabled' is false.
          */
         Result get_value(const std::string& name, bool protected_mode_enabled = false);
@@ -122,8 +132,12 @@ namespace sourdo
          * @brief Pops the value on the top of the stack and sets it to the object in the symbol table called 'name', creating it if not present.
          * 
          * @param name The name of the value to be set
+         * 
+         * @param protected_mode_enabled If true, returns an error code instead of throwing an exception.
+         * 
+         * @throws SourDoError Thrown if 'name' is not in the symbol table and 'protected_mode_enabled' is false.
          */
-        void set_value(const std::string& name);
+        Result set_value(const std::string& name, bool protected_mode_enabled = false);
 
         /**
          * @brief Returns the size of the stack.

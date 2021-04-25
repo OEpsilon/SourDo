@@ -262,6 +262,23 @@ namespace sourdo
         return Result::SUCCESS;
     }
 
+    Result Data::create_value(const std::string& name, bool protected_mode_enabled)
+    {
+        if(impl->symbol_table.find(name) != impl->symbol_table.end())
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << "'" << name << "' is already defined" << COLOR_DEFAULT << std::flush;
+            if(protected_mode_enabled)
+            {
+                push_string(ss.str());
+                return Result::RUNTIME_ERROR;
+            }
+            throw SourDoError(ss.str());
+        }
+        impl->symbol_table[name] = Null();
+        return Result::SUCCESS;
+    }
+
     Result Data::get_value(const std::string& name, bool protected_mode_enabled)
     {
         Value* value = impl->get_symbol(name);
@@ -281,10 +298,22 @@ namespace sourdo
         return Result::SUCCESS;
     }
 
-    void Data::set_value(const std::string& name)
+    Result Data::set_value(const std::string& name, bool protected_mode_enabled)
     {
-        impl->set_symbol(name, impl->index_stack(-1));
+        bool result = impl->set_symbol(name, impl->index_stack(-1));
         pop();
+        if(!result)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << "'" << name << "' is undefined" << COLOR_DEFAULT << std::flush;
+            if(protected_mode_enabled)
+            {
+                push_string(ss.str());
+                return Result::RUNTIME_ERROR;
+            }
+            throw SourDoError(ss.str());
+        }
+        return Result::SUCCESS;
     }
 
     uint32_t Data::get_size()
