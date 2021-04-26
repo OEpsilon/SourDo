@@ -52,6 +52,7 @@ namespace sourdo
             SIGN,
             POWER,
             CALL,
+            SUBSCRIPT,
             FACTOR,
         };
 
@@ -84,6 +85,7 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> unary_op(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
         std::shared_ptr<ExpressionNode> call(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
+        std::shared_ptr<ExpressionNode> subscript(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
         std::shared_ptr<ExpressionNode> factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 

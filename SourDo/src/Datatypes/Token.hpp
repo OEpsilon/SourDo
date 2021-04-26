@@ -19,7 +19,7 @@ namespace sourdo
             LOGIC_OR, LOGIC_AND, LOGIC_NOT,
             COMMA,
             ASSIGN, ASSIGN_ADD, ASSIGN_SUB, ASSIGN_MUL, ASSIGN_DIV,
-            LPAREN, RPAREN,
+            LPAREN, RPAREN, LBRACKET, RBRACKET,
             NEW_LINE, 
             TK_EOF,
         };

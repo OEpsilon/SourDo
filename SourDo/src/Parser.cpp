@@ -434,7 +434,7 @@ namespace sourdo
         std::vector<std::shared_ptr<ExpressionNode>> arguments;
         if(current_token.type != Token::Type::RPAREN)
         {
-            std::shared_ptr<ExpressionNode> arg = expression();
+            std::shared_ptr<ExpressionNode> arg = expression(true);
             if(error)
             {
                 return nullptr;
@@ -444,7 +444,7 @@ namespace sourdo
             while(current_token.type == Token::Type::COMMA)
             {
                 advance();
-                std::shared_ptr<ExpressionNode> arg = expression();
+                std::shared_ptr<ExpressionNode> arg = expression(true);
                 if(error)
                 {
                     return nullptr;
@@ -462,6 +462,25 @@ namespace sourdo
         }
         advance();
         return std::make_shared<CallNode>(previous, arguments);
+    }
+
+    std::shared_ptr<ExpressionNode> Parser::subscript(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
+    {
+        advance();
+        std::shared_ptr<ExpressionNode> expr = expression(true);
+        if(error)
+        {
+            return nullptr;
+        }
+        if(current_token.type != Token::Type::RBRACKET)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected a ']'";
+            error = ss.str();
+            return nullptr;
+        }
+        advance();
+        return std::make_shared<SubscriptNode>(previous, expr);
     }
 
     std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
@@ -538,6 +557,7 @@ namespace sourdo
             {Token::Type::LOGIC_NOT,        {&Parser::unary_op,     nullptr,                    ExprPrecedence::NONE        }},
 
             {Token::Type::LPAREN,           {&Parser::grouping,     &Parser::call,              ExprPrecedence::CALL        }},
+            {Token::Type::LBRACKET,         {nullptr,               &Parser::subscript,         ExprPrecedence::SUBSCRIPT   }},
             
             {Token::Type::TK_EOF,           {nullptr,               nullptr,                    ExprPrecedence::NONE        }},
         };

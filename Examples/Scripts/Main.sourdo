@@ -8,4 +8,4 @@ end
 var message = "Hello "
 
 message += "World!"
-print(message)
+print(message[0])

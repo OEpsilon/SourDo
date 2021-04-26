@@ -22,10 +22,8 @@ namespace sourdo
                 os << "String";
                 break;
             case ValueType::SOURDO_FUNCTION:
-                os << "Function";
-                break;
             case ValueType::CPP_FUNCTION:
-                os << "CppFunction";
+                os << "Function";
                 break;
             case ValueType::_NULL:
                 os << "Null";
@@ -748,10 +746,64 @@ namespace sourdo
         else
         {
             std::stringstream ss;
-            ss << node->position << "Value being called is not a function";
+            ss << node->position << "Cannot call " << callee.result.get_type();
             return_value.error_message = ss.str();
         }
         
+        return return_value;
+    }
+
+    static VisitorReturn visit_subscript_node(Data::Impl* data, std::shared_ptr<SubscriptNode> node)
+    {
+        VisitorReturn return_value;
+        VisitorReturn base = visit_ast(data, node->base);
+        if(base.error_message)
+        {
+            return base;
+        }
+
+        VisitorReturn subscript = visit_ast(data, node->subscript);
+        if(subscript.error_message)
+        {
+            return subscript;
+        }
+
+        if(base.result.get_type() == ValueType::STRING)
+        {
+            if(subscript.result.get_type() == ValueType::NUMBER)
+            {
+                int num = subscript.result.to_number();
+                if(num < 0)
+                {
+                    std::stringstream ss;
+                    ss << node->subscript->position << "Index was less than 1";
+                    return_value.error_message = ss.str();
+                }
+                else if(num > base.result.to_string().size())
+                {
+                    std::stringstream ss;
+                    ss << node->subscript->position << "Index was greater than string length";
+                    return_value.error_message = ss.str();
+                }
+                else
+                {
+                    return_value.result = std::string(1, base.result.to_string()[num]);
+                }
+            }
+            else
+            {
+                std::stringstream ss;
+                ss << node->subscript->position << "Expected a number";
+                return_value.error_message = ss.str();
+            }
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << node->position << "Cannot index " << base.result.get_type();
+            return_value.error_message = ss.str();
+        }
+
         return return_value;
     }
 
@@ -793,6 +845,11 @@ namespace sourdo
             case Node::Type::CALL_NODE:
             {
                 return_value = visit_call_node(data, std::static_pointer_cast<CallNode>(node));
+                break;
+            }
+            case Node::Type::SUBSCRIPT_NODE:
+            {
+                return_value = visit_subscript_node(data, std::static_pointer_cast<SubscriptNode>(node));
                 break;
             }
             case Node::Type::UNARY_OP_NODE:

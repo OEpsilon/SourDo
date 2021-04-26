@@ -22,6 +22,7 @@ namespace sourdo
     struct BinaryOpNode;
     struct UnaryOpNode;
     struct CallNode;
+    struct SubscriptNode;
 
     struct NumberNode;
     struct StringNode;
@@ -45,6 +46,7 @@ namespace sourdo
             BINARY_OP_NODE,
             UNARY_OP_NODE,
             CALL_NODE,
+            SUBSCRIPT_NODE,
 
             NUMBER_NODE,
             STRING_NODE,
@@ -298,6 +300,25 @@ namespace sourdo
                 }
             }
             ss << ")";
+            return ss.str();
+        }
+    };
+
+    struct SubscriptNode : public ExpressionNode
+    {
+        SubscriptNode(std::shared_ptr<ExpressionNode> base, std::shared_ptr<ExpressionNode> subscript)
+            : ExpressionNode(base->position), base(base), subscript(subscript)
+        {
+            type = Type::SUBSCRIPT_NODE;
+        }
+
+        std::shared_ptr<ExpressionNode> base; 
+        std::shared_ptr<ExpressionNode> subscript;
+
+        std::string to_string() final
+        {
+            std::stringstream ss;
+            ss << "(" << base->to_string() << ", " << subscript->to_string() << ")";
             return ss.str();
         }
     };

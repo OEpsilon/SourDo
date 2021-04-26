@@ -304,6 +304,16 @@ namespace sourdo
                         tokens.emplace_back(Token::Type::RPAREN, file_position);
                         break;
                     }
+                    case '[':
+                    {
+                        tokens.emplace_back(Token::Type::LBRACKET, file_position);
+                        break;
+                    }
+                    case ']':
+                    {
+                        tokens.emplace_back(Token::Type::RBRACKET, file_position);
+                        break;
+                    }
                     default:
                     {
                         std::stringstream ss;
