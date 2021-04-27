@@ -173,6 +173,58 @@ namespace sourdo
                             tokens.emplace_back(Token::Type::ASSIGN_SUB, saved_position);
                             break;
                         }
+                        else if(current_char == '-')
+                        {
+                            i++;
+                            file_position.column++;
+                            current_char = text[i];
+                            while(i < text.size() && current_char != '\n')
+                            {
+                                i++;
+                                file_position.column++;
+                                current_char = text[i];
+                            }
+                            break;
+                        }
+                        else if(current_char == '*')
+                        {
+                            do
+                            {
+                                i++;
+                                file_position.column++;
+                                current_char = text[i];
+
+                                if(current_char == '\n')
+                                {
+                                    file_position.column = 0;
+                                    file_position.line++;
+                                }
+
+                                if(current_char == '*')
+                                {
+                                    i++;
+                                    file_position.column++;
+                                    current_char = text[i];
+                                    if(i < text.size() && text[i] == '-')
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                            while(i < text.size());
+
+                            if(current_char != '-')
+                            {
+                                std::stringstream ss;
+                                ss << file_position << "Expected '*-' to close comment that was begun at (Ln " << saved_position.line << ", Col " << saved_position.column << ") ";
+                                return { {}, ss.str()};
+                            }
+                            i++;
+                            file_position.column++;
+                            current_char = text[i];
+
+                            break;
+                        }
                         i--;
                         file_position.column--;
                         

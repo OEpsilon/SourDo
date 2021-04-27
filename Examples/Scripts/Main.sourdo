@@ -9,19 +9,9 @@ var message = "Hello "
 
 message += "World!"
 
-if false then
-    for var i = 0, i < strlen(message), i += 1 do
-        print(message[i])
-        if i >= 9 then
-            break
-        end
-    end
-end
-
-if true then
-    var i = 0
-    while i < strlen(message) do
-        print(message[i])
-        i += 1
+for var i = 0, i < strlen(message), i += 1 do
+    print(message[i])
+    if i >= 9 then
+        break
     end
 end
