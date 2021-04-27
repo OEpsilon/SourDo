@@ -271,6 +271,7 @@ namespace sourdo
                 std::stringstream ss;
                 ss << current_token << "Expected a ','";
                 error = ss.str();
+                return nullptr;
             }
             advance();
             std::shared_ptr<ExpressionNode> condition = expression(true);
@@ -280,6 +281,7 @@ namespace sourdo
                 std::stringstream ss;
                 ss << current_token << "Expected a ','";
                 error = ss.str();
+                return nullptr;
             }
             advance();
             
@@ -317,6 +319,62 @@ namespace sourdo
             }
             advance();
             return std::make_shared<ForNode>(initializer, condition, increment, statements, saved_position);
+        }
+        else if(current_token == Token(Token::Type::KEYWORD, "while"))
+        {
+            Position saved_position = current_token.position;
+            advance();
+
+            std::shared_ptr<ExpressionNode> condition = expression(true);
+            if(error)
+            {
+                return nullptr;
+            }
+
+            if(current_token != Token(Token::Type::KEYWORD, "do"))
+            {
+                std::stringstream ss;
+                ss << current_token << "Expected 'do'";
+                error = ss.str();
+                return nullptr;
+            }
+            advance();
+            std::shared_ptr<StatementListNode> statements = statement_list();
+            if(error)
+            {
+                return nullptr;
+            }
+
+            if(current_token != Token(Token::Type::KEYWORD, "end"))
+            {
+                std::stringstream ss;
+                ss << current_token << "Expected 'end'";
+                error = ss.str();
+                return nullptr;
+            }
+            advance();
+            return std::make_shared<WhileNode>(condition, statements, saved_position);
+        }
+        else if(current_token == Token(Token::Type::KEYWORD, "loop"))
+        {
+            Position saved_position = current_token.position;
+            advance();
+
+            std::shared_ptr<StatementListNode> statements = statement_list();
+            if(error)
+            {
+                return nullptr;
+            }
+
+            if(current_token != Token(Token::Type::KEYWORD, "end"))
+            {
+                std::stringstream ss;
+                ss << current_token << "Expected 'end'";
+                error = ss.str();
+                return nullptr;
+            }
+            advance();
+            return std::make_shared<LoopNode>(statements, saved_position);
         }
         else if(current_token.type == Token::Type::IDENTIFIER)
         {

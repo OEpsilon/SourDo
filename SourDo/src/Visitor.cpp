@@ -440,19 +440,72 @@ namespace sourdo
             }
 
             VisitorReturn statements = visit_ast(for_scope.get_impl(), node->statements);
-            if(statements.error_message || statements.is_function_return)
+            if(statements.error_message || statements.is_function_return || statements.is_breaking)
             {
                 return statements;
-            }
-            else if(statements.is_breaking)
-            {
-                break;
             }
 
             VisitorReturn increment = visit_ast(for_scope.get_impl(), node->increment);
             if(increment.error_message)
             {
                 return increment;
+            }
+        }
+
+        return return_value;
+    }
+
+    static VisitorReturn visit_while_node(Data::Impl* data, std::shared_ptr<WhileNode> node)
+    {
+        VisitorReturn return_value;
+        
+        Data while_scope;
+        while_scope.get_impl()->parent = data;
+
+        while(true)
+        {
+            VisitorReturn condition = visit_ast(while_scope.get_impl(), node->condition);
+            if(condition.error_message)
+            {
+                return condition;
+            }
+
+            if(condition.result.get_type() != ValueType::BOOL)
+            {
+                std::stringstream ss;
+                ss << node->condition->position << "Condition does not result in a bool";
+                return_value.error_message = ss.str();
+                break;
+            }
+
+            if(!condition.result.to_bool())
+            {
+                break;
+            }
+
+            VisitorReturn statements = visit_ast(while_scope.get_impl(), node->statements);
+            if(statements.error_message || statements.is_function_return || statements.is_breaking)
+            {
+                return statements;
+            }
+        }
+
+        return return_value;
+    }
+
+    static VisitorReturn visit_loop_node(Data::Impl* data, std::shared_ptr<LoopNode> node)
+    {
+        VisitorReturn return_value;
+
+        Data loop_scope;
+        loop_scope.get_impl()->parent = data;
+
+        while(true)
+        {
+            VisitorReturn statements = visit_ast(loop_scope.get_impl(), node->statements);
+            if(statements.error_message || statements.is_function_return || statements.is_breaking)
+            {
+                return statements;
             }
         }
 
@@ -892,6 +945,16 @@ namespace sourdo
             case Node::Type::FOR_NODE:
             {
                 return_value = visit_for_node(data, std::static_pointer_cast<ForNode>(node));
+                break;
+            }
+            case Node::Type::WHILE_NODE:
+            {
+                return_value = visit_while_node(data, std::static_pointer_cast<WhileNode>(node));
+                break;
+            }
+            case Node::Type::LOOP_NODE:
+            {
+                return_value = visit_loop_node(data, std::static_pointer_cast<LoopNode>(node));
                 break;
             }
             case Node::Type::VAR_DECLARATION_NODE:

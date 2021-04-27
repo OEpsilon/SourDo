@@ -5,7 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/SourDo/include"
             ],
-            "defines": [],
+            "defines": [ "SOURDO_DEBUG" ],
             "macFrameworkPath": [
                 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks"
             ],

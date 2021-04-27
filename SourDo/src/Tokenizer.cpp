@@ -10,7 +10,7 @@ namespace sourdo
         "var", "func",
         "return", "break", "continue",
         "if", "elif", "else", 
-        "for",
+        "for", "while", "loop",
         "then", "do", "end" 
     };
 

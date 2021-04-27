@@ -84,7 +84,6 @@ namespace sourdo
 
         file.close();
 
-
         auto[tokens, tok_error] = tokenize_string(file_text.str(), file_path);
         if(tok_error)
         {

@@ -13,6 +13,8 @@ namespace sourdo
     struct StatementListNode;
     struct IfNode;
     struct ForNode;
+    struct WhileNode;
+    struct LoopNode;
     
     struct VarDeclarationNode;
     struct VarAssignmentNode;
@@ -41,6 +43,8 @@ namespace sourdo
             STATEMENT_LIST_NODE,
             IF_NODE,
             FOR_NODE,
+            WHILE_NODE,
+            LOOP_NODE,
 
             VAR_DECLARATION_NODE,
             VAR_ASSIGNMENT_NODE,
@@ -189,6 +193,55 @@ namespace sourdo
             std::stringstream ss;
             return ss.str();
         }
+    };
+
+    struct WhileNode : public Node
+    {
+        WhileNode(std::shared_ptr<ExpressionNode> condition, std::shared_ptr<StatementListNode> statements, const Position& position)
+            : Node(position), condition(condition), statements(statements)
+        {
+            type = Type::WHILE_NODE;
+        }
+
+        std::shared_ptr<ExpressionNode> condition;
+        std::shared_ptr<StatementListNode> statements;
+
+        std::string to_string(uint32_t indent_level) final
+        {
+            std::stringstream ss;
+            ss << "while(" << condition->to_string(0) << "\n";
+            ss << statements->to_string(indent_level + 1) << "\n)";
+            return ss.str();
+        }
+
+        virtual ~WhileNode() = default;
+    };
+
+    struct LoopNode : public Node
+    {
+        LoopNode(std::shared_ptr<StatementListNode> statements, const Position& position)
+            : Node(position), statements(statements)
+        {
+            type = Type::LOOP_NODE;
+        }
+
+        std::shared_ptr<StatementListNode> statements;
+
+        std::string to_string(uint32_t indent_level) final
+        {
+            std::stringstream ss;
+            ss << "loop(" << "\n";
+            ss << statements->to_string(indent_level + 1) << "\n";
+            for(int i = 0; i < indent_level; i++)
+            {
+                ss << "\t";
+            }
+
+            ss << ")";
+            return ss.str();
+        }
+
+        virtual ~LoopNode() = default;
     };
 
     struct VarDeclarationNode : public Node
