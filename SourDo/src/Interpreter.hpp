@@ -28,6 +28,9 @@ namespace sourdo
         Value result;
         std::optional<std::string> error_message;
         bool is_function_return = false;
+        bool is_breaking = false;
+        bool is_continuing = false;
+        Position break_position;
     };
 
     TokenizerReturn tokenize_string(const std::string& string, const std::string& file_name);
@@ -73,6 +76,8 @@ namespace sourdo
         std::shared_ptr<StatementListNode> statement_list();
 
         std::shared_ptr<Node> statement();
+        std::shared_ptr<Node> var_declaration();
+        std::shared_ptr<Node> var_assignment();
 
         std::shared_ptr<ExpressionNode> expression(bool multiline_mode = false);
         std::shared_ptr<ExpressionNode> expression_with_precedence(ExprPrecedence precedence, bool multiline_mode = false);

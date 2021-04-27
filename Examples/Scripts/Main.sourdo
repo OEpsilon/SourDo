@@ -8,4 +8,10 @@ end
 var message = "Hello "
 
 message += "World!"
-print(message[0])
+
+for var i = 0, i < strlen(message), i += 1 do
+    print(message[i])
+    if i >= 9 then
+        break
+    end
+end

@@ -44,7 +44,7 @@ namespace sourdo
                 {
                     return_value.result = left_value.to_number() + right_value.to_number();
                 }
-                if(left_value.get_type() == ValueType::STRING 
+                else if(left_value.get_type() == ValueType::STRING 
                         && right_value.get_type() == ValueType::STRING)
                 {
                     return_value.result = left_value.to_string() + right_value.to_string();
@@ -366,7 +366,8 @@ namespace sourdo
         for(auto& stmt : node->statements)
         {
             VisitorReturn stmt_return = visit_ast(data, stmt);
-            if(stmt_return.error_message || stmt_return.is_function_return)
+            if(stmt_return.error_message || stmt_return.is_function_return 
+                    || stmt_return.is_breaking || stmt_return.is_continuing)
             {
                 return stmt_return;
             }
@@ -405,6 +406,56 @@ namespace sourdo
             else_scope.get_impl()->parent = data;
             return_value = visit_ast(else_scope.get_impl(), node->else_case);
         }
+        return return_value;
+    }
+
+    static VisitorReturn visit_for_node(Data::Impl* data, std::shared_ptr<ForNode> node)
+    {
+        VisitorReturn return_value;
+        Data for_scope;
+        for_scope.get_impl()->parent = data;
+        VisitorReturn initializer = visit_ast(for_scope.get_impl(), node->initializer);
+        if(initializer.error_message)
+        {
+            return initializer;
+        }
+
+        while(true)
+        {
+            VisitorReturn condition = visit_ast(for_scope.get_impl(), node->condition);
+            if(condition.error_message)
+            {
+                return condition;
+            }
+            if(condition.result.get_type() != ValueType::BOOL)
+            {
+                std::stringstream ss;
+                ss << node->condition->position << "Condition does not result in a bool";
+                return_value.error_message = ss.str();
+                break;
+            }
+            if(!condition.result.to_bool())
+            {
+                break;
+            }
+
+            VisitorReturn statements = visit_ast(for_scope.get_impl(), node->statements);
+            if(statements.error_message || statements.is_function_return)
+            {
+                return statements;
+            }
+            else if(statements.is_breaking)
+            {
+                break;
+            }
+
+            VisitorReturn increment = visit_ast(for_scope.get_impl(), node->increment);
+            if(increment.error_message)
+            {
+                return increment;
+            }
+        }
+
         return return_value;
     }
 
@@ -704,6 +755,22 @@ namespace sourdo
             }
 
             return_value = visit_ast(func_scope.get_impl(), func_value->statements);
+            if(return_value.error_message)
+            {
+                return return_value;
+            }
+            if(return_value.is_breaking)
+            {
+                std::stringstream ss;
+                ss << return_value.break_position << "Cannot use 'break' outside of a loop";
+                return_value.error_message = ss.str();
+            }
+            else if(return_value.is_continuing)
+            {
+                std::stringstream ss;
+                ss << return_value.break_position << "Cannot use 'continue' outside of a loop";
+                return_value.error_message = ss.str();
+            }
         }
         else if(callee.result.get_type() == ValueType::CPP_FUNCTION)
         {
@@ -822,6 +889,11 @@ namespace sourdo
                 return_value = visit_if_node(data, std::static_pointer_cast<IfNode>(node));
                 break;
             }
+            case Node::Type::FOR_NODE:
+            {
+                return_value = visit_for_node(data, std::static_pointer_cast<ForNode>(node));
+                break;
+            }
             case Node::Type::VAR_DECLARATION_NODE:
             {
                 return_value = visit_var_declaration_node(data, std::static_pointer_cast<VarDeclarationNode>(node));
@@ -840,6 +912,20 @@ namespace sourdo
             case Node::Type::RETURN_NODE:
             {
                 return_value = visit_return_node(data, std::static_pointer_cast<ReturnNode>(node));
+                break;
+            }
+            case Node::Type::BREAK_NODE:
+            {
+                auto break_node = std::static_pointer_cast<ReturnNode>(node);
+                return_value.is_breaking = true;
+                return_value.break_position = break_node->position;
+                break;
+            }
+            case Node::Type::CONTINUE_NODE:
+            {
+                auto continue_node = std::static_pointer_cast<ReturnNode>(node);
+                return_value.is_continuing = true;
+                return_value.break_position = continue_node->position;
                 break;
             }
             case Node::Type::CALL_NODE:

@@ -47,6 +47,21 @@ namespace sourdo
             push_string(ss.str());
             return Result::RUNTIME_ERROR;
         }
+        if(result.is_breaking)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << result.break_position << "Cannot use 'break' outside of a loop" << COLOR_DEFAULT << std::flush;
+            push_string(ss.str());
+            return Result::RUNTIME_ERROR;
+        }
+        else if(result.is_continuing)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << result.break_position << "Cannot use 'continue' outside of a loop" << COLOR_DEFAULT << std::flush;
+            push_string(ss.str());
+            return Result::RUNTIME_ERROR;
+        }
+
         impl->stack.push_back(result.result);
 
         return Result::SUCCESS;
@@ -94,6 +109,20 @@ namespace sourdo
         {
             std::stringstream ss;
             ss << COLOR_RED << result.error_message.value() << COLOR_DEFAULT << std::flush;
+            push_string(ss.str());
+            return Result::RUNTIME_ERROR;
+        }
+        if(result.is_breaking)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << result.break_position << "Cannot use 'break' outside of a loop" << COLOR_DEFAULT << std::flush;
+            push_string(ss.str());
+            return Result::RUNTIME_ERROR;
+        }
+        else if(result.is_continuing)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << result.break_position << "Cannot use 'continue' outside of a loop" << COLOR_DEFAULT << std::flush;
             push_string(ss.str());
             return Result::RUNTIME_ERROR;
         }

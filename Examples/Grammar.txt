@@ -16,15 +16,23 @@
 
 statement_list      := (<NEW_LINE>)* (statement (<NEW_LINE>)+)*
 
-statement           := <KEYWORD:var> <IDENTIFIER> <ASSIGN> expression
-                    := <KEYWORD:var> <IDENTIFIER> expression
-                    := <IDENTIFIER> <ASSIGN|ASSIGN_ADD|ASSIGN_SUB|ASSIGN_MUL|ASSIGN_DIV> expression
+statement           := var_declaration
+                    := var_assignment
+                    := <KEYWORD:break>
+                    := <KEYWORD:continue>
                     := <KEYWORD:if> expression <KEYWORD:then> statement_list
                             (<KEYWORD:elif> expression <KEYWORD:then> statement_list)*
                             (<KEYWORD:else> statement_list)?
                             <KEYWORD:end>
+                    := <KEYWORD:for> (var_declaration|expression)
+                            <COMMA> <expression> <COMMA> (var_assignment|expression) <KEYWORD:do> statement_list <KEYWORD:end>
 
                     := expression
+
+var_declaration     := <KEYWORD:var> <IDENTIFIER> <ASSIGN> expression
+                    := <KEYWORD:var> <IDENTIFIER>
+
+var_assignment      := <IDENTIFIER> <ASSIGN|ASSIGN_ADD|ASSIGN_SUB|ASSIGN_MUL|ASSIGN_DIV> expression
 
 func_def            := <KEYWORD:func> <IDENTIFIER> <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> 
                             <KEYWORD:then> statement_list <KEYWORD:end>

@@ -74,28 +74,7 @@ namespace sourdo
     {
         if(current_token == Token(Token::Type::KEYWORD, "var"))
         {
-            Position saved_position = current_token.position;
-            advance();
-            if(current_token.type != Token::Type::IDENTIFIER)
-            {
-                std::stringstream ss;
-                ss << current_token.position << "Expected an identifier";
-                error = ss.str();
-                return nullptr;
-            }
-            Token name_tok = current_token;
-            advance();
-            if(current_token.type != Token::Type::ASSIGN)
-            {
-                return std::make_shared<VarDeclarationNode>(name_tok, nullptr, saved_position);
-            }
-            advance();
-            std::shared_ptr<ExpressionNode> expr = expression();
-            if(error)
-            {
-                return nullptr;
-            }
-            return std::make_shared<VarDeclarationNode>(name_tok, expr, saved_position);
+            return var_declaration();
         }
         else if(current_token == Token(Token::Type::KEYWORD, "func"))
         {
@@ -182,6 +161,18 @@ namespace sourdo
             }
             return std::make_shared<ReturnNode>(return_value, saved_position);
         }
+        else if(current_token == Token(Token::Type::KEYWORD, "break"))
+        {
+            Position saved_position = current_token.position;
+            advance();
+            return std::make_shared<BreakNode>(saved_position);
+        }
+        else if(current_token == Token(Token::Type::KEYWORD, "continue"))
+        {
+            Position saved_position = current_token.position;
+            advance();
+            return std::make_shared<ContinueNode>(saved_position);
+        }
         else if(current_token == Token(Token::Type::KEYWORD, "if"))
         {
             Position saved_position = current_token.position;
@@ -255,55 +246,167 @@ namespace sourdo
 
             return std::make_shared<IfNode>(cases, else_case, saved_position);
         }
-        else if(current_token.type == Token::Type::IDENTIFIER)
+        else if(current_token == Token(Token::Type::KEYWORD, "for"))
         {
-            auto do_assignment = [&](VarAssignmentNode::Operation op) -> std::shared_ptr<VarAssignmentNode>
+            Position saved_position = current_token.position;
+            advance();
+
+            std::shared_ptr<Node> initializer;
+            if(current_token == Token(Token::Type::KEYWORD, "var"))
             {
-                Token name_tok = current_token;
-                advance();
-                Position saved_position = current_token.position;
-                advance();
-                std::shared_ptr<ExpressionNode> new_value = expression();
+                initializer = var_declaration();
+            }
+            else
+            {
+                initializer = expression(true);
+            }
+            
+            if(error)
+            {
+                return nullptr;
+            }
+
+            if(current_token.type != Token::Type::COMMA)
+            {
+                std::stringstream ss;
+                ss << current_token << "Expected a ','";
+                error = ss.str();
+            }
+            advance();
+            std::shared_ptr<ExpressionNode> condition = expression(true);
+
+            if(current_token.type != Token::Type::COMMA)
+            {
+                std::stringstream ss;
+                ss << current_token << "Expected a ','";
+                error = ss.str();
+            }
+            advance();
+            
+            std::shared_ptr<Node> increment = var_assignment();
+            if(error)
+            {
+                return nullptr;
+            }
+            if(increment == nullptr)
+            {
+                increment = expression(true);
                 if(error)
                 {
                     return nullptr;
                 }
-                return std::make_shared<VarAssignmentNode>(name_tok, op, new_value, saved_position);
-            };
-
-            switch(tokens[position + 1].type)
-            {
-                case Token::Type::ASSIGN:
-                {
-                    return do_assignment(VarAssignmentNode::Operation::NONE);
-                    break;
-                }
-                case Token::Type::ASSIGN_ADD:
-                {
-                    return do_assignment(VarAssignmentNode::Operation::ADD);
-                    break;
-                }
-                case Token::Type::ASSIGN_SUB:
-                {
-                    return do_assignment(VarAssignmentNode::Operation::SUB);
-                    break;
-                }
-                case Token::Type::ASSIGN_MUL:
-                {
-                    return do_assignment(VarAssignmentNode::Operation::MUL);
-                    break;
-                }
-                case Token::Type::ASSIGN_DIV:
-                {
-                    return do_assignment(VarAssignmentNode::Operation::DIV);
-                    break;
-                }
-                default:
-                    break;
             }
-            // If the next token is not an assignment, move on to expressions.
+            if(current_token != Token(Token::Type::KEYWORD, "do"))
+            {
+                std::stringstream ss;
+                ss << current_token << "Expected 'do'";
+                error = ss.str();
+            }
+            advance();
+
+            std::shared_ptr<StatementListNode> statements = statement_list();
+            if(error)
+            {
+                return nullptr;
+            }
+            if(current_token != Token(Token::Type::KEYWORD, "end"))
+            {
+                std::stringstream ss;
+                ss << current_token << "Expected 'end'";
+                error = ss.str();
+            }
+            advance();
+            return std::make_shared<ForNode>(initializer, condition, increment, statements, saved_position);
+        }
+        else if(current_token.type == Token::Type::IDENTIFIER)
+        {
+            std::shared_ptr<Node> assign = var_assignment();
+            if(error)
+            {
+                return nullptr;
+            }
+            if(assign != nullptr)
+            {
+                return assign;
+            }
+
         }
         return expression();
+    }
+
+    std::shared_ptr<Node> Parser::var_declaration()
+    {
+        Position saved_position = current_token.position;
+        advance();
+        if(current_token.type != Token::Type::IDENTIFIER)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected an identifier";
+            error = ss.str();
+            return nullptr;
+        }
+        Token name_tok = current_token;
+        advance();
+        if(current_token.type != Token::Type::ASSIGN)
+        {
+            return std::make_shared<VarDeclarationNode>(name_tok, nullptr, saved_position);
+        }
+        advance();
+        std::shared_ptr<ExpressionNode> expr = expression();
+        if(error)
+        {
+            return nullptr;
+        }
+        return std::make_shared<VarDeclarationNode>(name_tok, expr, saved_position);
+    }
+
+    std::shared_ptr<Node> Parser::var_assignment()
+    {
+        auto do_assignment = [&](VarAssignmentNode::Operation op) -> std::shared_ptr<Node>
+        {
+            Token name_tok = current_token;
+            advance();
+            Position saved_position = current_token.position;
+            advance();
+            std::shared_ptr<ExpressionNode> new_value = expression();
+            if(error)
+            {
+                return nullptr;
+            }
+            return std::make_shared<VarAssignmentNode>(name_tok, op, new_value, saved_position);
+        };
+
+        switch(tokens[position + 1].type)
+        {
+            case Token::Type::ASSIGN:
+            {
+                return do_assignment(VarAssignmentNode::Operation::NONE);
+                break;
+            }
+            case Token::Type::ASSIGN_ADD:
+            {
+                return do_assignment(VarAssignmentNode::Operation::ADD);
+                break;
+            }
+            case Token::Type::ASSIGN_SUB:
+            {
+                return do_assignment(VarAssignmentNode::Operation::SUB);
+                break;
+            }
+            case Token::Type::ASSIGN_MUL:
+            {
+                return do_assignment(VarAssignmentNode::Operation::MUL);
+                break;
+            }
+            case Token::Type::ASSIGN_DIV:
+            {
+                return do_assignment(VarAssignmentNode::Operation::DIV);
+                break;
+            }
+            default:
+                break;
+        }
+        return nullptr;
     }
 
     std::shared_ptr<ExpressionNode> Parser::expression(bool multiline_mode)

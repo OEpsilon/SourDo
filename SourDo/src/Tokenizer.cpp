@@ -8,9 +8,10 @@ namespace sourdo
     static const std::vector<std::string> KEYWORDS = 
     {
         "var", "func",
-        "return",
+        "return", "break", "continue",
         "if", "elif", "else", 
-        "then", "end" 
+        "for",
+        "then", "do", "end" 
     };
 
     TokenizerReturn tokenize_string(const std::string& text, const std::string& file_name)
