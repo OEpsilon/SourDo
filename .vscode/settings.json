@@ -70,6 +70,7 @@
         "stack": "cpp",
         "cinttypes": "cpp",
         "__functional_03": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "clocale": "cpp"
     }
 }

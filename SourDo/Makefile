@@ -70,12 +70,18 @@ endif
 GENERATED :=
 OBJECTS :=
 
+GENERATED += $(OBJDIR)/Basic.o
+GENERATED += $(OBJDIR)/Errors.o
+GENERATED += $(OBJDIR)/Math.o
 GENERATED += $(OBJDIR)/Parser.o
 GENERATED += $(OBJDIR)/SourDoData.o
 GENERATED += $(OBJDIR)/Token.o
 GENERATED += $(OBJDIR)/Tokenizer.o
 GENERATED += $(OBJDIR)/Value.o
 GENERATED += $(OBJDIR)/Visitor.o
+OBJECTS += $(OBJDIR)/Basic.o
+OBJECTS += $(OBJDIR)/Errors.o
+OBJECTS += $(OBJDIR)/Math.o
 OBJECTS += $(OBJDIR)/Parser.o
 OBJECTS += $(OBJDIR)/SourDoData.o
 OBJECTS += $(OBJDIR)/Token.o
@@ -151,10 +157,19 @@ $(OBJDIR)/Token.o: src/Datatypes/Token.cpp
 $(OBJDIR)/Value.o: src/Datatypes/Value.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Errors.o: src/Errors.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/Parser.o: src/Parser.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/SourDoData.o: src/SourDoData.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Basic.o: src/StandardLibs/Basic.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Math.o: src/StandardLibs/Math.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/Tokenizer.o: src/Tokenizer.cpp

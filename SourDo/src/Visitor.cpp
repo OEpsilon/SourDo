@@ -442,6 +442,7 @@ namespace sourdo
             VisitorReturn statements = visit_ast(for_scope.get_impl(), node->statements);
             if(statements.error_message || statements.is_function_return || statements.is_breaking)
             {
+                statements.is_breaking = false;
                 return statements;
             }
 
@@ -486,6 +487,7 @@ namespace sourdo
             VisitorReturn statements = visit_ast(while_scope.get_impl(), node->statements);
             if(statements.error_message || statements.is_function_return || statements.is_breaking)
             {
+                statements.is_breaking = false;
                 return statements;
             }
         }
@@ -505,6 +507,7 @@ namespace sourdo
             VisitorReturn statements = visit_ast(loop_scope.get_impl(), node->statements);
             if(statements.error_message || statements.is_function_return || statements.is_breaking)
             {
+                statements.is_breaking = false;
                 return statements;
             }
         }

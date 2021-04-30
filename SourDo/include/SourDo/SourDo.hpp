@@ -109,14 +109,12 @@ namespace sourdo
         Result call_function(uint32_t arg_count, bool protected_mode_enabled = false);
 
         /**
-         * @brief Pushes a value in the symbol table onto the top of the stack.
+         * @brief Creates a value in the symbol table if it doesn't already exist.
          * 
          * @param name The name of the value to be returned.
-         * @param protected_mode_enabled If true, returns an error code instead of throwing an exception.
          * 
-         * @throws SourDoError Thrown if 'name' is already in the symbol table and 'protected_mode_enabled' is false.
          */
-        Result create_value(const std::string& name, bool protected_mode_enabled = false);
+        void create_value(const std::string& name);
 
         /**
          * @brief Pushes a value in the symbol table onto the top of the stack.

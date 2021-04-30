@@ -6,51 +6,15 @@
 #include <chrono>
 
 #include <SourDo/SourDo.hpp>
-#include <SourDo/ConsoleColors.hpp>
+#include <SourDo/StandardLibs/Basic.hpp>
+#include <Sourdo/StandardLibs/Math.hpp>
 
 int main()
 {
     sourdo::Data test;
 
-    test.create_value("print");
-    test.push_cppfunction([](sourdo::Data& data) -> bool
-    {
-        uint32_t arg_count = data.get_size();
-        std::stringstream ss;
-        ss << std::boolalpha << std::fixed;
-        for(int i = 1; i <= arg_count; i++)
-        {
-            switch(data.get_value_type(i))
-            {
-                case sourdo::ValueType::_NULL:
-                    ss << "null";
-                    break;
-                case sourdo::ValueType::NUMBER:
-                    ss << data.value_to_number(i);
-                    break;
-                case sourdo::ValueType::BOOL:
-                    ss << data.value_to_bool(i);
-                    break;
-                case sourdo::ValueType::STRING:
-                    ss << data.value_to_string(i);
-                    break;
-                case sourdo::ValueType::SOURDO_FUNCTION:
-                    ss << "[SourdoFunction]";
-                    break;
-                case sourdo::ValueType::CPP_FUNCTION:
-                    ss << "[CppFunction]";
-                    break;
-            }
-            if(i < arg_count)
-            {
-                ss << " ";
-            }
-        }
-        ss << std::endl;
-        std::cout << ss.str();
-        return false;
-    });
-    test.set_value("print");
+    sourdo::load_lib_basic(test);
+    sourdo::load_lib_math(test);
 
     test.create_value("strlen");
     test.push_cppfunction([](sourdo::Data& data) -> bool

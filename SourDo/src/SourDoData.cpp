@@ -290,21 +290,9 @@ namespace sourdo
         return Result::SUCCESS;
     }
 
-    Result Data::create_value(const std::string& name, bool protected_mode_enabled)
+    void Data::create_value(const std::string& name)
     {
-        if(impl->symbol_table.find(name) != impl->symbol_table.end())
-        {
-            std::stringstream ss;
-            ss << COLOR_RED << "'" << name << "' is already defined" << COLOR_DEFAULT << std::flush;
-            if(protected_mode_enabled)
-            {
-                push_string(ss.str());
-                return Result::RUNTIME_ERROR;
-            }
-            throw SourDoError(ss.str());
-        }
         impl->symbol_table[name] = Null();
-        return Result::SUCCESS;
     }
 
     Result Data::get_value(const std::string& name, bool protected_mode_enabled)
