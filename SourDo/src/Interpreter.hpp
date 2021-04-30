@@ -55,6 +55,7 @@ namespace sourdo
             SIGN,
             POWER,
             CALL,
+            INDEX,
             SUBSCRIPT,
             FACTOR,
         };
@@ -72,6 +73,7 @@ namespace sourdo
         uint32_t position;
 
         Token advance();
+        std::vector<std::shared_ptr<ExpressionNode>> get_arguments();
 
         std::shared_ptr<StatementListNode> statement_list();
 
@@ -90,6 +92,7 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> unary_op(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
         std::shared_ptr<ExpressionNode> call(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
+        std::shared_ptr<ExpressionNode> index(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
         std::shared_ptr<ExpressionNode> subscript(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
         std::shared_ptr<ExpressionNode> factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);

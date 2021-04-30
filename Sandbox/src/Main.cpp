@@ -14,27 +14,7 @@ int main()
     sourdo::Data test;
 
     sourdo::load_lib_basic(test);
-    sourdo::load_lib_math(test);
-
-    test.create_value("strlen");
-    test.push_cppfunction([](sourdo::Data& data) -> bool
-    {
-        if(data.get_size() != 1)
-        {
-            std::stringstream ss;
-            ss << "Expected 1 argument but got " << data.get_size();
-            data.error(ss.str());
-        }
-        if(data.get_value_type(1) != sourdo::ValueType::STRING)
-        {
-            std::stringstream ss;
-            ss << "Argument #1: Expected a string";
-            data.error(ss.str());
-        }
-        data.push_number(data.value_to_string(1).size());
-        return true;
-    });
-    test.set_value("strlen");
+    sourdo::load_lib_math(test);;
 
     auto begin = std::chrono::high_resolution_clock::now();
 

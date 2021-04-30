@@ -35,6 +35,9 @@ namespace sourdo
             {   Token::Type::LOGIC_NOT,         "LOGIC_NOT"         },
 
             {   Token::Type::COMMA,             "COMMA"             },
+            {   Token::Type::DOT,               "DOT"               },
+            {   Token::Type::COLON,             "COLON"             },
+
             {   Token::Type::ASSIGN,            "ASSIGN"            },
             {   Token::Type::ASSIGN_ADD,        "ASSIGN_ADD"        },
             {   Token::Type::ASSIGN_SUB,        "ASSIGN_SUB"        },

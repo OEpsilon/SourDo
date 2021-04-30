@@ -5,6 +5,9 @@
 #include <iostream>
 
 #include "SourDoData.hpp"
+#include "VisitorTypeFunctions/StringFunctions.hpp"
+
+#include "SourDo/Errors.hpp"
 
 namespace sourdo
 {
@@ -876,6 +879,181 @@ namespace sourdo
         return return_value;
     }
 
+    static VisitorReturn visit_index_node(Data::Impl* data, std::shared_ptr<IndexNode> node)
+    {
+        VisitorReturn return_value;
+        VisitorReturn base = visit_ast(data, node->base);
+        if(base.error_message)
+        {
+            return base;
+        }
+        if(base.result.get_type() == ValueType::STRING)
+        {
+            if(node->attribute.value == "length")
+            {
+                return_value.result = string_length;
+            }
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << node->position << "Cannot index value of type " << base.result.get_type(); 
+            return_value.error_message = ss.str();
+        }
+        return return_value;
+    }
+
+    static VisitorReturn visit_index_call_node(Data::Impl* data, std::shared_ptr<IndexCallNode> node)
+    {
+        VisitorReturn return_value;
+        VisitorReturn base = visit_ast(data, node->base);
+        if(base.error_message)
+        {
+            return base;
+        }
+
+        VisitorReturn callee;
+
+        if(base.result.get_type() == ValueType::STRING)
+        {
+            if(node->callee.value == "length")
+            {
+                callee.result = string_length;
+            }
+            else
+            {
+                std::stringstream ss;
+                ss << node->position << "Value of type " << base.result.get_type() 
+                        << " does not have a member named '" << node->callee.value << "'"; 
+                return_value.error_message = ss.str();
+                return return_value;
+            }
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << node->position << "Cannot index value of type " << base.result.get_type(); 
+            return_value.error_message = ss.str();
+            return return_value;
+        }
+
+        if(callee.result.get_type() == ValueType::SOURDO_FUNCTION)
+        {
+            std::shared_ptr<SourDoFunction> func_value = callee.result.to_sourdo_function();
+            if(node->arguments.size() != func_value->parameters.size())
+            {
+                std::stringstream ss;
+                ss << node->position << "Function being called expected " 
+                            << func_value->parameters.size(); 
+                // Grammar!
+                if(func_value->parameters.size() == 1)
+                {
+                    ss << " argument but ";
+                }
+                else
+                {
+                    ss << " arguments but ";
+                }
+
+                ss << node->arguments.size();
+
+                // More Grammar!
+                if(node->arguments.size() == 1)
+                {
+                    ss << " was given";
+                }
+                else
+                {
+                    ss << " were given";
+                }
+                return_value.error_message = ss.str();
+                return return_value;
+            }
+
+            Data func_scope;
+            func_scope.get_impl()->parent = data;
+
+            func_scope.get_impl()->symbol_table["self"] = base.result;
+            
+            for(int i = 0; i < func_value->parameters.size(); i++)
+            {
+                VisitorReturn arg = visit_ast(data, node->arguments[i]);
+                if(arg.error_message)
+                {
+                    return arg;
+                }
+
+                func_scope.get_impl()->symbol_table[func_value->parameters[i]] = arg.result;
+            }
+
+            return_value = visit_ast(func_scope.get_impl(), func_value->statements);
+            if(return_value.error_message)
+            {
+                return return_value;
+            }
+            if(return_value.is_breaking)
+            {
+                std::stringstream ss;
+                ss << return_value.break_position << "Cannot use 'break' outside of a loop";
+                return_value.error_message = ss.str();
+            }
+            else if(return_value.is_continuing)
+            {
+                std::stringstream ss;
+                ss << return_value.break_position << "Cannot use 'continue' outside of a loop";
+                return_value.error_message = ss.str();
+            }
+        }
+        else if(callee.result.get_type() == ValueType::CPP_FUNCTION)
+        {
+            CppFunction func_value = callee.result.to_cpp_function();
+
+            Data func_scope;
+            func_scope.get_impl()->parent = data;
+
+            func_scope.get_impl()->stack.reserve(node->arguments.size() + 1);
+
+            func_scope.get_impl()->stack.push_back(base.result);
+            
+            for(int i = 0; i < node->arguments.size(); i++)
+            {
+                VisitorReturn arg = visit_ast(data, node->arguments[i]);
+                if(arg.error_message)
+                {
+                    return arg;
+                }
+
+                func_scope.get_impl()->stack.push_back(arg.result);
+            }
+
+            try
+            {
+                if(func_value(func_scope))
+                {
+                    return_value.result = func_scope.get_impl()->index_stack(-1);
+                }
+                else
+                {
+                    return_value.result = Null();
+                }
+            }
+            catch(const SourDoError& error)
+            {
+                std::stringstream ss;
+                ss << node->position << error.what();
+                return_value.error_message = ss.str();
+            }
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << node->position << "Cannot call " << callee.result.get_type();
+            return_value.error_message = ss.str();
+        }
+
+        return return_value;
+    }
+
     static VisitorReturn visit_subscript_node(Data::Impl* data, std::shared_ptr<SubscriptNode> node)
     {
         VisitorReturn return_value;
@@ -997,6 +1175,16 @@ namespace sourdo
             case Node::Type::CALL_NODE:
             {
                 return_value = visit_call_node(data, std::static_pointer_cast<CallNode>(node));
+                break;
+            }
+            case Node::Type::INDEX_NODE:
+            {
+                return_value = visit_index_node(data, std::static_pointer_cast<IndexNode>(node));
+                break;
+            }
+            case Node::Type::INDEX_CALL_NODE:
+            {
+                return_value = visit_index_call_node(data, std::static_pointer_cast<IndexCallNode>(node));
                 break;
             }
             case Node::Type::SUBSCRIPT_NODE:

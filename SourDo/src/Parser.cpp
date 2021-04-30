@@ -34,6 +34,41 @@ namespace sourdo
         return current_token;
     }
 
+    std::vector<std::shared_ptr<ExpressionNode>> Parser::get_arguments()
+    {
+        std::vector<std::shared_ptr<ExpressionNode>> arguments;
+        if(current_token.type != Token::Type::RPAREN)
+        {
+            std::shared_ptr<ExpressionNode> arg = expression(true);
+            if(error)
+            {
+                return {};
+            }
+            arguments.push_back(arg);
+
+            while(current_token.type == Token::Type::COMMA)
+            {
+                advance();
+                std::shared_ptr<ExpressionNode> arg = expression(true);
+                if(error)
+                {
+                    return {};
+                }
+                arguments.push_back(arg);
+            }
+
+            if(current_token.type != Token::Type::RPAREN)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Expected a ')'";
+                error = ss.str();
+                return {};
+            }
+        }
+        advance();
+        return arguments;
+    }
+
     std::shared_ptr<StatementListNode> Parser::statement_list()
     {
         Position saved_position = current_token.position;
@@ -592,37 +627,46 @@ namespace sourdo
     std::shared_ptr<ExpressionNode> Parser::call(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
         advance();
-        std::vector<std::shared_ptr<ExpressionNode>> arguments;
-        if(current_token.type != Token::Type::RPAREN)
+        std::vector<std::shared_ptr<ExpressionNode>> arguments = get_arguments();
+        if(error)
         {
-            std::shared_ptr<ExpressionNode> arg = expression(true);
+            return nullptr;
+        }
+        return std::make_shared<CallNode>(previous, arguments);
+    }
+
+    std::shared_ptr<ExpressionNode> Parser::index(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
+    {
+        Token tok = current_token.type;
+
+        advance();
+        if(current_token.type != Token::Type::IDENTIFIER)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected an identifier";
+            error = ss.str();
+            return nullptr;
+        }
+        Token name_tok = current_token;
+        advance();
+        if(tok.type == Token::Type::COLON)
+        {
+            if(current_token.type != Token::Type::LPAREN)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Member that was accessed with ':' must be called";
+                error = ss.str();
+                return nullptr;
+            }
+            advance();
+            std::vector<std::shared_ptr<ExpressionNode>> arguments = get_arguments();
             if(error)
             {
                 return nullptr;
             }
-            arguments.push_back(arg);
-
-            while(current_token.type == Token::Type::COMMA)
-            {
-                advance();
-                std::shared_ptr<ExpressionNode> arg = expression(true);
-                if(error)
-                {
-                    return nullptr;
-                }
-                arguments.push_back(arg);
-            }
-
-            if(current_token.type != Token::Type::RPAREN)
-            {
-                std::stringstream ss;
-                ss << current_token.position << "Expected a ')'";
-                error = ss.str();
-                return nullptr;
-            }
+            return std::make_shared<IndexCallNode>(previous, name_tok, arguments);
         }
-        advance();
-        return std::make_shared<CallNode>(previous, arguments);
+        return std::make_shared<IndexNode>(previous, name_tok);
     }
 
     std::shared_ptr<ExpressionNode> Parser::subscript(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
@@ -718,6 +762,8 @@ namespace sourdo
             {Token::Type::LOGIC_NOT,        {&Parser::unary_op,     nullptr,                    ExprPrecedence::NONE        }},
 
             {Token::Type::LPAREN,           {&Parser::grouping,     &Parser::call,              ExprPrecedence::CALL        }},
+            {Token::Type::DOT,              {nullptr,               &Parser::index,             ExprPrecedence::INDEX       }},
+            {Token::Type::COLON,            {nullptr,               &Parser::index,             ExprPrecedence::INDEX       }},
             {Token::Type::LBRACKET,         {nullptr,               &Parser::subscript,         ExprPrecedence::SUBSCRIPT   }},
             
             {Token::Type::TK_EOF,           {nullptr,               nullptr,                    ExprPrecedence::NONE        }},

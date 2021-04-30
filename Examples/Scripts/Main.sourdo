@@ -9,7 +9,7 @@ var message = "Hello "
 
 message += "World!"
 
-for var i = 0, i < strlen(message), i += 1 do
+for var i = 0, i < message:length(), i += 1 do
     print(message[i])
     if i >= 9 then
         break

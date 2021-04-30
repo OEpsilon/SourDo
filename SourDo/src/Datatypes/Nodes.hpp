@@ -27,6 +27,8 @@ namespace sourdo
     struct BinaryOpNode;
     struct UnaryOpNode;
     struct CallNode;
+    struct IndexNode;
+    struct IndexCallNode;
     struct SubscriptNode;
 
     struct NumberNode;
@@ -56,6 +58,8 @@ namespace sourdo
             BINARY_OP_NODE,
             UNARY_OP_NODE,
             CALL_NODE,
+            INDEX_NODE,
+            INDEX_CALL_NODE,
             SUBSCRIPT_NODE,
 
             NUMBER_NODE,
@@ -284,7 +288,7 @@ namespace sourdo
         }
     };
 
-    struct VarAssignmentNode : public ExpressionNode
+    struct VarAssignmentNode : public Node
     {
         enum class Operation
         {
@@ -296,7 +300,7 @@ namespace sourdo
         };
         
         VarAssignmentNode(Token name_tok, Operation op, std::shared_ptr<ExpressionNode> new_value, const Position& position)
-            : ExpressionNode(position), name_tok(name_tok), op(op), new_value(new_value)
+            : Node(position), name_tok(name_tok), op(op), new_value(new_value)
         {
             type = Type::VAR_ASSIGNMENT_NODE;
         }
@@ -429,6 +433,56 @@ namespace sourdo
         {
             std::stringstream ss;
             ss << "(" << callee->to_string(0) << ", ";
+            for(int i = 0; i < arguments.size(); i++)
+            {
+                ss << arguments[i]->to_string(0);
+                if(i <= arguments.size() - 1)
+                {
+                    ss << ", ";
+                }
+            }
+            ss << ")";
+            return ss.str();
+        }
+    };
+
+    struct IndexNode : public ExpressionNode
+    {
+        IndexNode(std::shared_ptr<ExpressionNode> base, const Token& attribute)
+            : ExpressionNode(base->position), base(base), attribute(attribute)
+        {
+            type = Type::INDEX_NODE;
+        }
+
+        std::shared_ptr<ExpressionNode> base; 
+        Token attribute;
+
+        std::string to_string(uint32_t indent_level) final
+        {
+            std::stringstream ss;
+            ss << "(" << base->to_string(0) << ", " << attribute << ")";
+            return ss.str();
+        }
+    };
+
+    struct IndexCallNode : public ExpressionNode
+    {
+        IndexCallNode(std::shared_ptr<ExpressionNode> base, const Token& callee, 
+                const std::vector<std::shared_ptr<ExpressionNode>>& arguments)
+            : ExpressionNode(base->position), base(base), callee(callee), arguments(arguments)
+        {
+            type = Type::INDEX_CALL_NODE;
+        }
+
+        std::shared_ptr<ExpressionNode> base; 
+        Token callee;
+        std::vector<std::shared_ptr<ExpressionNode>> arguments;
+
+        std::string to_string(uint32_t indent_level) final
+        {
+            std::stringstream ss;
+            ss << "(" << base->to_string(0) << ", " << callee << ", ";
+            
             for(int i = 0; i < arguments.size(); i++)
             {
                 ss << arguments[i]->to_string(0);

@@ -275,6 +275,16 @@ namespace sourdo
                         tokens.emplace_back(Token::Type::COMMA, file_position);
                         break;
                     }
+                    case '.':
+                    {
+                        tokens.emplace_back(Token::Type::DOT, file_position);
+                        break;
+                    }
+                    case ':':
+                    {
+                        tokens.emplace_back(Token::Type::COLON, file_position);
+                        break;
+                    }
                     case '>':
                     {
                         Position saved_position = file_position;

@@ -59,7 +59,9 @@ sign                := <ADD|SUB> sign
 
 power               := call (<Power> sign)*
 
-call                := subscript (<LPAREN> (expression (<COMMA> expression)*)? <RPAREN>)?
+call                := index (<LPAREN> (expression (<COMMA> expression)*)? <RPAREN>)?
+
+index               := subscript (<DOT|COLON> <IDENTIFIER>)?
 
 subscript           := factor (<LBRACKET> expression <RBRACKET>)?
 
