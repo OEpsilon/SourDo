@@ -293,7 +293,7 @@ namespace sourdo
             }
             else
             {
-                initializer = expression(true);
+                initializer = expression(true, true);
             }
             
             if(error)
@@ -320,23 +320,15 @@ namespace sourdo
             }
             advance();
             
-            std::shared_ptr<Node> increment = var_assignment();
+            std::shared_ptr<Node> increment = expression(true, true);
             if(error)
             {
                 return nullptr;
             }
-            if(increment == nullptr)
-            {
-                increment = expression(true);
-                if(error)
-                {
-                    return nullptr;
-                }
-            }
             if(current_token != Token(Token::Type::KEYWORD, "do"))
             {
                 std::stringstream ss;
-                ss << current_token << "Expected 'do'";
+                ss << current_token.position << "Expected 'do'";
                 error = ss.str();
             }
             advance();
@@ -411,20 +403,7 @@ namespace sourdo
             advance();
             return std::make_shared<LoopNode>(statements, saved_position);
         }
-        else if(current_token.type == Token::Type::IDENTIFIER)
-        {
-            std::shared_ptr<Node> assign = var_assignment();
-            if(error)
-            {
-                return nullptr;
-            }
-            if(assign != nullptr)
-            {
-                return assign;
-            }
-
-        }
-        return expression();
+        return expression(false, true);
     }
 
     std::shared_ptr<Node> Parser::var_declaration()
@@ -453,58 +432,9 @@ namespace sourdo
         return std::make_shared<VarDeclarationNode>(name_tok, expr, saved_position);
     }
 
-    std::shared_ptr<Node> Parser::var_assignment()
+    std::shared_ptr<ExpressionNode> Parser::expression(bool multiline_mode, bool allow_assignment)
     {
-        auto do_assignment = [&](VarAssignmentNode::Operation op) -> std::shared_ptr<Node>
-        {
-            Token name_tok = current_token;
-            advance();
-            Position saved_position = current_token.position;
-            advance();
-            std::shared_ptr<ExpressionNode> new_value = expression();
-            if(error)
-            {
-                return nullptr;
-            }
-            return std::make_shared<VarAssignmentNode>(name_tok, op, new_value, saved_position);
-        };
-
-        switch(tokens[position + 1].type)
-        {
-            case Token::Type::ASSIGN:
-            {
-                return do_assignment(VarAssignmentNode::Operation::NONE);
-                break;
-            }
-            case Token::Type::ASSIGN_ADD:
-            {
-                return do_assignment(VarAssignmentNode::Operation::ADD);
-                break;
-            }
-            case Token::Type::ASSIGN_SUB:
-            {
-                return do_assignment(VarAssignmentNode::Operation::SUB);
-                break;
-            }
-            case Token::Type::ASSIGN_MUL:
-            {
-                return do_assignment(VarAssignmentNode::Operation::MUL);
-                break;
-            }
-            case Token::Type::ASSIGN_DIV:
-            {
-                return do_assignment(VarAssignmentNode::Operation::DIV);
-                break;
-            }
-            default:
-                break;
-        }
-        return nullptr;
-    }
-
-    std::shared_ptr<ExpressionNode> Parser::expression(bool multiline_mode)
-    {
-        return expression_with_precedence(ExprPrecedence::LOGIC_OR, multiline_mode);
+        return expression_with_precedence(allow_assignment ? ExprPrecedence::ASSIGNMENT : ExprPrecedence::LOGIC_OR, multiline_mode);
     }
 
     std::shared_ptr<ExpressionNode> Parser::expression_with_precedence(ExprPrecedence precedence, bool multiline_mode)
@@ -556,6 +486,51 @@ namespace sourdo
         #undef IGNORE_NEW_LINE_IF_MULTILINE
 
         return previous_operand;
+    }
+
+    std::shared_ptr<ExpressionNode> Parser::assignment(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
+    {
+        if(previous->type != Node::Type::IDENTIFIER_NODE && previous->type != Node::Type::SUBSCRIPT_NODE)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Cannot assign to an expression";
+            error = ss.str();
+            return nullptr;
+        }
+
+        auto do_assignment = [&](AssignmentNode::Operation op) -> std::shared_ptr<ExpressionNode>
+        {
+            Position saved_position = current_token.position;
+            advance();
+            std::shared_ptr<ExpressionNode> new_value = expression(false, false);
+            if(error)
+            {
+                return nullptr;
+            }
+            return std::make_shared<AssignmentNode>(previous, op, new_value, saved_position);
+        };
+
+        switch(current_token.type)
+        {
+            case Token::Type::ASSIGN:
+                return do_assignment(AssignmentNode::Operation::NONE);
+                break;
+            case Token::Type::ASSIGN_ADD:
+                return do_assignment(AssignmentNode::Operation::ADD);
+                break;
+            case Token::Type::ASSIGN_SUB:
+                return do_assignment(AssignmentNode::Operation::SUB);
+                break;
+            case Token::Type::ASSIGN_MUL:
+                return do_assignment(AssignmentNode::Operation::MUL);
+                break;
+            case Token::Type::ASSIGN_DIV:
+                return do_assignment(AssignmentNode::Operation::DIV);
+                break;
+            default:
+                break;
+        }
+        return nullptr;
     }
 
     std::shared_ptr<ExpressionNode> Parser::grouping(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
@@ -760,6 +735,12 @@ namespace sourdo
             {Token::Type::LOGIC_OR,         {nullptr,               &Parser::binary_op_left,    ExprPrecedence::LOGIC_OR    }},
             {Token::Type::LOGIC_AND,        {nullptr,               &Parser::binary_op_left,    ExprPrecedence::LOGIC_AND   }},
             {Token::Type::LOGIC_NOT,        {&Parser::unary_op,     nullptr,                    ExprPrecedence::NONE        }},
+
+            {Token::Type::ASSIGN,           {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
+            {Token::Type::ASSIGN_ADD,       {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
+            {Token::Type::ASSIGN_SUB,       {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
+            {Token::Type::ASSIGN_MUL,       {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
+            {Token::Type::ASSIGN_DIV,       {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
 
             {Token::Type::LPAREN,           {&Parser::grouping,     &Parser::call,              ExprPrecedence::CALL        }},
             {Token::Type::DOT,              {nullptr,               &Parser::index,             ExprPrecedence::INDEX       }},

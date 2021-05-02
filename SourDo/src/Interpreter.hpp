@@ -46,6 +46,7 @@ namespace sourdo
         enum class ExprPrecedence
         {
             NONE = 0,
+            ASSIGNMENT,
             LOGIC_OR,
             LOGIC_AND,
             LOGIC_NOT,
@@ -79,10 +80,11 @@ namespace sourdo
 
         std::shared_ptr<Node> statement();
         std::shared_ptr<Node> var_declaration();
-        std::shared_ptr<Node> var_assignment();
 
-        std::shared_ptr<ExpressionNode> expression(bool multiline_mode = false);
+        std::shared_ptr<ExpressionNode> expression(bool multiline_mode = false, bool allow_assignment = false);
         std::shared_ptr<ExpressionNode> expression_with_precedence(ExprPrecedence precedence, bool multiline_mode = false);
+
+        std::shared_ptr<ExpressionNode> assignment(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
         std::shared_ptr<ExpressionNode> grouping(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 

@@ -551,7 +551,7 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_var_assignment_node(Data::Impl* data, std::shared_ptr<VarAssignmentNode> node)
+    static VisitorReturn visit_assignment_node(Data::Impl* data, std::shared_ptr<AssignmentNode> node)
     {
         VisitorReturn return_value;
         VisitorReturn new_value = visit_ast(data, node->new_value);
@@ -560,38 +560,80 @@ namespace sourdo
             return new_value;
         }
 
-        if(data->get_symbol(node->name_tok.value) == nullptr)
+        Value initial_value;
+
+        if(node->assignee->type == Node::Type::SUBSCRIPT_NODE)
+        {
+            std::shared_ptr<SubscriptNode> subscription = std::static_pointer_cast<SubscriptNode>(node->assignee);
+            VisitorReturn base = visit_ast(data, subscription->base);
+            if(base.error_message)
+            {
+                return base;
+            }
+
+            VisitorReturn subscript = visit_ast(data, subscription->subscript);
+            if(subscript.error_message)
+            {
+                return subscript;
+            }
+
+            if(base.result.get_type() == ValueType::STRING)
+            {
+                if(subscript.result.get_type() == ValueType::NUMBER)
+                {
+                    std::stringstream ss;
+                    ss << subscription->position << "The result from indexing a string cannot be assigned to";
+                    return_value.error_message = ss.str();
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << subscription->position << "Expected a number";
+                    return_value.error_message = ss.str();
+                }
+            }
+            else
+            {
+                std::stringstream ss;
+                ss << node->position << "Cannot index " << base.result.get_type();
+                return_value.error_message = ss.str();
+            }
+            return return_value;
+        }
+        
+        Token name_tok = std::static_pointer_cast<IdentifierNode>(node->assignee)->name_tok;
+        if(data->get_symbol(name_tok.value) == nullptr)
         {
             std::stringstream ss;
-            ss << node->name_tok.position << "'" << node->name_tok.value << "' is not defined";
+            ss << name_tok.position << "'" << name_tok.value << "' is not defined";
             return_value.error_message = ss.str();
         }
         else
         {
-            Value initial_value = *(data->get_symbol(node->name_tok.value));
+            initial_value = *(data->get_symbol(name_tok.value));
             switch(node->op)
             {
-                case VarAssignmentNode::Operation::NONE:
+                case AssignmentNode::Operation::NONE:
                 {
                     return_value.result = new_value.result;
                     break;
                 }
-                case VarAssignmentNode::Operation::ADD:
+                case AssignmentNode::Operation::ADD:
                 {
                     return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::ADD, node->position);
                     break;
                 }
-                case VarAssignmentNode::Operation::SUB:
+                case AssignmentNode::Operation::SUB:
                 {
                     return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::SUB, node->position);
                     break;
                 }
-                case VarAssignmentNode::Operation::MUL:
+                case AssignmentNode::Operation::MUL:
                 {
                     return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::MUL, node->position);
                     break;
                 }
-                case VarAssignmentNode::Operation::DIV:
+                case AssignmentNode::Operation::DIV:
                 {
                     return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::DIV, node->position);
                     break;
@@ -601,7 +643,7 @@ namespace sourdo
             {
                 return return_value;
             }
-            data->set_symbol(node->name_tok.value, return_value.result);
+            data->set_symbol(name_tok.value, return_value.result);
         }
 
         return return_value;
@@ -1143,9 +1185,9 @@ namespace sourdo
                 return_value = visit_var_declaration_node(data, std::static_pointer_cast<VarDeclarationNode>(node));
                 break;
             }
-            case Node::Type::VAR_ASSIGNMENT_NODE:
+            case Node::Type::ASSIGNMENT_NODE:
             {
-                return_value = visit_var_assignment_node(data, std::static_pointer_cast<VarAssignmentNode>(node));
+                return_value = visit_assignment_node(data, std::static_pointer_cast<AssignmentNode>(node));
                 break;
             }
             case Node::Type::FUNC_DECLARATION_NODE:

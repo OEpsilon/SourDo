@@ -17,7 +17,7 @@ namespace sourdo
     struct LoopNode;
     
     struct VarDeclarationNode;
-    struct VarAssignmentNode;
+    struct AssignmentNode;
     struct FuncDeclarationNode;
     struct ReturnNode;
     struct BreakNode;
@@ -49,7 +49,7 @@ namespace sourdo
             LOOP_NODE,
 
             VAR_DECLARATION_NODE,
-            VAR_ASSIGNMENT_NODE,
+            ASSIGNMENT_NODE,
             FUNC_DECLARATION_NODE,
             RETURN_NODE,
             BREAK_NODE,
@@ -288,34 +288,6 @@ namespace sourdo
         }
     };
 
-    struct VarAssignmentNode : public Node
-    {
-        enum class Operation
-        {
-            NONE,
-            ADD, 
-            SUB, 
-            MUL, 
-            DIV,
-        };
-        
-        VarAssignmentNode(Token name_tok, Operation op, std::shared_ptr<ExpressionNode> new_value, const Position& position)
-            : Node(position), name_tok(name_tok), op(op), new_value(new_value)
-        {
-            type = Type::VAR_ASSIGNMENT_NODE;
-        }
-        Token name_tok;
-        Operation op;
-        std::shared_ptr<ExpressionNode> new_value;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(" << name_tok << ", " << new_value << ")";
-            return ss.str();
-        }
-    };
-
     struct ReturnNode : public Node
     {
         ReturnNode(std::shared_ptr<ExpressionNode> return_value, const Position& position)
@@ -370,6 +342,34 @@ namespace sourdo
         }
 
         virtual ~ContinueNode() = default;
+    };
+
+    struct AssignmentNode : public ExpressionNode
+    {
+        enum class Operation
+        {
+            NONE,
+            ADD, 
+            SUB, 
+            MUL, 
+            DIV,
+        };
+        
+        AssignmentNode(std::shared_ptr<ExpressionNode> assignee, Operation op, std::shared_ptr<ExpressionNode> new_value, const Position& position)
+            : ExpressionNode(position), assignee(assignee), op(op), new_value(new_value)
+        {
+            type = Type::ASSIGNMENT_NODE;
+        }
+        std::shared_ptr<ExpressionNode> assignee;
+        Operation op;
+        std::shared_ptr<ExpressionNode> new_value;
+
+        std::string to_string(uint32_t indent_level) final
+        {
+            std::stringstream ss;
+            ss << "(" << assignee->to_string(0) << ", " << new_value << ")";
+            return ss.str();
+        }
     };
 
     struct BinaryOpNode : public ExpressionNode
