@@ -4,6 +4,7 @@
 #include <memory>
 #include <sstream>
 #include <optional>
+#include <map>
 
 #include "Token.hpp"
 
@@ -29,13 +30,13 @@ namespace sourdo
     struct CallNode;
     struct IndexNode;
     struct IndexCallNode;
-    struct SubscriptNode;
 
     struct NumberNode;
     struct StringNode;
     struct BoolNode;
     struct NullNode;
     struct IdentifierNode;
+    struct ObjectLiteralNode;
 
     struct Node 
     {
@@ -60,13 +61,13 @@ namespace sourdo
             CALL_NODE,
             INDEX_NODE,
             INDEX_CALL_NODE,
-            SUBSCRIPT_NODE,
 
             NUMBER_NODE,
             STRING_NODE,
             BOOL_NODE,
             NULL_NODE,
             IDENTIFIER_NODE,
+            OBJECT_LITERAL_NODE,
         };
 
         Node(const Position& position)
@@ -448,26 +449,26 @@ namespace sourdo
 
     struct IndexNode : public ExpressionNode
     {
-        IndexNode(std::shared_ptr<ExpressionNode> base, const Token& attribute)
+        IndexNode(std::shared_ptr<ExpressionNode> base, std::shared_ptr<ExpressionNode> attribute)
             : ExpressionNode(base->position), base(base), attribute(attribute)
         {
             type = Type::INDEX_NODE;
         }
 
         std::shared_ptr<ExpressionNode> base; 
-        Token attribute;
+        std::shared_ptr<ExpressionNode> attribute;
 
         std::string to_string(uint32_t indent_level) final
         {
             std::stringstream ss;
-            ss << "(" << base->to_string(0) << ", " << attribute << ")";
+            ss << "(" << base->to_string(0) << ", " << attribute->to_string(0) << ")";
             return ss.str();
         }
     };
 
     struct IndexCallNode : public ExpressionNode
     {
-        IndexCallNode(std::shared_ptr<ExpressionNode> base, const Token& callee, 
+        IndexCallNode(std::shared_ptr<ExpressionNode> base, std::shared_ptr<ExpressionNode> callee, 
                 const std::vector<std::shared_ptr<ExpressionNode>>& arguments)
             : ExpressionNode(base->position), base(base), callee(callee), arguments(arguments)
         {
@@ -475,13 +476,13 @@ namespace sourdo
         }
 
         std::shared_ptr<ExpressionNode> base; 
-        Token callee;
+        std::shared_ptr<ExpressionNode> callee;
         std::vector<std::shared_ptr<ExpressionNode>> arguments;
 
         std::string to_string(uint32_t indent_level) final
         {
             std::stringstream ss;
-            ss << "(" << base->to_string(0) << ", " << callee << ", ";
+            ss << "(" << base->to_string(0) << ", " << callee->to_string(0) << ", ";
             
             for(int i = 0; i < arguments.size(); i++)
             {
@@ -492,25 +493,6 @@ namespace sourdo
                 }
             }
             ss << ")";
-            return ss.str();
-        }
-    };
-
-    struct SubscriptNode : public ExpressionNode
-    {
-        SubscriptNode(std::shared_ptr<ExpressionNode> base, std::shared_ptr<ExpressionNode> subscript)
-            : ExpressionNode(base->position), base(base), subscript(subscript)
-        {
-            type = Type::SUBSCRIPT_NODE;
-        }
-
-        std::shared_ptr<ExpressionNode> base; 
-        std::shared_ptr<ExpressionNode> subscript;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(" << base->to_string(0) << ", " << subscript->to_string(0) << ")";
             return ss.str();
         }
     };
@@ -611,6 +593,24 @@ namespace sourdo
         {
             std::stringstream ss;
             ss << name_tok;
+            return ss.str();
+        }
+    };
+
+    struct ObjectLiteralNode : public ExpressionNode
+    {
+        ObjectLiteralNode(const std::map<std::shared_ptr<ExpressionNode>, std::shared_ptr<ExpressionNode>>& keys, 
+                const Position& position)
+            : ExpressionNode(position), keys(keys)
+        {
+            type = Type::OBJECT_LITERAL_NODE;
+        }
+
+        std::map<std::shared_ptr<ExpressionNode>, std::shared_ptr<ExpressionNode>> keys;
+
+        std::string to_string(uint32_t indent_level) final
+        {
+            std::stringstream ss;
             return ss.str();
         }
     };

@@ -31,6 +31,9 @@ namespace sourdo
             case ValueType::_NULL:
                 os << "Null";
                 break;
+            case ValueType::OBJECT:
+                os << "Object";
+                break;
         }
         return os;
     }
@@ -223,6 +226,11 @@ namespace sourdo
                 {
                     return_value.result = left_value.to_cpp_function() == right_value.to_cpp_function();
                 }
+                else if(left_value.get_type() == ValueType::OBJECT
+                        && right_value.get_type() == ValueType::OBJECT)
+                {
+                    return_value.result = left_value.to_object() == right_value.to_object();
+                }
                 else if(left_value.get_type() == ValueType::_NULL)
                 {
                     switch(right_value.get_type())
@@ -232,6 +240,7 @@ namespace sourdo
                         case ValueType::STRING:
                         case ValueType::SOURDO_FUNCTION:
                         case ValueType::CPP_FUNCTION:
+                        case ValueType::OBJECT:
                             return_value.result = false;
                             break;
                         case ValueType::_NULL:
@@ -248,6 +257,7 @@ namespace sourdo
                         case ValueType::STRING:
                         case ValueType::SOURDO_FUNCTION:
                         case ValueType::CPP_FUNCTION:
+                        case ValueType::OBJECT:
                             return_value.result = false;
                             break;
                         case ValueType::_NULL:
@@ -281,6 +291,11 @@ namespace sourdo
                 {
                     return_value.result = left_value.to_string() != right_value.to_string();
                 }
+                else if(left_value.get_type() == ValueType::OBJECT
+                        && right_value.get_type() == ValueType::OBJECT)
+                {
+                    return_value.result = left_value.to_object() != right_value.to_object();
+                }
                 else if(left_value.get_type() == ValueType::_NULL)
                 {
                     switch(right_value.get_type())
@@ -290,6 +305,7 @@ namespace sourdo
                         case ValueType::STRING:
                         case ValueType::SOURDO_FUNCTION:
                         case ValueType::CPP_FUNCTION:
+                        case ValueType::OBJECT:
                             return_value.result = true;
                             break;
                         case ValueType::_NULL:
@@ -302,11 +318,11 @@ namespace sourdo
                     switch(left_value.get_type())
                     {
                         case ValueType::NUMBER:
-                        
                         case ValueType::BOOL:
                         case ValueType::STRING:
                         case ValueType::SOURDO_FUNCTION:
                         case ValueType::CPP_FUNCTION:
+                        case ValueType::OBJECT:
                             return_value.result = true;
                             break;
                         case ValueType::_NULL:
@@ -359,6 +375,74 @@ namespace sourdo
             {
                 break;
             }
+        }
+        return return_value;
+    }
+
+    static VisitorReturn perform_index_operation(Data::Impl* data, Value& base, Value& attribute, const Position& base_position, const Position& attribute_position)
+    {
+        VisitorReturn return_value;
+        
+        if(base.get_type() == ValueType::STRING)
+        {
+            if(attribute.get_type() == ValueType::STRING)
+            {
+                if(attribute.to_string() == "length")
+                {
+                    return_value.result = string_length;
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << attribute_position << "'" << attribute.to_string() << "' does not exist in String";
+                    return_value.error_message = ss.str();
+                }
+            }
+            else if(attribute.get_type() == ValueType::NUMBER)
+            {
+                int num = attribute.to_number();
+                if(num < 0)
+                {
+                    std::stringstream ss;
+                    ss << attribute_position << "Index is less than 0";
+                    return_value.error_message = ss.str();
+                }
+                else if(num > base.to_string().size())
+                {
+                    std::stringstream ss;
+                    ss << attribute_position << "Index is greater than the string length";
+                    return_value.error_message = ss.str();
+                }
+                else
+                {
+                    return_value.result = std::string(1, base.to_string()[num]);
+                }
+            }
+            else
+            {
+                std::stringstream ss;
+                ss << attribute_position << "Cannot index String with value of type " << attribute.get_type();
+                return_value.error_message = ss.str();
+            }
+        }
+        else if(base.get_type() == ValueType::OBJECT)
+        {
+            if(base.to_object()->keys.find(attribute) != base.to_object()->keys.end())
+            {
+                return_value.result = base.to_object()->keys[attribute];
+            }
+            else
+            {
+                std::stringstream ss;
+                ss << attribute_position << "Index does not exist in object";
+                return_value.error_message = ss.str();
+            }
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << base_position << "Cannot index value of type " << base.get_type(); 
+            return_value.error_message = ss.str();
         }
         return return_value;
     }
@@ -553,6 +637,40 @@ namespace sourdo
 
     static VisitorReturn visit_assignment_node(Data::Impl* data, std::shared_ptr<AssignmentNode> node)
     {
+        auto do_assignment = [](Data::Impl* data, AssignmentNode::Operation op, const Position& position, Value& initial_value, Value& new_value) -> VisitorReturn
+        {
+            VisitorReturn return_value;
+            switch(op)
+            {
+                case AssignmentNode::Operation::NONE:
+                {
+                    return_value.result = new_value;
+                    break;
+                }
+                case AssignmentNode::Operation::ADD:
+                {
+                    return_value = perform_binary_operation(initial_value, new_value, Token::Type::ADD, position);
+                    break;
+                }
+                case AssignmentNode::Operation::SUB:
+                {
+                    return_value = perform_binary_operation(initial_value, new_value, Token::Type::SUB, position);
+                    break;
+                }
+                case AssignmentNode::Operation::MUL:
+                {
+                    return_value = perform_binary_operation(initial_value, new_value, Token::Type::MUL, position);
+                    break;
+                }
+                case AssignmentNode::Operation::DIV:
+                {
+                    return_value = perform_binary_operation(initial_value, new_value, Token::Type::DIV, position);
+                    break;
+                }
+            }
+            return return_value;
+        };
+
         VisitorReturn return_value;
         VisitorReturn new_value = visit_ast(data, node->new_value);
         if(new_value.error_message)
@@ -562,40 +680,60 @@ namespace sourdo
 
         Value initial_value;
 
-        if(node->assignee->type == Node::Type::SUBSCRIPT_NODE)
+        if(node->assignee->type == Node::Type::INDEX_NODE)
         {
-            std::shared_ptr<SubscriptNode> subscription = std::static_pointer_cast<SubscriptNode>(node->assignee);
-            VisitorReturn base = visit_ast(data, subscription->base);
+            auto index_node = std::static_pointer_cast<IndexNode>(node->assignee);
+            VisitorReturn base = visit_ast(data, index_node->base);
             if(base.error_message)
             {
                 return base;
             }
 
-            VisitorReturn subscript = visit_ast(data, subscription->subscript);
-            if(subscript.error_message)
+            VisitorReturn attribute = visit_ast(data, index_node->attribute);
+            if(attribute.error_message)
             {
-                return subscript;
+                return attribute;
             }
 
             if(base.result.get_type() == ValueType::STRING)
             {
-                if(subscript.result.get_type() == ValueType::NUMBER)
+                if(attribute.result.get_type() == ValueType::NUMBER)
                 {
                     std::stringstream ss;
-                    ss << subscription->position << "The result from indexing a string cannot be assigned to";
+                    ss << index_node->position << "The result from indexing a string cannot be assigned to";
                     return_value.error_message = ss.str();
                 }
                 else
                 {
                     std::stringstream ss;
-                    ss << subscription->position << "Expected a number";
+                    ss << index_node->position << "Expected a number";
+                    return_value.error_message = ss.str();
+                }
+                return return_value;
+            }
+            else if(base.result.get_type() == ValueType::OBJECT)
+            {
+                if(base.result.to_object()->keys.find(attribute.result) != base.result.to_object()->keys.end())
+                {
+                    return_value = do_assignment(data, node->op, node->position, 
+                            base.result.to_object()->keys[attribute.result], new_value.result);
+                    if(return_value.error_message)
+                    {
+                        return return_value;
+                    }
+                    base.result.to_object()->keys[attribute.result] = return_value.result;
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << index_node->attribute->position << "Index does not exist in object";
                     return_value.error_message = ss.str();
                 }
             }
             else
             {
                 std::stringstream ss;
-                ss << node->position << "Cannot index " << base.result.get_type();
+                ss << node->position << "Cannot index value of type " << base.result.get_type();
                 return_value.error_message = ss.str();
             }
             return return_value;
@@ -611,34 +749,7 @@ namespace sourdo
         else
         {
             initial_value = *(data->get_symbol(name_tok.value));
-            switch(node->op)
-            {
-                case AssignmentNode::Operation::NONE:
-                {
-                    return_value.result = new_value.result;
-                    break;
-                }
-                case AssignmentNode::Operation::ADD:
-                {
-                    return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::ADD, node->position);
-                    break;
-                }
-                case AssignmentNode::Operation::SUB:
-                {
-                    return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::SUB, node->position);
-                    break;
-                }
-                case AssignmentNode::Operation::MUL:
-                {
-                    return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::MUL, node->position);
-                    break;
-                }
-                case AssignmentNode::Operation::DIV:
-                {
-                    return_value = perform_binary_operation(initial_value, new_value.result, Token::Type::DIV, node->position);
-                    break;
-                }
-            }
+            return_value = do_assignment(data, node->op, node->position, initial_value, new_value.result);
             if(return_value.error_message)
             {
                 return return_value;
@@ -923,66 +1034,48 @@ namespace sourdo
 
     static VisitorReturn visit_index_node(Data::Impl* data, std::shared_ptr<IndexNode> node)
     {
-        VisitorReturn return_value;
         VisitorReturn base = visit_ast(data, node->base);
         if(base.error_message)
         {
             return base;
         }
-        if(base.result.get_type() == ValueType::STRING)
+        VisitorReturn attribute = visit_ast(data, node->attribute);
+        if(attribute.error_message)
         {
-            if(node->attribute.value == "length")
-            {
-                return_value.result = string_length;
-            }
+            return attribute;
         }
-        else
-        {
-            std::stringstream ss;
-            ss << node->position << "Cannot index value of type " << base.result.get_type(); 
-            return_value.error_message = ss.str();
-        }
-        return return_value;
+
+        return perform_index_operation(data, base.result, attribute.result, 
+                node->base->position, node->attribute->position);
     }
 
     static VisitorReturn visit_index_call_node(Data::Impl* data, std::shared_ptr<IndexCallNode> node)
     {
         VisitorReturn return_value;
-        VisitorReturn base = visit_ast(data, node->base);
-        if(base.error_message)
+
+        VisitorReturn base_value = visit_ast(data, node->base);
+        if(base_value.error_message)
         {
-            return base;
+            return base_value;
         }
 
-        VisitorReturn callee;
-
-        if(base.result.get_type() == ValueType::STRING)
+        VisitorReturn callee_value = visit_ast(data, node->callee);
+        if(callee_value.error_message)
         {
-            if(node->callee.value == "length")
-            {
-                callee.result = string_length;
-            }
-            else
-            {
-                std::stringstream ss;
-                ss << node->position << "Value of type " << base.result.get_type() 
-                        << " does not have a member named '" << node->callee.value << "'"; 
-                return_value.error_message = ss.str();
-                return return_value;
-            }
+            return callee_value;
         }
-        else
+
+        VisitorReturn callee = perform_index_operation(data, base_value.result, callee_value.result, 
+                node->base->position, node->callee->position);
+        if(callee.error_message)
         {
-            std::stringstream ss;
-            ss << node->position << "Cannot index value of type " << base.result.get_type(); 
-            return_value.error_message = ss.str();
-            return return_value;
+            return callee;
         }
 
         if(callee.result.get_type() == ValueType::SOURDO_FUNCTION)
         {
             std::shared_ptr<SourDoFunction> func_value = callee.result.to_sourdo_function();
-            if(node->arguments.size() != func_value->parameters.size())
+            if(node->arguments.size() + 1 != func_value->parameters.size())
             {
                 std::stringstream ss;
                 ss << node->position << "Function being called expected " 
@@ -1015,10 +1108,13 @@ namespace sourdo
             Data func_scope;
             func_scope.get_impl()->parent = data;
 
-            func_scope.get_impl()->symbol_table["self"] = base.result;
-            
             for(int i = 0; i < func_value->parameters.size(); i++)
             {
+                if(i == 0)
+                {
+                    func_scope.get_impl()->symbol_table[func_value->parameters[i]] = base_value.result;
+                    continue;
+                }
                 VisitorReturn arg = visit_ast(data, node->arguments[i]);
                 if(arg.error_message)
                 {
@@ -1048,14 +1144,12 @@ namespace sourdo
         }
         else if(callee.result.get_type() == ValueType::CPP_FUNCTION)
         {
-            CppFunction func_value = callee.result.to_cpp_function();
-
             Data func_scope;
             func_scope.get_impl()->parent = data;
 
             func_scope.get_impl()->stack.reserve(node->arguments.size() + 1);
 
-            func_scope.get_impl()->stack.push_back(base.result);
+            func_scope.get_impl()->stack.push_back(base_value.result);
             
             for(int i = 0; i < node->arguments.size(); i++)
             {
@@ -1070,7 +1164,7 @@ namespace sourdo
 
             try
             {
-                if(func_value(func_scope))
+                if(callee.result.to_cpp_function()(func_scope))
                 {
                     return_value.result = func_scope.get_impl()->index_stack(-1);
                 }
@@ -1090,60 +1184,6 @@ namespace sourdo
         {
             std::stringstream ss;
             ss << node->position << "Cannot call " << callee.result.get_type();
-            return_value.error_message = ss.str();
-        }
-
-        return return_value;
-    }
-
-    static VisitorReturn visit_subscript_node(Data::Impl* data, std::shared_ptr<SubscriptNode> node)
-    {
-        VisitorReturn return_value;
-        VisitorReturn base = visit_ast(data, node->base);
-        if(base.error_message)
-        {
-            return base;
-        }
-
-        VisitorReturn subscript = visit_ast(data, node->subscript);
-        if(subscript.error_message)
-        {
-            return subscript;
-        }
-
-        if(base.result.get_type() == ValueType::STRING)
-        {
-            if(subscript.result.get_type() == ValueType::NUMBER)
-            {
-                int num = subscript.result.to_number();
-                if(num < 0)
-                {
-                    std::stringstream ss;
-                    ss << node->subscript->position << "Index was less than 1";
-                    return_value.error_message = ss.str();
-                }
-                else if(num > base.result.to_string().size())
-                {
-                    std::stringstream ss;
-                    ss << node->subscript->position << "Index was greater than string length";
-                    return_value.error_message = ss.str();
-                }
-                else
-                {
-                    return_value.result = std::string(1, base.result.to_string()[num]);
-                }
-            }
-            else
-            {
-                std::stringstream ss;
-                ss << node->subscript->position << "Expected a number";
-                return_value.error_message = ss.str();
-            }
-        }
-        else
-        {
-            std::stringstream ss;
-            ss << node->position << "Cannot index " << base.result.get_type();
             return_value.error_message = ss.str();
         }
 
@@ -1229,11 +1269,6 @@ namespace sourdo
                 return_value = visit_index_call_node(data, std::static_pointer_cast<IndexCallNode>(node));
                 break;
             }
-            case Node::Type::SUBSCRIPT_NODE:
-            {
-                return_value = visit_subscript_node(data, std::static_pointer_cast<SubscriptNode>(node));
-                break;
-            }
             case Node::Type::UNARY_OP_NODE:
             {
                 return_value = visit_unary_op_node(data, std::static_pointer_cast<UnaryOpNode>(node));
@@ -1270,6 +1305,29 @@ namespace sourdo
             case Node::Type::IDENTIFIER_NODE:
             {
                 return_value = visit_identifier_node(data, std::static_pointer_cast<IdentifierNode>(node));
+                break;
+            }
+            case Node::Type::OBJECT_LITERAL_NODE:
+            {
+                auto object_node = std::static_pointer_cast<ObjectLiteralNode>(node);
+                std::unordered_map<Value, Value> keys;
+                for(auto[k, v] : object_node->keys)
+                {
+                    VisitorReturn key = visit_ast(data, k);
+                    if(key.error_message)
+                    {
+                        return key;
+                    }
+
+                    VisitorReturn value = visit_ast(data, v);
+                    if(value.error_message)
+                    {
+                        return value;
+                    }
+
+                    keys[key.result] = value.result;
+                }
+                return_value.result = std::make_shared<Object>(std::move(keys));
                 break;
             }
             default:

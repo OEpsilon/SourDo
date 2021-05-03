@@ -66,5 +66,8 @@ index               := subscript (<DOT|COLON> <IDENTIFIER>)?
 subscript           := factor (<LBRACKET> expression <RBRACKET>)?
 
 factor              := <NUMBER_LITERAL|STRING_LITERAL|BOOL_LITERAL|NULL_LITERAL|IDENTIFIER>
+                    := object_literal
                     := <LPAREN> expression <RPAREN>
-                
+
+object_literal      := <LBRACE> (expression (<COMMA> expression)* (<COMMA>)?)? <RBRACE>
+ 

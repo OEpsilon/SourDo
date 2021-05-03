@@ -161,7 +161,7 @@ namespace sourdo
         {
             return "";
         }
-        return value.to_string().c_str();
+        return value.to_string();
     }
 
     void Data::push_number(Number value)
@@ -293,6 +293,26 @@ namespace sourdo
     void Data::create_value(const std::string& name)
     {
         impl->symbol_table[name] = Null();
+    }
+
+    std::shared_ptr<SourDoFunction> Data::create_function_ref(int index)
+    {
+        Value& value = impl->index_stack(index);
+        if(value.get_type() != ValueType::SOURDO_FUNCTION)
+        {
+            return nullptr;
+        }
+        return value.to_sourdo_function();
+    }
+
+    std::shared_ptr<Object> Data::create_object_ref(int index)
+    {
+        Value& value = impl->index_stack(index);
+        if(value.get_type() != ValueType::OBJECT)
+        {
+            return nullptr;
+        }
+        return value.to_object();
     }
 
     Result Data::get_value(const std::string& name, bool protected_mode_enabled)

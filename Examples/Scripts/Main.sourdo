@@ -5,6 +5,30 @@ func factorial(value)
     return value * factorial(value - 1)
 end
 
+func Vec2_print(self)
+    print("(", self.x, self.y, ")")
+end
+
+func Vec2_new(x, y)
+    var self = {
+        "x" = x,
+        "y" = y,
+        "print" = Vec2_print,
+    }
+    return self
+end
+
+var Vec2 = {
+    "new" = Vec2_new,
+}
+
+var vec = Vec2.new(2, 4)
+
+vec:print()
+vec.x += 43
+vec:print()
+
+-*
 var message = "Hello "
 
 message += "World!"
@@ -15,3 +39,4 @@ for var i = 0, i < message:length(), i += 1 do
         break
     end
 end
+*-

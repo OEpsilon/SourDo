@@ -99,6 +99,8 @@ namespace sourdo
 
         std::shared_ptr<ExpressionNode> factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
+        std::shared_ptr<ExpressionNode> object_literal(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
+
         ParseExprRule& get_rule(const Token::Type& type);
     };
 } // namespace sourdo

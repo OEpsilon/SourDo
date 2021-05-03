@@ -48,6 +48,8 @@ namespace sourdo
             {   Token::Type::RPAREN,            "RPAREN"            },
             {   Token::Type::LBRACKET,          "LBRACKET"          },
             {   Token::Type::RBRACKET,          "RBRACKET"          },
+            {   Token::Type::LBRACE,            "LBRACE"            },
+            {   Token::Type::RBRACE,            "RBRACE"            },
 
             {   Token::Type::NEW_LINE,          "NEW_LINE"          },
             {   Token::Type::TK_EOF,            "EOF"               },

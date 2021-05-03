@@ -67,7 +67,7 @@ namespace sourdo
             {
                 Position saved_position = file_position;
                 std::string identifier_string;
-                while(i < text.size() && (std::isalpha(current_char) || current_char == '_'))
+                while(i < text.size() && (std::isalpha(current_char) || std::isdigit(current_char) || current_char == '_'))
                 {
                     identifier_string += current_char;
                     i++;
@@ -375,6 +375,16 @@ namespace sourdo
                     case ']':
                     {
                         tokens.emplace_back(Token::Type::RBRACKET, file_position);
+                        break;
+                    }
+                    case '{':
+                    {
+                        tokens.emplace_back(Token::Type::LBRACE, file_position);
+                        break;
+                    }
+                    case '}':
+                    {
+                        tokens.emplace_back(Token::Type::RBRACE, file_position);
                         break;
                     }
                     default:

@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <sstream>
+#include <map>
 
 #include <iostream>
 
@@ -490,7 +491,7 @@ namespace sourdo
 
     std::shared_ptr<ExpressionNode> Parser::assignment(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
     {
-        if(previous->type != Node::Type::IDENTIFIER_NODE && previous->type != Node::Type::SUBSCRIPT_NODE)
+        if(previous->type != Node::Type::IDENTIFIER_NODE && previous->type != Node::Type::INDEX_NODE)
         {
             std::stringstream ss;
             ss << current_token.position << "Cannot assign to an expression";
@@ -639,9 +640,9 @@ namespace sourdo
             {
                 return nullptr;
             }
-            return std::make_shared<IndexCallNode>(previous, name_tok, arguments);
+            return std::make_shared<IndexCallNode>(previous, std::make_shared<StringNode>(name_tok), arguments);
         }
-        return std::make_shared<IndexNode>(previous, name_tok);
+        return std::make_shared<IndexNode>(previous, std::make_shared<StringNode>(name_tok));
     }
 
     std::shared_ptr<ExpressionNode> Parser::subscript(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
@@ -660,7 +661,7 @@ namespace sourdo
             return nullptr;
         }
         advance();
-        return std::make_shared<SubscriptNode>(previous, expr);
+        return std::make_shared<IndexNode>(previous, expr);
     }
 
     std::shared_ptr<ExpressionNode> Parser::factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
@@ -707,45 +708,94 @@ namespace sourdo
         return nullptr;
     }
 
+    std::shared_ptr<ExpressionNode> Parser::object_literal(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
+    {
+        Position saved_position;
+        std::map<std::shared_ptr<ExpressionNode>, std::shared_ptr<ExpressionNode>> keys;
+        do
+        {
+            advance();
+            while(current_token.type == Token::Type::NEW_LINE)
+            {
+                advance();
+            }
+
+            if(current_token.type == Token::Type::RBRACE)
+            {
+                break;
+            }
+            std::shared_ptr<ExpressionNode> key = expression();
+            if(error)
+            {
+                return nullptr;
+            }
+            if(current_token.type != Token::Type::ASSIGN)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Expected a '='";
+                error = ss.str();
+            }
+            advance();
+            std::shared_ptr<ExpressionNode> value = expression();
+            if(error)
+            {
+                return nullptr;
+            }
+            keys[key] = value;
+        }
+        while(current_token.type == Token::Type::COMMA);
+
+        if(current_token.type != Token::Type::RBRACE)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected a '}'";
+            error = ss.str();
+            return nullptr;
+        }
+        advance();
+        return std::make_shared<ObjectLiteralNode>(std::move(keys), saved_position);
+    }
+
     Parser::ParseExprRule& Parser::get_rule(const Token::Type& type)
     {
         static std::unordered_map<Token::Type, ParseExprRule> rules =
         {
-            //                              Prefix                  Infix                       Precedence
-            {Token::Type::NONE,             {nullptr,               nullptr,                    ExprPrecedence::NONE        }},
-            {Token::Type::NUMBER_LITERAL,   {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::STRING_LITERAL,   {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::BOOL_LITERAL,     {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::NULL_LITERAL,     {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::IDENTIFIER,       {&Parser::factor,       nullptr,                    ExprPrecedence::FACTOR      }},
+            //                              Prefix                      Infix                       Precedence
+            {Token::Type::NONE,             {nullptr,                   nullptr,                    ExprPrecedence::NONE        }},
+            {Token::Type::NUMBER_LITERAL,   {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::STRING_LITERAL,   {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::BOOL_LITERAL,     {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::NULL_LITERAL,     {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::IDENTIFIER,       {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
 
-            {Token::Type::ADD,              {&Parser::unary_op,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
-            {Token::Type::SUB,              {&Parser::unary_op,     &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
-            {Token::Type::MUL,              {nullptr,               &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
-            {Token::Type::DIV,              {nullptr,               &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
-            {Token::Type::POW,              {nullptr,               &Parser::binary_op_right,   ExprPrecedence::POWER       }},
+            {Token::Type::ADD,              {&Parser::unary_op,         &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::SUB,              {&Parser::unary_op,         &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
+            {Token::Type::MUL,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
+            {Token::Type::DIV,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
+            {Token::Type::POW,              {nullptr,                   &Parser::binary_op_right,   ExprPrecedence::POWER       }},
             
-            {Token::Type::LESS_THAN,        {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
-            {Token::Type::GREATER_THAN,     {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
-            {Token::Type::LESS_EQUAL,       {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
-            {Token::Type::GREATER_EQUAL,    {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
-            {Token::Type::EQUAL,            {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
-            {Token::Type::NOT_EQUAL,        {nullptr,               &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::LESS_THAN,        {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::GREATER_THAN,     {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::LESS_EQUAL,       {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::GREATER_EQUAL,    {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::EQUAL,            {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
+            {Token::Type::NOT_EQUAL,        {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
 
-            {Token::Type::LOGIC_OR,         {nullptr,               &Parser::binary_op_left,    ExprPrecedence::LOGIC_OR    }},
-            {Token::Type::LOGIC_AND,        {nullptr,               &Parser::binary_op_left,    ExprPrecedence::LOGIC_AND   }},
-            {Token::Type::LOGIC_NOT,        {&Parser::unary_op,     nullptr,                    ExprPrecedence::NONE        }},
+            {Token::Type::LOGIC_OR,         {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::LOGIC_OR    }},
+            {Token::Type::LOGIC_AND,        {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::LOGIC_AND   }},
+            {Token::Type::LOGIC_NOT,        {&Parser::unary_op,         nullptr,                    ExprPrecedence::NONE        }},
 
-            {Token::Type::ASSIGN,           {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
-            {Token::Type::ASSIGN_ADD,       {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
-            {Token::Type::ASSIGN_SUB,       {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
-            {Token::Type::ASSIGN_MUL,       {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
-            {Token::Type::ASSIGN_DIV,       {nullptr,               &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
+            {Token::Type::ASSIGN,           {nullptr,                   &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
+            {Token::Type::ASSIGN_ADD,       {nullptr,                   &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
+            {Token::Type::ASSIGN_SUB,       {nullptr,                   &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
+            {Token::Type::ASSIGN_MUL,       {nullptr,                   &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
+            {Token::Type::ASSIGN_DIV,       {nullptr,                   &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
 
-            {Token::Type::LPAREN,           {&Parser::grouping,     &Parser::call,              ExprPrecedence::CALL        }},
-            {Token::Type::DOT,              {nullptr,               &Parser::index,             ExprPrecedence::INDEX       }},
-            {Token::Type::COLON,            {nullptr,               &Parser::index,             ExprPrecedence::INDEX       }},
-            {Token::Type::LBRACKET,         {nullptr,               &Parser::subscript,         ExprPrecedence::SUBSCRIPT   }},
+            {Token::Type::LPAREN,           {&Parser::grouping,         &Parser::call,              ExprPrecedence::CALL        }},
+            {Token::Type::DOT,              {nullptr,                   &Parser::index,             ExprPrecedence::INDEX       }},
+            {Token::Type::COLON,            {nullptr,                   &Parser::index,             ExprPrecedence::INDEX       }},
+            {Token::Type::LBRACKET,         {nullptr,                   &Parser::subscript,         ExprPrecedence::SUBSCRIPT   }},
+            {Token::Type::LBRACE,           {&Parser::object_literal,   nullptr,                    ExprPrecedence::NONE        }},
             
             {Token::Type::TK_EOF,           {nullptr,               nullptr,                    ExprPrecedence::NONE        }},
         };
