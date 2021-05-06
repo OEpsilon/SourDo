@@ -5,13 +5,30 @@
 
 namespace sourdo
 {
-    static const std::vector<std::string> KEYWORDS = 
+    static std::unordered_map<std::string, Token::Type> KEYWORDS = 
     {
-        "var", "func",
-        "return", "break", "continue",
-        "if", "elif", "else", 
-        "for", "while", "loop",
-        "then", "do", "end" 
+        {"var",         Token::Type::VAR            }, 
+        {"func",        Token::Type::FUNC           },
+        {"return",      Token::Type::RETURN         }, 
+        {"break",       Token::Type::BREAK          }, 
+        {"continue",    Token::Type::CONTINUE       },
+        {"if",          Token::Type::IF             }, 
+        {"elif",        Token::Type::ELIF           }, 
+        {"else",        Token::Type::ELSE           }, 
+        {"for",         Token::Type::FOR            }, 
+        {"while",       Token::Type::WHILE          }, 
+        {"loop",        Token::Type::LOOP           },
+        {"then",        Token::Type::THEN           }, 
+        {"do",          Token::Type::DO             }, 
+        {"end",         Token::Type::END            },
+
+        {"or",          Token::Type::LOGIC_OR       }, 
+        {"and",         Token::Type::LOGIC_AND      }, 
+        {"not",         Token::Type::LOGIC_NOT      }, 
+
+        {"null",        Token::Type::NULL_LITERAL   }, 
+        {"true",        Token::Type::BOOL_TRUE      }, 
+        {"false",       Token::Type::BOOL_FALSE     }, 
     };
 
     TokenizerReturn tokenize_string(const std::string& text, const std::string& file_name)
@@ -76,34 +93,9 @@ namespace sourdo
                 }
                 i--;
                 file_position.column--;
-
-                if(identifier_string == "or")
+                if(KEYWORDS.find(identifier_string) != KEYWORDS.end())
                 {
-                    tokens.emplace_back(Token::Type::LOGIC_OR, saved_position);
-                }
-                else if(identifier_string == "and")
-                {
-                    tokens.emplace_back(Token::Type::LOGIC_AND, saved_position);
-                }
-                else if(identifier_string == "not")
-                {
-                    tokens.emplace_back(Token::Type::LOGIC_NOT, saved_position);
-                }
-                else if(identifier_string == "false")
-                {
-                    tokens.emplace_back(Token::Type::BOOL_LITERAL, saved_position, "false");
-                }
-                else if(identifier_string == "true")
-                {
-                    tokens.emplace_back(Token::Type::BOOL_LITERAL, saved_position, "true");
-                }
-                else if(identifier_string == "null")
-                {
-                    tokens.emplace_back(Token::Type::NULL_LITERAL, saved_position);
-                }
-                else if(std::find(KEYWORDS.begin(), KEYWORDS.end(), identifier_string) != KEYWORDS.end())
-                {
-                    tokens.emplace_back(Token::Type::KEYWORD, saved_position, identifier_string);
+                    tokens.emplace_back(KEYWORDS[identifier_string], saved_position);
                 }
                 else
                 {

@@ -5,28 +5,24 @@ func factorial(value)
     return value * factorial(value - 1)
 end
 
-func Vec2_print(self)
-    print("(", self.x, self.y, ")")
-end
+var Vec2 = {}
 
-func Vec2_new(x, y)
-    var self = {
-        "x" = x,
-        "y" = y,
-        "print" = Vec2_print,
-    }
+func Vec2.new(x, y)
+    var self = {} 
+    self.x = x
+    self.y = y
+    self.to_string = Vec2.to_string
     return self
 end
 
-var Vec2 = {
-    "new" = Vec2_new,
-}
+func Vec2:to_string()
+    return format("({1}, {2})", self.x, self.y)
+end
 
 var vec = Vec2.new(2, 4)
-
-vec:print()
+print(vec:to_string())
 vec.x += 43
-vec:print()
+print(vec:to_string())
 
 -*
 var message = "Hello "

@@ -4,11 +4,12 @@
 
 namespace sourdo
 {
-    void arg_count_error(Data& data, uint32_t expected_count);
+    void check_arg_count(Data& data, uint32_t expected_count);
 
-    void is_number_error(Data& data, int arg);
-    void is_bool_error(Data& data, int arg);
-    void is_string_error(Data& data, int arg);
-    void is_function_error(Data& data, int arg);
-    void is_null_error(Data& data, int arg);
+    void check_is_number(Data& data, int arg);
+    void check_is_bool(Data& data, int arg);
+    void check_is_string(Data& data, int arg);
+    void check_is_function(Data& data, int arg);
+    void check_is_null(Data& data, int arg);
+    void check_is_object(Data& data, int arg);
 } // namespace sourdo

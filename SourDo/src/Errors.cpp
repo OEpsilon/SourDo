@@ -4,7 +4,7 @@
 
 namespace sourdo
 {
-    void arg_count_error(Data& data, uint32_t expected_count)
+    void check_arg_count(Data& data, uint32_t expected_count)
     {
         if(data.get_size() != expected_count) 
         {
@@ -36,7 +36,7 @@ namespace sourdo
         }
     }
     
-    void is_number_error(Data& data, int arg)
+    void check_is_number(Data& data, int arg)
     {
         if(data.get_value_type(arg) != ValueType::NUMBER)
         {
@@ -46,7 +46,7 @@ namespace sourdo
         }
     }
 
-    void is_bool_error(Data& data, int arg)
+    void check_is_bool(Data& data, int arg)
     {
         if(data.get_value_type(arg) != ValueType::BOOL)
         {
@@ -56,7 +56,7 @@ namespace sourdo
         }
     }
 
-    void is_string_error(Data& data, int arg)
+    void check_is_string(Data& data, int arg)
     {
         if(data.get_value_type(arg) != ValueType::STRING)
         {
@@ -66,7 +66,7 @@ namespace sourdo
         }
     }
 
-    void is_function_error(Data& data, int arg)
+    void check_is_function(Data& data, int arg)
     {
         if(data.get_value_type(arg) != ValueType::SOURDO_FUNCTION 
             || data.get_value_type(arg) != ValueType::CPP_FUNCTION)
@@ -77,12 +77,22 @@ namespace sourdo
         }
     }
 
-    void is_null_error(Data& data, int arg)
+    void check_is_null(Data& data, int arg)
     {
         if(data.get_value_type(arg) != ValueType::_NULL)
         {
             std::stringstream ss;
             ss << "Argument #" << arg << ": Expected null";
+            data.error(ss.str());
+        }
+    }
+
+    void check_is_object(Data& data, int arg)
+    {
+        if(data.get_value_type(arg) != ValueType::OBJECT)
+        {
+            std::stringstream ss;
+            ss << "Argument #" << arg << ": Expected an object";
             data.error(ss.str());
         }
     }

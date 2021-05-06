@@ -70,6 +70,54 @@ namespace sourdo
         return arguments;
     }
 
+    std::vector<std::string> Parser::get_parameters(std::vector<std::string>& parameters)
+    {
+        if(current_token.type != Token::Type::LPAREN)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected a '('";
+            error = ss.str();
+            return {};
+        }
+        advance();
+        if(current_token.type != Token::Type::RPAREN)
+        {
+            if(current_token.type != Token::Type::IDENTIFIER)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Expected an identifier";
+                error = ss.str();
+                return {};
+            }
+            parameters.push_back(current_token.value);
+            advance();
+
+            while(current_token.type == Token::Type::COMMA)
+            {
+                advance();
+                if(current_token.type != Token::Type::IDENTIFIER)
+                {
+                    std::stringstream ss;
+                    ss << current_token.position << "Expected an identifier";
+                    error = ss.str();
+                    return {};
+                }
+                parameters.push_back(current_token.value);
+                advance();
+            }
+            
+            if(current_token.type != Token::Type::RPAREN)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Expected a ')'";
+                error = ss.str();
+                return {};
+            }
+        }
+        advance();
+        return parameters;
+    }
+
     std::shared_ptr<StatementListNode> Parser::statement_list()
     {
         Position saved_position = current_token.position;
@@ -80,9 +128,9 @@ namespace sourdo
             advance();
         }
 
-        while(current_token != Token(Token::Type::KEYWORD, "end") &&
-                current_token != Token(Token::Type::KEYWORD, "elif") &&
-                current_token != Token(Token::Type::KEYWORD, "else") &&
+        while(current_token.type != Token::Type::END &&
+                current_token.type != Token::Type::ELIF &&
+            current_token.type != Token::Type::ELSE &&
                 current_token.type != Token::Type::TK_EOF)
         {
             std::shared_ptr<Node> stmt = statement();
@@ -108,47 +156,57 @@ namespace sourdo
 
     std::shared_ptr<Node> Parser::statement()
     {
-        if(current_token == Token(Token::Type::KEYWORD, "var"))
+        switch(current_token.type)
         {
-            return var_declaration();
-        }
-        else if(current_token == Token(Token::Type::KEYWORD, "func"))
-        {
-            Position saved_position = current_token.position;
-            advance();
-            if(current_token.type != Token::Type::IDENTIFIER)
+            case Token::Type::VAR:
             {
-                std::stringstream ss;
-                ss << current_token.position << "Expected an identifier";
-                error = ss.str();
-                return nullptr;
+                return var_declaration();
+                break;
             }
-            Token name = current_token;
-            advance();
-
-            if(current_token.type != Token::Type::LPAREN)
+            case Token::Type::FUNC:
             {
-                std::stringstream ss;
-                ss << current_token.position << "Expected a '('";
-                error = ss.str();
-                return nullptr;
-            }
-            advance();
-            std::vector<Token> paramaters;
-            if(current_token.type != Token::Type::RPAREN)
-            {
-                if(current_token.type != Token::Type::IDENTIFIER)
+                // Don't give an error yet as this may be a lambda function and thus have no name.
+                if(tokens[position + 1].type != Token::Type::IDENTIFIER)
                 {
-                    std::stringstream ss;
-                    ss << current_token.position << "Expected an identifier";
-                    error = ss.str();
-                    return nullptr;
+                    break;
                 }
-                paramaters.push_back(current_token);
-                advance();
+                Position saved_position = current_token.position;
 
-                while(current_token.type == Token::Type::COMMA)
+                std::vector<std::string> parameters;
+                std::shared_ptr<StatementListNode> statements;
+
+                auto fill_function_data = [&]() -> void
                 {
+                    get_parameters(parameters);
+                    if(error)
+                    {
+                        return;
+                    }
+
+                    statements = statement_list();
+                    if(error)
+                    {
+                        return;
+                    }
+                    if(current_token.type != Token::Type::END)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected 'end'";
+                        error = ss.str();
+                        return;
+                    }
+                    advance();
+                };
+                
+                advance();
+                Token name = current_token;
+                advance();
+                if(current_token.type == Token::Type::DOT || current_token.type == Token::Type::COLON)
+                {
+                    if(current_token.type == Token::Type::COLON)
+                    {
+                        parameters.push_back("self");
+                    }
                     advance();
                     if(current_token.type != Token::Type::IDENTIFIER)
                     {
@@ -157,252 +215,257 @@ namespace sourdo
                         error = ss.str();
                         return nullptr;
                     }
-                    paramaters.push_back(current_token);
+                    Token property_name = current_token;
                     advance();
+
+                    fill_function_data();
+                    if(error)
+                    {
+                        return nullptr;
+                    }
+                    return std::make_shared<AssignmentNode>(
+                        std::make_shared<IndexNode>(std::make_shared<IdentifierNode>(name), 
+                            std::make_shared<StringNode>(property_name)
+                        ),
+                        AssignmentNode::Operation::NONE,
+                        std::make_shared<FuncNode>(parameters, statements, saved_position),
+                        saved_position
+                    );
                 }
                 
-                if(current_token.type != Token::Type::RPAREN)
+                fill_function_data();
+                if(error)
                 {
-                    std::stringstream ss;
-                    ss << current_token.position << "Expected a ')'";
-                    error = ss.str();
                     return nullptr;
                 }
-            }
-            advance();
-
-            std::shared_ptr<StatementListNode> statements = statement_list();
-            if(error)
-            {
-                return nullptr;
-            }
-            if(current_token != Token(Token::Type::KEYWORD, "end"))
-            {
-                std::stringstream ss;
-                ss << current_token.position << "Expected 'end'";
-                error = ss.str();
-                return nullptr;
-            }
-            advance();
-            return std::make_shared<FuncDeclarationNode>(name, paramaters, statements, saved_position);
-        }
-        else if(current_token == Token(Token::Type::KEYWORD, "return"))
-        {
-            Position saved_position = current_token.position;
-            advance();
-            std::shared_ptr<ExpressionNode> return_value = expression();
-            if(error)
-            {
-                return nullptr;
-            }
-            return std::make_shared<ReturnNode>(return_value, saved_position);
-        }
-        else if(current_token == Token(Token::Type::KEYWORD, "break"))
-        {
-            Position saved_position = current_token.position;
-            advance();
-            return std::make_shared<BreakNode>(saved_position);
-        }
-        else if(current_token == Token(Token::Type::KEYWORD, "continue"))
-        {
-            Position saved_position = current_token.position;
-            advance();
-            return std::make_shared<ContinueNode>(saved_position);
-        }
-        else if(current_token == Token(Token::Type::KEYWORD, "if"))
-        {
-            Position saved_position = current_token.position;
-            std::vector<IfNode::IfBlock> cases;
-            std::shared_ptr<StatementListNode> else_case;
-            advance();
-            
-            auto if_expr_case = [&]() -> void
-            {
-                std::shared_ptr<ExpressionNode> condition = expression();
-                if(error)
-                {
-                    return;
-                }
                 
-                if(current_token != Token(Token::Type::KEYWORD, "then"))
-                {
-                    std::stringstream ss;
-                    ss << current_token.position << "Expected 'then'";
-                    error = ss.str();
-                    return;
-                }
+                return std::make_shared<VarDeclarationNode>(name, std::make_shared<FuncNode>(parameters, statements, saved_position), saved_position);
+            }
+            case Token::Type::RETURN:
+            {
+                Position saved_position = current_token.position;
                 advance();
-
-                std::shared_ptr<StatementListNode> statements = statement_list();
+                std::shared_ptr<ExpressionNode> return_value = expression();
                 if(error)
                 {
-                    return;
+                    return nullptr;
                 }
-
-                cases.emplace_back(condition, statements);
-            };
-
-            if_expr_case();
-            if(error)
-            {
-                return nullptr;
+                return std::make_shared<ReturnNode>(return_value, saved_position);
+                break;
             }
-
-            while(current_token == Token(Token::Type::KEYWORD, "elif"))
+            case Token::Type::BREAK:
             {
+                Position saved_position = current_token.position;
                 advance();
+                return std::make_shared<BreakNode>(saved_position);
+                break;
+            }
+            case Token::Type::CONTINUE:
+            {
+                Position saved_position = current_token.position;
+                advance();
+                return std::make_shared<ContinueNode>(saved_position);
+                break;
+            }
+            case Token::Type::IF:
+            {
+                Position saved_position = current_token.position;
+                std::vector<IfNode::IfBlock> cases;
+                std::shared_ptr<StatementListNode> else_case;
+                advance();
+                
+                auto if_expr_case = [&]() -> void
+                {
+                    std::shared_ptr<ExpressionNode> condition = expression();
+                    if(error)
+                    {
+                        return;
+                    }
+                    
+                    if(current_token.type != Token::Type::THEN)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected 'then'";
+                        error = ss.str();
+                        return;
+                    }
+                    advance();
+
+                    std::shared_ptr<StatementListNode> statements = statement_list();
+                    if(error)
+                    {
+                        return;
+                    }
+
+                    cases.emplace_back(condition, statements);
+                };
 
                 if_expr_case();
                 if(error)
                 {
                     return nullptr;
                 }
-            }
 
-            if(current_token == Token(Token::Type::KEYWORD, "else"))
-            {
+                while(current_token.type == Token::Type::ELIF)
+                {
+                    advance();
+
+                    if_expr_case();
+                    if(error)
+                    {
+                        return nullptr;
+                    }
+                }
+
+                if(current_token.type == Token::Type::ELSE)
+                {
+                    advance();
+
+                    else_case = statement_list();
+                    if(error)
+                    {
+                        return nullptr;
+                    }
+                }
+
+                if(current_token.type != Token::Type::END)
+                {
+                    std::stringstream ss;
+                    ss << current_token.position << "Expected 'end'";
+                    error = ss.str();
+                    return nullptr;
+                }
                 advance();
 
-                else_case = statement_list();
+                return std::make_shared<IfNode>(cases, else_case, saved_position);
+                break;
+            }
+            case Token::Type::FOR:
+            {
+                Position saved_position = current_token.position;
+                advance();
+
+                std::shared_ptr<Node> initializer;
+                if(current_token.type == Token::Type::VAR)
+                {
+                    initializer = var_declaration();
+                }
+                else
+                {
+                    initializer = expression(true, true);
+                }
+                
                 if(error)
                 {
                     return nullptr;
                 }
-            }
 
-            if(current_token != Token(Token::Type::KEYWORD, "end"))
-            {
-                std::stringstream ss;
-                ss << current_token.position << "Expected 'end'";
-                error = ss.str();
-                return nullptr;
-            }
-            advance();
+                if(current_token.type != Token::Type::COMMA)
+                {
+                    std::stringstream ss;
+                    ss << current_token << "Expected a ','";
+                    error = ss.str();
+                    return nullptr;
+                }
+                advance();
+                std::shared_ptr<ExpressionNode> condition = expression(true);
 
+                if(current_token.type != Token::Type::COMMA)
+                {
+                    std::stringstream ss;
+                    ss << current_token << "Expected a ','";
+                    error = ss.str();
+                    return nullptr;
+                }
+                advance();
+                
+                std::shared_ptr<Node> increment = expression(true, true);
+                if(error)
+                {
+                    return nullptr;
+                }
+                if(current_token.type != Token::Type::DO)
+                {
+                    std::stringstream ss;
+                    ss << current_token.position << "Expected 'do'";
+                    error = ss.str();
+                }
+                advance();
 
-            return std::make_shared<IfNode>(cases, else_case, saved_position);
-        }
-        else if(current_token == Token(Token::Type::KEYWORD, "for"))
-        {
-            Position saved_position = current_token.position;
-            advance();
+                std::shared_ptr<StatementListNode> statements = statement_list();
+                if(error)
+                {
+                    return nullptr;
+                }
+                if(current_token.type == Token::Type::END)
+                {
+                    std::stringstream ss;
+                    ss << current_token << "Expected 'end'";
+                    error = ss.str();
+                }
+                advance();
+                return std::make_shared<ForNode>(initializer, condition, increment, statements, saved_position);
+            }
+            case Token::Type::WHILE:
+            {
+                Position saved_position = current_token.position;
+                advance();
 
-            std::shared_ptr<Node> initializer;
-            if(current_token == Token(Token::Type::KEYWORD, "var"))
-            {
-                initializer = var_declaration();
-            }
-            else
-            {
-                initializer = expression(true, true);
-            }
-            
-            if(error)
-            {
-                return nullptr;
-            }
+                std::shared_ptr<ExpressionNode> condition = expression(true);
+                if(error)
+                {
+                    return nullptr;
+                }
 
-            if(current_token.type != Token::Type::COMMA)
-            {
-                std::stringstream ss;
-                ss << current_token << "Expected a ','";
-                error = ss.str();
-                return nullptr;
-            }
-            advance();
-            std::shared_ptr<ExpressionNode> condition = expression(true);
+                if(current_token.type != Token::Type::DO)
+                {
+                    std::stringstream ss;
+                    ss << current_token << "Expected 'do'";
+                    error = ss.str();
+                    return nullptr;
+                }
+                advance();
+                std::shared_ptr<StatementListNode> statements = statement_list();
+                if(error)
+                {
+                    return nullptr;
+                }
 
-            if(current_token.type != Token::Type::COMMA)
-            {
-                std::stringstream ss;
-                ss << current_token << "Expected a ','";
-                error = ss.str();
-                return nullptr;
+                if(current_token.type != Token::Type::END)
+                {
+                    std::stringstream ss;
+                    ss << current_token << "Expected 'end'";
+                    error = ss.str();
+                    return nullptr;
+                }
+                advance();
+                return std::make_shared<WhileNode>(condition, statements, saved_position);
             }
-            advance();
-            
-            std::shared_ptr<Node> increment = expression(true, true);
-            if(error)
+            case Token::Type::LOOP:
             {
-                return nullptr;
-            }
-            if(current_token != Token(Token::Type::KEYWORD, "do"))
-            {
-                std::stringstream ss;
-                ss << current_token.position << "Expected 'do'";
-                error = ss.str();
-            }
-            advance();
+                Position saved_position = current_token.position;
+                advance();
 
-            std::shared_ptr<StatementListNode> statements = statement_list();
-            if(error)
-            {
-                return nullptr;
-            }
-            if(current_token != Token(Token::Type::KEYWORD, "end"))
-            {
-                std::stringstream ss;
-                ss << current_token << "Expected 'end'";
-                error = ss.str();
-            }
-            advance();
-            return std::make_shared<ForNode>(initializer, condition, increment, statements, saved_position);
-        }
-        else if(current_token == Token(Token::Type::KEYWORD, "while"))
-        {
-            Position saved_position = current_token.position;
-            advance();
+                std::shared_ptr<StatementListNode> statements = statement_list();
+                if(error)
+                {
+                    return nullptr;
+                }
 
-            std::shared_ptr<ExpressionNode> condition = expression(true);
-            if(error)
-            {
-                return nullptr;
+                if(current_token.type != Token::Type::END)
+                {
+                    std::stringstream ss;
+                    ss << current_token << "Expected 'end'";
+                    error = ss.str();
+                    return nullptr;
+                }
+                advance();
+                return std::make_shared<LoopNode>(statements, saved_position);
             }
-
-            if(current_token != Token(Token::Type::KEYWORD, "do"))
+            default:
             {
-                std::stringstream ss;
-                ss << current_token << "Expected 'do'";
-                error = ss.str();
-                return nullptr;
+                break;
             }
-            advance();
-            std::shared_ptr<StatementListNode> statements = statement_list();
-            if(error)
-            {
-                return nullptr;
-            }
-
-            if(current_token != Token(Token::Type::KEYWORD, "end"))
-            {
-                std::stringstream ss;
-                ss << current_token << "Expected 'end'";
-                error = ss.str();
-                return nullptr;
-            }
-            advance();
-            return std::make_shared<WhileNode>(condition, statements, saved_position);
-        }
-        else if(current_token == Token(Token::Type::KEYWORD, "loop"))
-        {
-            Position saved_position = current_token.position;
-            advance();
-
-            std::shared_ptr<StatementListNode> statements = statement_list();
-            if(error)
-            {
-                return nullptr;
-            }
-
-            if(current_token != Token(Token::Type::KEYWORD, "end"))
-            {
-                std::stringstream ss;
-                ss << current_token << "Expected 'end'";
-                error = ss.str();
-                return nullptr;
-            }
-            advance();
-            return std::make_shared<LoopNode>(statements, saved_position);
         }
         return expression(false, true);
     }
@@ -681,7 +744,13 @@ namespace sourdo
                 return std::make_shared<StringNode>(tok);
                 break;
             }
-            case Token::Type::BOOL_LITERAL:
+            case Token::Type::BOOL_TRUE:
+            {
+                advance();
+                return std::make_shared<BoolNode>(tok);
+                break;
+            }
+            case Token::Type::BOOL_FALSE:
             {
                 advance();
                 return std::make_shared<BoolNode>(tok);
@@ -706,6 +775,28 @@ namespace sourdo
         ss << current_token.position << "Expected an expression";
         error = ss.str();
         return nullptr;
+    }
+
+    std::shared_ptr<ExpressionNode> Parser::lambda_function(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
+    {
+        Position saved_position = current_token.position;
+        advance();
+        std::vector<std::string> parameters;
+        get_parameters(parameters);
+        std::shared_ptr<StatementListNode> statements = statement_list();
+        if(error)
+        {
+            return nullptr;
+        }
+        if(current_token.type != Token::Type::END)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected 'end'";
+            error = ss.str();
+            return nullptr;
+        }
+        advance();
+        return std::make_shared<FuncNode>(parameters, statements, saved_position);
     }
 
     std::shared_ptr<ExpressionNode> Parser::object_literal(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
@@ -734,6 +825,7 @@ namespace sourdo
                 std::stringstream ss;
                 ss << current_token.position << "Expected a '='";
                 error = ss.str();
+                return nullptr;
             }
             advance();
             std::shared_ptr<ExpressionNode> value = expression();
@@ -764,9 +856,11 @@ namespace sourdo
             {Token::Type::NONE,             {nullptr,                   nullptr,                    ExprPrecedence::NONE        }},
             {Token::Type::NUMBER_LITERAL,   {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::STRING_LITERAL,   {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
-            {Token::Type::BOOL_LITERAL,     {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::BOOL_TRUE,        {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::BOOL_FALSE,       {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::NULL_LITERAL,     {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
             {Token::Type::IDENTIFIER,       {&Parser::factor,           nullptr,                    ExprPrecedence::FACTOR      }},
+            {Token::Type::FUNC,             {&Parser::lambda_function,  nullptr,                    ExprPrecedence::FACTOR      }},
 
             {Token::Type::ADD,              {&Parser::unary_op,         &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
             {Token::Type::SUB,              {&Parser::unary_op,         &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},

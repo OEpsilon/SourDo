@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include <sstream>
+#include <vector>
+#include <string>
 
 namespace sourdo
 {
@@ -35,6 +37,9 @@ namespace sourdo
                 case sourdo::ValueType::CPP_FUNCTION:
                     ss << "[CppFunction]";
                     break;
+                case sourdo::ValueType::OBJECT:
+                    ss << "[Object]";
+                    break;
             }
             if(i < arg_count)
             {
@@ -48,7 +53,7 @@ namespace sourdo
 
     bool to_string(Data& data)
     {
-        arg_count_error(data, 1);
+        check_arg_count(data, 1);
 
         switch(data.get_value_type(1))
         {
@@ -74,7 +79,91 @@ namespace sourdo
             case ValueType::_NULL:
                 data.push_string("null");
                 break;
+            case sourdo::ValueType::OBJECT:
+                data.push_string("[Object]");
+                break;
         }
+        return true;
+    }
+
+    bool format(Data& data)
+    {
+        uint32_t arg_count = data.get_size();
+        if(arg_count < 1)
+        {
+            data.error("Expected a format string as the first argument");
+        }
+        check_is_string(data, 1);
+
+        std::string format_string = data.value_to_string(1);
+        std::stringstream ss;
+        ss << std::boolalpha << std::fixed;
+        for(int i = 0; i < format_string.length(); i++)
+        {
+            if(format_string[i] != '{')
+            {
+                ss << format_string[i];
+            }
+            else
+            {
+                i++;
+                if(format_string[i] == '{')
+                {
+                    continue;
+                }
+                std::string index_str = "";
+                while(i < format_string.length())
+                {
+                    if(format_string[i] == '}')
+                    {
+                        break;
+                    }
+                    index_str += format_string[i];
+                    i++;
+                }
+                if(format_string[i] != '}')
+                {
+                    data.error("'{' in format string is not closed");
+                }
+                
+                int index = std::stoi(index_str);
+                if(index > arg_count)
+                {
+                    data.error("Index '" + index_str + "' in format string is greater than the number of format arguments");
+                }
+                else if(index < 1)
+                {
+                    data.error("Index '" + index_str + "' in format string is less than 1");
+                }
+
+                switch(data.get_value_type(index + 1))
+                {
+                    case sourdo::ValueType::_NULL:
+                        ss << "null";
+                        break;
+                    case sourdo::ValueType::NUMBER:
+                        ss << data.value_to_number(index + 1);
+                        break;
+                    case sourdo::ValueType::BOOL:
+                        ss << data.value_to_bool(index + 1);
+                        break;
+                    case sourdo::ValueType::STRING:
+                        ss << data.value_to_string(index + 1);
+                        break;
+                    case sourdo::ValueType::SOURDO_FUNCTION:
+                        ss << "[SourdoFunction]";
+                        break;
+                    case sourdo::ValueType::CPP_FUNCTION:
+                        ss << "[CppFunction]";
+                        break;
+                    case sourdo::ValueType::OBJECT:
+                        ss << "[Object]";
+                        break;
+                }
+            }
+        }
+
+        data.push_string(ss.str());
         return true;
     }
 
@@ -87,5 +176,9 @@ namespace sourdo
         data.create_value("to_string");
         data.push_cppfunction(to_string);
         data.set_value("to_string", true);
+
+        data.create_value("format");
+        data.push_cppfunction(format);
+        data.set_value("format", true);
     }
 } // namespace sourdo

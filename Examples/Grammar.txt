@@ -34,8 +34,7 @@ var_declaration     := <KEYWORD:var> <IDENTIFIER> <ASSIGN> expression
 
 var_assignment      := <IDENTIFIER> <ASSIGN|ASSIGN_ADD|ASSIGN_SUB|ASSIGN_MUL|ASSIGN_DIV> expression
 
-func_def            := <KEYWORD:func> <IDENTIFIER> <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> 
-                            <KEYWORD:then> statement_list <KEYWORD:end>
+func_def            := <KEYWORD:func> <IDENTIFIER> <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> statement_list <KEYWORD:end>
 
 expression          := logic_or
 
@@ -67,7 +66,10 @@ subscript           := factor (<LBRACKET> expression <RBRACKET>)?
 
 factor              := <NUMBER_LITERAL|STRING_LITERAL|BOOL_LITERAL|NULL_LITERAL|IDENTIFIER>
                     := object_literal
+                    := lambda_function
                     := <LPAREN> expression <RPAREN>
 
 object_literal      := <LBRACE> (expression (<COMMA> expression)* (<COMMA>)?)? <RBRACE>
+
+lambda_function     := <KEYWORD:func> <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> statement_list <KEYWORD:end>
  

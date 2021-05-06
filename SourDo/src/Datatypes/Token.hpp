@@ -12,8 +12,14 @@ namespace sourdo
         enum class Type : uint32_t
         {
             NONE,
-            KEYWORD, IDENTIFIER,
-            NUMBER_LITERAL, STRING_LITERAL, BOOL_LITERAL, NULL_LITERAL,
+
+            VAR, FUNC, 
+            RETURN, BREAK, CONTINUE,
+            IF, ELIF, ELSE, 
+            FOR, WHILE, LOOP,
+            THEN, DO, END,
+            
+            NUMBER_LITERAL, STRING_LITERAL, BOOL_TRUE, BOOL_FALSE, NULL_LITERAL, IDENTIFIER,
             ADD, SUB, MUL, DIV, POW,
             LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, EQUAL, NOT_EQUAL,
             LOGIC_OR, LOGIC_AND, LOGIC_NOT,

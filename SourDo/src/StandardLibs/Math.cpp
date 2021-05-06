@@ -10,148 +10,148 @@ namespace sourdo
 {
     bool max(Data& data)
     {
-        arg_count_error(data, 2);
-        is_number_error(data, 1);
-        is_number_error(data, 2);
+        check_arg_count(data, 2);
+        check_is_number(data, 1);
+        check_is_number(data, 2);
         data.push_number(std::max(data.value_to_number(1), data.value_to_number(2)) );
         return true;
     }
 
     bool min(Data& data)
     {
-        arg_count_error(data, 2);
-        is_number_error(data, 1);
-        is_number_error(data, 2);
+        check_arg_count(data, 2);
+        check_is_number(data, 1);
+        check_is_number(data, 2);
         data.push_number(std::min(data.value_to_number(1), data.value_to_number(2)) );
         return true;
     }
 
     bool clamp(Data& data)
     {
-        arg_count_error(data, 3);
-        is_number_error(data, 1);
-        is_number_error(data, 2);
-        is_number_error(data, 3);
+        check_arg_count(data, 3);
+        check_is_number(data, 1);
+        check_is_number(data, 2);
+        check_is_number(data, 3);
         data.push_number(std::clamp(data.value_to_number(1), data.value_to_number(2), data.value_to_number(3)) );
         return true;
     }
 
     bool abs(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::abs(data.value_to_number(1)));
         return true;
     }
 
     bool acos(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::acos(data.value_to_number(1)));
         return true;
     }
 
     bool asin(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::asin(data.value_to_number(1)));
         return true;
     }
 
     bool atan(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::atan(data.value_to_number(1)));
         return true;
     }
     
     bool cos(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::cos(data.value_to_number(1)));
         return true;
     }
 
     bool sin(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::sin(data.value_to_number(1)));
         return true;
     }
 
     bool tan(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::tan(data.value_to_number(1)));
         return true;
     }
 
     bool cosh(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::cosh(data.value_to_number(1)));
         return true;
     }
 
     bool sinh(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::sinh(data.value_to_number(1)));
         return true;
     }
 
     bool tanh(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::tanh(data.value_to_number(1)));
         return true;
     }
 
     bool deg2rad(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(data.value_to_number(1) * (M_PI / 180) );
         return true;
     }
 
     bool rad2deg(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(data.value_to_number(1) * 180 * M_PI );
         return true;
     }
 
     bool floor(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::floor(data.value_to_number(1)));
         return true;
     }
 
     bool ceil(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::ceil(data.value_to_number(1)));
         return true;
     }
 
     bool sqrt(Data& data)
     {
-        arg_count_error(data, 1);
-        is_number_error(data, 1);
+        check_arg_count(data, 1);
+        check_is_number(data, 1);
         data.push_number(std::sqrt(data.value_to_number(1)));
         return true;
     }

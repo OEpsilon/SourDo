@@ -713,22 +713,14 @@ namespace sourdo
             }
             else if(base.result.get_type() == ValueType::OBJECT)
             {
-                if(base.result.to_object()->keys.find(attribute.result) != base.result.to_object()->keys.end())
+                return_value = do_assignment(data, node->op, node->position, 
+                        base.result.to_object()->keys[attribute.result], new_value.result);
+                if(return_value.error_message)
                 {
-                    return_value = do_assignment(data, node->op, node->position, 
-                            base.result.to_object()->keys[attribute.result], new_value.result);
-                    if(return_value.error_message)
-                    {
-                        return return_value;
-                    }
-                    base.result.to_object()->keys[attribute.result] = return_value.result;
+                    return return_value;
                 }
-                else
-                {
-                    std::stringstream ss;
-                    ss << index_node->attribute->position << "Index does not exist in object";
-                    return_value.error_message = ss.str();
-                }
+                base.result.to_object()->keys[attribute.result] = return_value.result;
+                
             }
             else
             {
@@ -760,41 +752,31 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn visit_func_declaration_node(Data::Impl* data, std::shared_ptr<FuncDeclarationNode> node)
+    static VisitorReturn visit_func_node(Data::Impl* data, std::shared_ptr<FuncNode> node)
     {
         VisitorReturn return_value;
         
-        if(data->get_symbol(node->name.value) != nullptr)
+        std::vector<std::string> parameters;
+        parameters.reserve(node->parameters.size());
+        for(auto& param : node->parameters)
         {
-            std::stringstream ss;
-            ss << node->position << "'" << node->name.value << "' is already defined";
-            return_value.error_message = ss.str();
-        }
-        else
-        {
-            std::vector<std::string> parameters;
-            parameters.reserve(node->parameters.size());
-            for(auto& param : node->parameters)
+            if(data->get_symbol(param) != nullptr)
             {
-                if(data->get_symbol(param.value) != nullptr)
-                {
-                    std::stringstream ss;
-                    ss << node->position << "A value called '" << param.value << "' is already defined outside of the function";
-                    return_value.error_message = ss.str();
-                    return return_value;
-                }
-                if(std::find(parameters.begin(), parameters.end(), param.value) != parameters.end())
-                {
-                    std::stringstream ss;
-                    ss << node->position << "A parameter called '" << param.value << "' is already defined in this function";
-                    return_value.error_message = ss.str();
-                    return return_value;
-                }
-                parameters.emplace_back(param.value);
+                std::stringstream ss;
+                ss << node->position << "A value called '" << param << "' is already defined outside of the function";
+                return_value.error_message = ss.str();
+                return return_value;
             }
-
-            data->symbol_table[node->name.value] = std::make_shared<SourDoFunction>(parameters, node->statements);
+            if(std::find(parameters.begin(), parameters.end(), param) != parameters.end())
+            {
+                std::stringstream ss;
+                ss << node->position << "A parameter called '" << param << "' is already defined in this function";
+                return_value.error_message = ss.str();
+                return return_value;
+            }
+            parameters.emplace_back(param);
         }
+        return_value.result = std::make_shared<SourDoFunction>(parameters, node->statements);
 
         return return_value;
     }
@@ -1230,9 +1212,9 @@ namespace sourdo
                 return_value = visit_assignment_node(data, std::static_pointer_cast<AssignmentNode>(node));
                 break;
             }
-            case Node::Type::FUNC_DECLARATION_NODE:
+            case Node::Type::FUNC_NODE:
             {
-                return_value = visit_func_declaration_node(data, std::static_pointer_cast<FuncDeclarationNode>(node));
+                return_value = visit_func_node(data, std::static_pointer_cast<FuncNode>(node));
                 break;
             }
             case Node::Type::RETURN_NODE:

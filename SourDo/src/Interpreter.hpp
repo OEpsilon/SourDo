@@ -75,6 +75,7 @@ namespace sourdo
 
         Token advance();
         std::vector<std::shared_ptr<ExpressionNode>> get_arguments();
+        std::vector<std::string> get_parameters(std::vector<std::string>& parameters);
 
         std::shared_ptr<StatementListNode> statement_list();
 
@@ -98,6 +99,8 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> subscript(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
         std::shared_ptr<ExpressionNode> factor(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
+
+        std::shared_ptr<ExpressionNode> lambda_function(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
         std::shared_ptr<ExpressionNode> object_literal(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 

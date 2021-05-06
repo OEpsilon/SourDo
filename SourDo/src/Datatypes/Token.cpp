@@ -10,12 +10,34 @@ namespace sourdo
         static std::unordered_map<Token::Type, const char*> strings = {
             //  Type                            String
             {   Token::Type::NONE,              "NONE"              },
-            {   Token::Type::KEYWORD ,          "KEYWORD"           },
-            {   Token::Type::IDENTIFIER ,       "IDENTIFIER"        },
+
+
+            {   Token::Type::VAR ,              "VAR"               },
+            {   Token::Type::FUNC ,             "FUNC"              },
+
+            {   Token::Type::RETURN ,           "RETURN"            },
+            {   Token::Type::BREAK ,            "BREAK"             },
+            {   Token::Type::CONTINUE ,         "CONTINUE"          },
+
+            {   Token::Type::IF ,               "IF"                },
+            {   Token::Type::ELIF ,             "ELIF"              },
+            {   Token::Type::ELSE ,             "ELSE"              },
+
+            {   Token::Type::FOR ,              "FOR"               },
+            {   Token::Type::WHILE ,            "WHILE"             },
+            {   Token::Type::LOOP ,             "LOOP"              },
+
+            {   Token::Type::THEN ,             "THEN"              },
+            {   Token::Type::DO ,               "DO"                },
+            {   Token::Type::END ,              "END"               },
+
+
             {   Token::Type::NUMBER_LITERAL,    "NUMBER_LITERAL"    },
             {   Token::Type::STRING_LITERAL,    "STRING_LITERAL"    },
-            {   Token::Type::BOOL_LITERAL,      "BOOL_LITERAL"      },
+            {   Token::Type::BOOL_TRUE,         "BOOL_TRUE"         },
+            {   Token::Type::BOOL_FALSE,        "BOOL_FALSE"        },
             {   Token::Type::NULL_LITERAL,      "NULL_LITERAL"      },
+            {   Token::Type::IDENTIFIER ,       "IDENTIFIER"        },
 
             {   Token::Type::ADD,               "ADD"               },
             {   Token::Type::SUB,               "SUB"               },

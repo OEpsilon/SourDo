@@ -19,7 +19,7 @@ namespace sourdo
     
     struct VarDeclarationNode;
     struct AssignmentNode;
-    struct FuncDeclarationNode;
+    struct FuncNode;
     struct ReturnNode;
     struct BreakNode;
     struct ContinueNode;
@@ -51,7 +51,7 @@ namespace sourdo
 
             VAR_DECLARATION_NODE,
             ASSIGNMENT_NODE,
-            FUNC_DECLARATION_NODE,
+            FUNC_NODE,
             RETURN_NODE,
             BREAK_NODE,
             CONTINUE_NODE,
@@ -263,28 +263,6 @@ namespace sourdo
         {
             std::stringstream ss;
             ss << "(var " << name_tok << ", " << initializer << ")";
-            return ss.str();
-        }
-    };
-
-    struct FuncDeclarationNode : public Node
-    {
-        FuncDeclarationNode(const Token& name, const std::vector<Token>& parameters, std::shared_ptr<StatementListNode> statements, const Position& position)
-            : Node(position), name(name), parameters(parameters), statements(statements)
-        {
-            type = Type::FUNC_DECLARATION_NODE;
-        }
-
-        virtual ~FuncDeclarationNode() = default;
-
-        Token name;
-        std::vector<Token> parameters;
-        std::shared_ptr<StatementListNode> statements;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            // implement later
-            std::stringstream ss;
             return ss.str();
         }
     };
@@ -593,6 +571,27 @@ namespace sourdo
         {
             std::stringstream ss;
             ss << name_tok;
+            return ss.str();
+        }
+    };
+
+    struct FuncNode : public ExpressionNode
+    {
+        FuncNode(const std::vector<std::string>& parameters, std::shared_ptr<StatementListNode> statements, const Position& position)
+            : ExpressionNode(position), parameters(parameters), statements(statements)
+        {
+            type = Type::FUNC_NODE;
+        }
+
+        virtual ~FuncNode() = default;
+
+        std::vector<std::string> parameters;
+        std::shared_ptr<StatementListNode> statements;
+
+        std::string to_string(uint32_t indent_level) final
+        {
+            // implement later
+            std::stringstream ss;
             return ss.str();
         }
     };
