@@ -9,30 +9,37 @@ var Vec2 = {}
 
 func Vec2.new(x, y)
     var self = {} 
+    self.__prototype = Vec2
+
     self.x = x
     self.y = y
-    self.to_string = Vec2.to_string
     return self
 end
 
-func Vec2:to_string()
+func Vec2:__string()
     return format("({1}, {2})", self.x, self.y)
 end
 
-var vec = Vec2.new(2, 4)
-print(vec:to_string())
-vec.x += 43
-print(vec:to_string())
-
--*
-var message = "Hello "
-
-message += "World!"
-
-for var i = 0, i < message:length(), i += 1 do
-    print(message[i])
-    if i >= 9 then
-        break
-    end
+func Vec2:__add(other)
+    return Vec2.new(self.x + other.x, self.y + other.y)
 end
-*-
+
+func Vec2:__sub(other)
+    return Vec2.new(self.x - other.x, self.y - other.y)
+end
+
+func Vec2:__mul(other)
+    return Vec2.new(self.x * other, self.y * other)
+end
+
+func Vec2:__div(other)
+    return Vec2.new(self.x / other, self.y / other)
+end
+
+
+var vec1 = Vec2.new(2, 4)
+print(format("vec1: {1}", vec1:__string()))
+var vec2 = Vec2.new(8, 09)
+vec1.x += vec2.x
+print(format("vec1: {1}", vec1:__string()))
+print(format("vec1 * 30: {1}", (vec1 * 30):__string()))

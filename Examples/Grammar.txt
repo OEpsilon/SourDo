@@ -34,7 +34,7 @@ var_declaration     := <KEYWORD:var> <IDENTIFIER> <ASSIGN> expression
 
 var_assignment      := <IDENTIFIER> <ASSIGN|ASSIGN_ADD|ASSIGN_SUB|ASSIGN_MUL|ASSIGN_DIV> expression
 
-func_def            := <KEYWORD:func> <IDENTIFIER> <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> statement_list <KEYWORD:end>
+func_def            := <KEYWORD:func> <IDENTIFIER> (<DOT|COLON> <IDENTIFIER>)? <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> statement_list <KEYWORD:end>
 
 expression          := logic_or
 

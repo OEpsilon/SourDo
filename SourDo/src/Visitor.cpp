@@ -37,8 +37,138 @@ namespace sourdo
         }
         return os;
     }
+    
+    static VisitorReturn get_magic_method(const Value& left_value, const std::string& name, const Position& position)
+    {
+        VisitorReturn return_value;
+        if(left_value.to_object()->keys.find(name) != left_value.to_object()->keys.end())
+        {
+            return_value.result = left_value.to_object()->keys[name];
+            return return_value;
+        }
+        
+        Value prototype_table = left_value.to_object()->keys["__prototype"];
+        while(prototype_table.get_type() != ValueType::_NULL)
+        {
+            if(prototype_table.to_object()->keys.find(name) != prototype_table.to_object()->keys.end())
+            {
+                return_value.result = prototype_table.to_object()->keys[name];
+                return return_value;
+            }
 
-    static VisitorReturn perform_binary_operation(Value& left_value, Value& right_value, Token::Type operation, const Position& position)
+            prototype_table = prototype_table.to_object()->keys["__prototype"];
+        }
+
+        std::stringstream ss;
+        ss << position << "Object does not have magic method '" << name << "'";
+        return_value.error_message = ss.str();
+        return return_value;
+    }
+    
+    static VisitorReturn call_function(Data::Impl* data, const Value& callee, const std::vector<Value>& arguments, const Position& position)
+    {
+        VisitorReturn return_value;
+        if(callee.get_type() == ValueType::SOURDO_FUNCTION)
+        {
+            std::shared_ptr<SourDoFunction> func_value = callee.to_sourdo_function();
+            if(arguments.size() != func_value->parameters.size())
+            {
+                std::stringstream ss;
+                ss << position << "Function being called expected " 
+                            << func_value->parameters.size(); 
+                // Grammar!
+                if(func_value->parameters.size() == 1)
+                {
+                    ss << " argument but ";
+                }
+                else
+                {
+                    ss << " arguments but ";
+                }
+
+                ss << arguments.size();
+
+                // More Grammar!
+                if(arguments.size() == 1)
+                {
+                    ss << " was given";
+                }
+                else
+                {
+                    ss << " were given";
+                }
+                return_value.error_message = ss.str();
+                return return_value;
+            }
+
+            Data func_scope;
+            func_scope.get_impl()->parent = data;
+            
+            for(int i = 0; i < func_value->parameters.size(); i++)
+            {
+                func_scope.get_impl()->symbol_table[func_value->parameters[i]] = arguments[i];
+            }
+
+            return_value = visit_ast(func_scope.get_impl(), func_value->statements);
+            if(return_value.error_message)
+            {
+                return return_value;
+            }
+            if(return_value.is_breaking)
+            {
+                std::stringstream ss;
+                ss << return_value.break_position << "Cannot use 'break' outside of a loop";
+                return_value.error_message = ss.str();
+            }
+            else if(return_value.is_continuing)
+            {
+                std::stringstream ss;
+                ss << return_value.break_position << "Cannot use 'continue' outside of a loop";
+                return_value.error_message = ss.str();
+            }
+        }
+        else if(callee.get_type() == ValueType::CPP_FUNCTION)
+        {
+            CppFunction func_value = callee.to_cpp_function();
+
+            Data func_scope;
+            func_scope.get_impl()->parent = data;
+
+            func_scope.get_impl()->stack.reserve(arguments.size());
+            
+            for(int i = 0; i < arguments.size(); i++)
+            {
+                func_scope.get_impl()->stack.push_back(arguments[i]);
+            }
+
+            try
+            {
+                if(func_value(func_scope))
+                {
+                    return_value.result = func_scope.get_impl()->index_stack(-1);
+                }
+                else
+                {
+                    return_value.result = Null();
+                }
+            }
+            catch(const SourDoError& error)
+            {
+                std::stringstream ss;
+                ss << position << error.what();
+                return_value.error_message = ss.str();
+            }
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << position << "Cannot call " << callee.get_type();
+            return_value.error_message = ss.str();
+        }
+        return return_value;
+    }
+
+    static VisitorReturn perform_binary_operation(Data::Impl* data, const Value& left_value, const Value& right_value, Token::Type operation, const Position& position)
     {
         VisitorReturn return_value;
         switch(operation)
@@ -54,6 +184,15 @@ namespace sourdo
                         && right_value.get_type() == ValueType::STRING)
                 {
                     return_value.result = left_value.to_string() + right_value.to_string();
+                }
+                else if(left_value.get_type() == ValueType::OBJECT)
+                {
+                    VisitorReturn add_method = get_magic_method(left_value, "__add", position);
+                    if(add_method.error_message)
+                    {
+                        return add_method;
+                    }
+                    return_value = call_function(data, add_method.result, {left_value.to_object(), right_value}, position);
                 }
                 else
                 {
@@ -71,6 +210,15 @@ namespace sourdo
                 {
                     return_value.result = left_value.to_number() - right_value.to_number();
                 }
+                else if(left_value.get_type() == ValueType::OBJECT)
+                {
+                    VisitorReturn sub_method = get_magic_method(left_value, "__sub", position);
+                    if(sub_method.error_message)
+                    {
+                        return sub_method;
+                    }
+                    return_value = call_function(data, sub_method.result, {left_value.to_object(), right_value}, position);
+                }
                 else
                 {
                     std::stringstream ss;
@@ -86,6 +234,15 @@ namespace sourdo
                         && right_value.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = left_value.to_number() * right_value.to_number();
+                }
+                else if(left_value.get_type() == ValueType::OBJECT)
+                {
+                    VisitorReturn mul_method = get_magic_method(left_value, "__mul", position);
+                    if(mul_method.error_message)
+                    {
+                        return mul_method;
+                    }
+                    return_value = call_function(data, mul_method.result, {left_value.to_object(), right_value}, position);
                 }
                 else
                 {
@@ -110,6 +267,15 @@ namespace sourdo
                     }
                     return_value.result = left_value.to_number() / right_value.to_number();
                 }
+                else if(left_value.get_type() == ValueType::OBJECT)
+                {
+                    VisitorReturn div_method = get_magic_method(left_value, "__div", position);
+                    if(div_method.error_message)
+                    {
+                        return div_method;
+                    }
+                    return_value = call_function(data, div_method.result, {left_value.to_object(), right_value}, position);
+                }
                 else
                 {
                     std::stringstream ss;
@@ -125,6 +291,15 @@ namespace sourdo
                         && right_value.get_type() == ValueType::NUMBER)
                 {
                     return_value.result = std::pow(left_value.to_number(), right_value.to_number());
+                }
+                else if(left_value.get_type() == ValueType::OBJECT)
+                {
+                    VisitorReturn add_method = get_magic_method(left_value, "__pow", position);
+                    if(add_method.error_message)
+                    {
+                        return add_method;
+                    }
+                    return_value = call_function(data, add_method.result, {right_value}, position);
                 }
                 else
                 {
@@ -379,7 +554,7 @@ namespace sourdo
         return return_value;
     }
 
-    static VisitorReturn perform_index_operation(Data::Impl* data, Value& base, Value& attribute, const Position& base_position, const Position& attribute_position)
+    static VisitorReturn perform_index_operation(Data::Impl* data, const Value& base, const Value& attribute, const Position& base_position, const Position& attribute_position)
     {
         VisitorReturn return_value;
         
@@ -433,6 +608,19 @@ namespace sourdo
             }
             else
             {
+                Value prototype_table = base.to_object()->keys["__prototype"];
+                while(prototype_table.get_type() != ValueType::_NULL)
+                {
+                    // We already confirmed the type of "__prototype" when it was set, so we can treat it as an object.
+                    if(prototype_table.to_object()->keys.find(attribute) != prototype_table.to_object()->keys.end())
+                    {
+                        return_value.result = prototype_table.to_object()->keys[attribute];
+                        return return_value;
+                    }
+
+                    prototype_table = prototype_table.to_object()->keys["__prototype"];
+                }
+                
                 std::stringstream ss;
                 ss << attribute_position << "Index does not exist in object";
                 return_value.error_message = ss.str();
@@ -649,22 +837,22 @@ namespace sourdo
                 }
                 case AssignmentNode::Operation::ADD:
                 {
-                    return_value = perform_binary_operation(initial_value, new_value, Token::Type::ADD, position);
+                    return_value = perform_binary_operation(data, initial_value, new_value, Token::Type::ADD, position);
                     break;
                 }
                 case AssignmentNode::Operation::SUB:
                 {
-                    return_value = perform_binary_operation(initial_value, new_value, Token::Type::SUB, position);
+                    return_value = perform_binary_operation(data, initial_value, new_value, Token::Type::SUB, position);
                     break;
                 }
                 case AssignmentNode::Operation::MUL:
                 {
-                    return_value = perform_binary_operation(initial_value, new_value, Token::Type::MUL, position);
+                    return_value = perform_binary_operation(data, initial_value, new_value, Token::Type::MUL, position);
                     break;
                 }
                 case AssignmentNode::Operation::DIV:
                 {
-                    return_value = perform_binary_operation(initial_value, new_value, Token::Type::DIV, position);
+                    return_value = perform_binary_operation(data, initial_value, new_value, Token::Type::DIV, position);
                     break;
                 }
             }
@@ -719,8 +907,16 @@ namespace sourdo
                 {
                     return return_value;
                 }
+                if(attribute.result == "__prototype" &&
+                    (return_value.result.get_type() != ValueType::OBJECT 
+                        && return_value.result.get_type() != ValueType::_NULL))
+                {
+                    std::stringstream ss;
+                    ss << index_node->attribute->position << "Key '__prototype' must be of type Object or Null";
+                    return_value.error_message = ss.str();
+                    return return_value;
+                }
                 base.result.to_object()->keys[attribute.result] = return_value.result;
-                
             }
             else
             {
@@ -887,131 +1083,32 @@ namespace sourdo
             return right_value;
         }
 
-        return_value = perform_binary_operation(left_value.result, right_value.result, node->op_token.type, node->position);
+        return_value = perform_binary_operation(data, left_value.result, right_value.result, node->op_token.type, node->position);
 
         return return_value;
     }
 
     static VisitorReturn visit_call_node(Data::Impl* data, std::shared_ptr<CallNode> node)
     {
-        VisitorReturn return_value;
         VisitorReturn callee = visit_ast(data, node->callee);
         if(callee.error_message)
         {
             return callee;
         }
 
-        if(callee.result.get_type() == ValueType::SOURDO_FUNCTION)
+        std::vector<Value> arguments;
+        arguments.reserve(node->arguments.size());
+        for(auto& arg : node->arguments)
         {
-            std::shared_ptr<SourDoFunction> func_value = callee.result.to_sourdo_function();
-            if(node->arguments.size() != func_value->parameters.size())
+            VisitorReturn arg_value = visit_ast(data, arg);
+            if(arg_value.error_message)
             {
-                std::stringstream ss;
-                ss << node->position << "Function being called expected " 
-                            << func_value->parameters.size(); 
-                // Grammar!
-                if(func_value->parameters.size() == 1)
-                {
-                    ss << " argument but ";
-                }
-                else
-                {
-                    ss << " arguments but ";
-                }
-
-                ss << node->arguments.size();
-
-                // More Grammar!
-                if(node->arguments.size() == 1)
-                {
-                    ss << " was given";
-                }
-                else
-                {
-                    ss << " were given";
-                }
-                return_value.error_message = ss.str();
-                return return_value;
+                return arg_value;
             }
-
-            Data func_scope;
-            func_scope.get_impl()->parent = data;
-            
-            for(int i = 0; i < func_value->parameters.size(); i++)
-            {
-                VisitorReturn arg = visit_ast(data, node->arguments[i]);
-                if(arg.error_message)
-                {
-                    return arg;
-                }
-
-                func_scope.get_impl()->symbol_table[func_value->parameters[i]] = arg.result;
-            }
-
-            return_value = visit_ast(func_scope.get_impl(), func_value->statements);
-            if(return_value.error_message)
-            {
-                return return_value;
-            }
-            if(return_value.is_breaking)
-            {
-                std::stringstream ss;
-                ss << return_value.break_position << "Cannot use 'break' outside of a loop";
-                return_value.error_message = ss.str();
-            }
-            else if(return_value.is_continuing)
-            {
-                std::stringstream ss;
-                ss << return_value.break_position << "Cannot use 'continue' outside of a loop";
-                return_value.error_message = ss.str();
-            }
-        }
-        else if(callee.result.get_type() == ValueType::CPP_FUNCTION)
-        {
-            CppFunction func_value = callee.result.to_cpp_function();
-
-            Data func_scope;
-            func_scope.get_impl()->parent = data;
-
-            func_scope.get_impl()->stack.reserve(node->arguments.size());
-            
-            for(int i = 0; i < node->arguments.size(); i++)
-            {
-                VisitorReturn arg = visit_ast(data, node->arguments[i]);
-                if(arg.error_message)
-                {
-                    return arg;
-                }
-
-                func_scope.get_impl()->stack.push_back(arg.result);
-            }
-
-            try
-            {
-                if(func_value(func_scope))
-                {
-                    return_value.result = func_scope.get_impl()->index_stack(-1);
-                }
-                else
-                {
-                    return_value.result = Null();
-                }
-            }
-            catch(const SourDoError& error)
-            {
-                std::stringstream ss;
-                ss << node->position << error.what();
-                return_value.error_message = ss.str();
-            }
-        }
-        else
-        {
-            std::stringstream ss;
-            ss << node->position << "Cannot call " << callee.result.get_type();
-            return_value.error_message = ss.str();
+            arguments.emplace_back(arg_value.result);
         }
         
-        return return_value;
+        return call_function(data, callee.result, arguments, node->position);
     }
 
     static VisitorReturn visit_index_node(Data::Impl* data, std::shared_ptr<IndexNode> node)
@@ -1053,123 +1150,21 @@ namespace sourdo
         {
             return callee;
         }
-
-        if(callee.result.get_type() == ValueType::SOURDO_FUNCTION)
+        
+        std::vector<Value> arguments;
+        arguments.reserve(node->arguments.size() + 1);
+        arguments.emplace_back(base_value.result);
+        for(auto& arg : node->arguments)
         {
-            std::shared_ptr<SourDoFunction> func_value = callee.result.to_sourdo_function();
-            if(node->arguments.size() + 1 != func_value->parameters.size())
+            VisitorReturn arg_value = visit_ast(data, arg);
+            if(arg_value.error_message)
             {
-                std::stringstream ss;
-                ss << node->position << "Function being called expected " 
-                            << func_value->parameters.size(); 
-                // Grammar!
-                if(func_value->parameters.size() == 1)
-                {
-                    ss << " argument but ";
-                }
-                else
-                {
-                    ss << " arguments but ";
-                }
-
-                ss << node->arguments.size();
-
-                // More Grammar!
-                if(node->arguments.size() == 1)
-                {
-                    ss << " was given";
-                }
-                else
-                {
-                    ss << " were given";
-                }
-                return_value.error_message = ss.str();
-                return return_value;
+                return arg_value;
             }
-
-            Data func_scope;
-            func_scope.get_impl()->parent = data;
-
-            for(int i = 0; i < func_value->parameters.size(); i++)
-            {
-                if(i == 0)
-                {
-                    func_scope.get_impl()->symbol_table[func_value->parameters[i]] = base_value.result;
-                    continue;
-                }
-                VisitorReturn arg = visit_ast(data, node->arguments[i]);
-                if(arg.error_message)
-                {
-                    return arg;
-                }
-
-                func_scope.get_impl()->symbol_table[func_value->parameters[i]] = arg.result;
-            }
-
-            return_value = visit_ast(func_scope.get_impl(), func_value->statements);
-            if(return_value.error_message)
-            {
-                return return_value;
-            }
-            if(return_value.is_breaking)
-            {
-                std::stringstream ss;
-                ss << return_value.break_position << "Cannot use 'break' outside of a loop";
-                return_value.error_message = ss.str();
-            }
-            else if(return_value.is_continuing)
-            {
-                std::stringstream ss;
-                ss << return_value.break_position << "Cannot use 'continue' outside of a loop";
-                return_value.error_message = ss.str();
-            }
-        }
-        else if(callee.result.get_type() == ValueType::CPP_FUNCTION)
-        {
-            Data func_scope;
-            func_scope.get_impl()->parent = data;
-
-            func_scope.get_impl()->stack.reserve(node->arguments.size() + 1);
-
-            func_scope.get_impl()->stack.push_back(base_value.result);
-            
-            for(int i = 0; i < node->arguments.size(); i++)
-            {
-                VisitorReturn arg = visit_ast(data, node->arguments[i]);
-                if(arg.error_message)
-                {
-                    return arg;
-                }
-
-                func_scope.get_impl()->stack.push_back(arg.result);
-            }
-
-            try
-            {
-                if(callee.result.to_cpp_function()(func_scope))
-                {
-                    return_value.result = func_scope.get_impl()->index_stack(-1);
-                }
-                else
-                {
-                    return_value.result = Null();
-                }
-            }
-            catch(const SourDoError& error)
-            {
-                std::stringstream ss;
-                ss << node->position << error.what();
-                return_value.error_message = ss.str();
-            }
-        }
-        else
-        {
-            std::stringstream ss;
-            ss << node->position << "Cannot call " << callee.result.get_type();
-            return_value.error_message = ss.str();
+            arguments.emplace_back(arg_value.result);
         }
 
-        return return_value;
+        return call_function(data, callee.result, arguments, node->callee->position);
     }
 
     VisitorReturn visit_ast(Data::Impl* data, std::shared_ptr<Node> node)
@@ -1307,7 +1302,20 @@ namespace sourdo
                         return value;
                     }
 
+                    if(key.result == "__prototype" &&
+                        (value.result.get_type() != ValueType::OBJECT && value.result.get_type() != ValueType::_NULL))
+                    {
+                        std::stringstream ss;
+                        ss << v->position << "Key '__prototype' must be of type Object or Null";
+                        return_value.error_message = ss.str();
+                        return return_value;
+                    }
+
                     keys[key.result] = value.result;
+                }
+                if(keys.find("__prototype") == keys.end())
+                {
+                    keys["__prototype"] = Null();
                 }
                 return_value.result = std::make_shared<Object>(std::move(keys));
                 break;

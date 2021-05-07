@@ -15,6 +15,17 @@ namespace sourdo
     struct Null
     {
     };
+    // Can't put this in the struct declaration as I get errors.
+
+    constexpr bool operator==(const Null& first, const Null& second)
+    {
+        return true;
+    }
+
+    constexpr bool operator!=(const Null& first, const Null& second)
+    {
+        return false;
+    }
 
     struct SourDoFunction
     {
@@ -34,6 +45,7 @@ namespace sourdo
         Value(double new_value);
         Value(bool new_value);
         Value(const std::string& new_value);
+        Value(const char* new_value);
         Value(std::shared_ptr<SourDoFunction> new_value);
         Value(const CppFunction& new_value);
         Value(std::shared_ptr<Object> new_value);
@@ -48,13 +60,15 @@ namespace sourdo
         Value& operator=(double new_value);
         Value& operator=(bool new_value);
         Value& operator=(const std::string& new_value);
+        Value& operator=(const char* new_value);
         Value& operator=(std::shared_ptr<SourDoFunction> new_value);
         Value& operator=(const CppFunction& new_value);
         Value& operator=(std::shared_ptr<Object> new_value);
 
         bool operator==(const Value& other) const;
+        bool operator!=(const Value& other) const;
 
-        ValueType get_type();
+        ValueType get_type() const;
 
         double to_number() const
         { 
