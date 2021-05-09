@@ -120,24 +120,6 @@ namespace sourdo
         void create_value(const std::string& name);
 
         /**
-         * @brief Creates a reference to a function on the stack
-         * 
-         * @param index The name of the value to be returned.
-         * 
-         * @returns Returns a shared_ptr if the value at 'index' is a SourDoFunction. Otherwise returns nullptr.
-         */
-        std::shared_ptr<SourDoFunction> create_function_ref(int index);
-        
-        /**
-         * @brief Creates a reference to an object on the stack
-         * 
-         * @param index The name of the value to be returned.
-         * 
-         * @returns Returns a shared_ptr if the value at 'index' is an Object. Otherwise nullptr.
-         */
-        std::shared_ptr<Object> create_object_ref(int index);
-
-        /**
          * @brief Pushes a value in the symbol table onto the top of the stack.
          * 
          * @param name The name of the value to be returned.

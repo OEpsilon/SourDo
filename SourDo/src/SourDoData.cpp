@@ -3,8 +3,10 @@
 
 #include "SourDoData.hpp"
 #include "Interpreter.hpp"
+#include "GarbageCollector.hpp"
 
 #include <fstream>
+#include <iostream>
 
 namespace sourdo
 {
@@ -15,6 +17,11 @@ namespace sourdo
 
     Data::~Data()
     {
+        impl->symbol_table.clear();
+        if(impl->parent == nullptr)
+        {
+            GarbageCollector::collect_garbage(impl);
+        }
         delete impl;
     }
 
@@ -118,6 +125,13 @@ namespace sourdo
             push_string(ss.str());
             return Result::RUNTIME_ERROR;
         }
+        else if(result.is_function_return)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << result.break_position << "Cannot use 'return' outside of a function" << COLOR_DEFAULT << std::flush;
+            push_string(ss.str());
+            return Result::RUNTIME_ERROR;
+        }
         else if(result.is_continuing)
         {
             std::stringstream ss;
@@ -167,26 +181,31 @@ namespace sourdo
     void Data::push_number(Number value)
     {
         impl->stack.push_back(value);
+        GarbageCollector::collect_garbage(impl);
     }
 
     void Data::push_bool(bool value)
     {
         impl->stack.push_back(bool(value));
+        GarbageCollector::collect_garbage(impl);
     }
 
     void Data::push_string(const std::string& value)
     {
         impl->stack.push_back(value);
+        GarbageCollector::collect_garbage(impl);
     }
 
     void Data::push_cppfunction(const CppFunction& value)
     {
         impl->stack.push_back(value);
+        GarbageCollector::collect_garbage(impl);
     }
 
     void Data::push_null()
     {
         impl->stack.push_back(Null());
+        GarbageCollector::collect_garbage(impl);
     }
 
     Result Data::call_function(uint32_t arg_count, bool protected_mode_enabled)
@@ -212,11 +231,10 @@ namespace sourdo
             args.push_back(impl->index_stack(i));
             remove(i);
         }
-
         
         if(func.get_type() == ValueType::SOURDO_FUNCTION)
         {
-            std::shared_ptr<SourDoFunction> func_value = func.to_sourdo_function();
+            SourDoFunction* func_value = func.to_sourdo_function();
             if(args.size() != func_value->parameters.size())
             {
                 std::stringstream ss;
@@ -295,26 +313,6 @@ namespace sourdo
         impl->symbol_table[name] = Null();
     }
 
-    std::shared_ptr<SourDoFunction> Data::create_function_ref(int index)
-    {
-        Value& value = impl->index_stack(index);
-        if(value.get_type() != ValueType::SOURDO_FUNCTION)
-        {
-            return nullptr;
-        }
-        return value.to_sourdo_function();
-    }
-
-    std::shared_ptr<Object> Data::create_object_ref(int index)
-    {
-        Value& value = impl->index_stack(index);
-        if(value.get_type() != ValueType::OBJECT)
-        {
-            return nullptr;
-        }
-        return value.to_object();
-    }
-
     Result Data::get_value(const std::string& name, bool protected_mode_enabled)
     {
         Value* value = impl->get_symbol(name);
@@ -338,6 +336,7 @@ namespace sourdo
     {
         bool result = impl->set_symbol(name, impl->index_stack(-1));
         pop();
+        GarbageCollector::collect_garbage(impl);
         if(!result)
         {
             std::stringstream ss;

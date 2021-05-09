@@ -72,6 +72,8 @@ OBJECTS :=
 
 GENERATED += $(OBJDIR)/Basic.o
 GENERATED += $(OBJDIR)/Errors.o
+GENERATED += $(OBJDIR)/GCObject.o
+GENERATED += $(OBJDIR)/GarbageCollector.o
 GENERATED += $(OBJDIR)/Math.o
 GENERATED += $(OBJDIR)/Parser.o
 GENERATED += $(OBJDIR)/SourDoData.o
@@ -81,6 +83,8 @@ GENERATED += $(OBJDIR)/Value.o
 GENERATED += $(OBJDIR)/Visitor.o
 OBJECTS += $(OBJDIR)/Basic.o
 OBJECTS += $(OBJDIR)/Errors.o
+OBJECTS += $(OBJDIR)/GCObject.o
+OBJECTS += $(OBJDIR)/GarbageCollector.o
 OBJECTS += $(OBJDIR)/Math.o
 OBJECTS += $(OBJDIR)/Parser.o
 OBJECTS += $(OBJDIR)/SourDoData.o
@@ -151,6 +155,9 @@ endif
 # File Rules
 # #############################################
 
+$(OBJDIR)/GCObject.o: src/Datatypes/GCObject.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/Token.o: src/Datatypes/Token.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
@@ -158,6 +165,9 @@ $(OBJDIR)/Value.o: src/Datatypes/Value.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/Errors.o: src/Errors.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/GarbageCollector.o: src/GarbageCollector.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/Parser.o: src/Parser.cpp

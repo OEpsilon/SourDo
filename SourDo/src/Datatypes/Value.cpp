@@ -38,7 +38,7 @@ namespace sourdo
         value = new_value;
     }
 
-    Value::Value(std::shared_ptr<SourDoFunction> new_value)
+    Value::Value(SourDoFunction* new_value)
     {
         type = ValueType::SOURDO_FUNCTION;
         value = new_value;
@@ -50,7 +50,7 @@ namespace sourdo
         value = new_value;
     }
 
-    Value::Value(std::shared_ptr<Object> new_value)
+    Value::Value(Object* new_value)
     {
         type = ValueType::OBJECT;
         value = new_value;
@@ -123,7 +123,7 @@ namespace sourdo
         return *this;
     }
 
-    Value& Value::operator=(std::shared_ptr<SourDoFunction> new_value)
+    Value& Value::operator=(SourDoFunction* new_value)
     {
         type = ValueType::SOURDO_FUNCTION;
         value = new_value;
@@ -137,7 +137,7 @@ namespace sourdo
         return *this;
     }
 
-    Value& Value::operator=(std::shared_ptr<Object> new_value)
+    Value& Value::operator=(Object* new_value)
     {
         type = ValueType::OBJECT;
         value = new_value;

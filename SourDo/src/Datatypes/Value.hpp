@@ -1,9 +1,9 @@
 #pragma once
 
 #include "SourDo/SourDo.hpp"
+#include "GCObject.hpp"
 
 #include <vector>
-#include <memory>
 #include <variant>
 #include <string>
 #include <unordered_map>
@@ -15,7 +15,7 @@ namespace sourdo
     struct Null
     {
     };
-    // Can't put this in the struct declaration as I get errors.
+    // Can't put this in the Null struct declaration as I get errors.
 
     constexpr bool operator==(const Null& first, const Null& second)
     {
@@ -27,12 +27,15 @@ namespace sourdo
         return false;
     }
 
-    struct SourDoFunction
+    struct SourDoFunction : public GCObject
     {
         SourDoFunction(std::vector<std::string> parameters, std::shared_ptr<StatementListNode> statements)
             : parameters(parameters), statements(statements)
         {
         }
+        
+        virtual ~SourDoFunction() = default;
+
         std::vector<std::string> parameters;
         std::shared_ptr<StatementListNode> statements;
     };
@@ -46,9 +49,9 @@ namespace sourdo
         Value(bool new_value);
         Value(const std::string& new_value);
         Value(const char* new_value);
-        Value(std::shared_ptr<SourDoFunction> new_value);
+        Value(SourDoFunction* new_value);
         Value(const CppFunction& new_value);
-        Value(std::shared_ptr<Object> new_value);
+        Value(Object* new_value);
         
         Value(const Value& new_value);
         Value(Value&& new_value);
@@ -61,9 +64,9 @@ namespace sourdo
         Value& operator=(bool new_value);
         Value& operator=(const std::string& new_value);
         Value& operator=(const char* new_value);
-        Value& operator=(std::shared_ptr<SourDoFunction> new_value);
+        Value& operator=(SourDoFunction* new_value);
         Value& operator=(const CppFunction& new_value);
-        Value& operator=(std::shared_ptr<Object> new_value);
+        Value& operator=(Object* new_value);
 
         bool operator==(const Value& other) const;
         bool operator!=(const Value& other) const;
@@ -85,9 +88,9 @@ namespace sourdo
             return std::get<std::string>(value); 
         }
 
-        std::shared_ptr<SourDoFunction> to_sourdo_function() const
+        SourDoFunction* to_sourdo_function() const
         {
-            return std::get<std::shared_ptr<SourDoFunction>>(value);
+            return std::get<SourDoFunction*>(value);
         }
 
         CppFunction to_cpp_function() const
@@ -95,9 +98,9 @@ namespace sourdo
             return std::get<CppFunction>(value);
         }
 
-        std::shared_ptr<Object> to_object() const
+        Object* to_object() const
         {
-            return std::get<std::shared_ptr<Object>>(value);
+            return std::get<Object*>(value);
         }
     private:
         friend struct std::hash<Value>;
@@ -108,9 +111,9 @@ namespace sourdo
                 double, 
                 bool, 
                 std::string, 
-                std::shared_ptr<SourDoFunction>, 
+                SourDoFunction*, 
                 CppFunction, 
-                std::shared_ptr<Object>
+                Object*
             > value;
     };
 } // namespace SourDo
@@ -136,9 +139,9 @@ namespace std
                     double, 
                     bool, 
                     std::string, 
-                    std::shared_ptr<sourdo::SourDoFunction>, 
+                    sourdo::SourDoFunction*, 
                     sourdo::CppFunction, 
-                    std::shared_ptr<sourdo::Object>
+                    sourdo::Object*
                 >>()(k.value);
         }
     };
@@ -146,12 +149,14 @@ namespace std
 
 namespace sourdo
 {
-    struct Object
+    struct Object : public GCObject
     {
         Object(const std::unordered_map<Value, Value>& keys)
             : keys(keys)
         {
         }
+        
+        virtual ~Object() = default;
 
         std::unordered_map<Value, Value> keys;
     };

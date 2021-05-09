@@ -6,6 +6,7 @@
 
 #include "SourDoData.hpp"
 #include "VisitorTypeFunctions/StringFunctions.hpp"
+#include "GarbageCollector.hpp"
 
 #include "SourDo/Errors.hpp"
 
@@ -70,7 +71,7 @@ namespace sourdo
         VisitorReturn return_value;
         if(callee.get_type() == ValueType::SOURDO_FUNCTION)
         {
-            std::shared_ptr<SourDoFunction> func_value = callee.to_sourdo_function();
+            SourDoFunction* func_value = callee.to_sourdo_function();
             if(arguments.size() != func_value->parameters.size())
             {
                 std::stringstream ss;
@@ -126,6 +127,7 @@ namespace sourdo
                 ss << return_value.break_position << "Cannot use 'continue' outside of a loop";
                 return_value.error_message = ss.str();
             }
+            return_value.is_function_return = false;
         }
         else if(callee.get_type() == ValueType::CPP_FUNCTION)
         {
@@ -641,12 +643,18 @@ namespace sourdo
         for(auto& stmt : node->statements)
         {
             VisitorReturn stmt_return = visit_ast(data, stmt);
-            if(stmt_return.error_message || stmt_return.is_function_return 
-                    || stmt_return.is_breaking || stmt_return.is_continuing)
+            if(stmt_return.error_message || stmt_return.is_breaking 
+                || stmt_return.is_continuing)
+            {
+                GarbageCollector::collect_garbage(data);
+                return stmt_return;
+            }
+            else if(stmt_return.is_function_return)
             {
                 return stmt_return;
             }
         }
+        GarbageCollector::collect_garbage(data);
         return return_value;
     }
 
@@ -972,7 +980,7 @@ namespace sourdo
             }
             parameters.emplace_back(param);
         }
-        return_value.result = std::make_shared<SourDoFunction>(parameters, node->statements);
+        return_value.result = new SourDoFunction(parameters, node->statements);
 
         return return_value;
     }
@@ -981,7 +989,7 @@ namespace sourdo
     {
         VisitorReturn return_value = visit_ast(data, node->return_value);
         return_value.is_function_return = true;
-
+        return_value.break_position = node->position;
         return return_value;
     }
 
@@ -1317,7 +1325,7 @@ namespace sourdo
                 {
                     keys["__prototype"] = Null();
                 }
-                return_value.result = std::make_shared<Object>(std::move(keys));
+                return_value.result = new Object(std::move(keys));
                 break;
             }
             default:
