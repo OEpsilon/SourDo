@@ -35,6 +35,9 @@ namespace sourdo
             case ValueType::OBJECT:
                 os << "Object";
                 break;
+            case ValueType::CPP_OBJECT:
+                os << "CppObject";
+                break;
         }
         return os;
     }
@@ -173,6 +176,18 @@ namespace sourdo
     static VisitorReturn perform_binary_operation(Data::Impl* data, const Value& left_value, const Value& right_value, Token::Type operation, const Position& position)
     {
         VisitorReturn return_value;
+        if(left_value.get_type() == ValueType::CPP_OBJECT)
+        {
+            if(left_value.to_cpp_object()->prototype)
+            {
+                return perform_binary_operation(data, left_value.to_cpp_object()->prototype, 
+                        right_value, operation, position);
+            }
+            std::stringstream ss;
+            ss << position << "CppObject does not have an Object interface";
+            return_value.error_message = ss.str();
+        }
+
         switch(operation)
         {
             case Token::Type::ADD:
@@ -418,6 +433,7 @@ namespace sourdo
                         case ValueType::SOURDO_FUNCTION:
                         case ValueType::CPP_FUNCTION:
                         case ValueType::OBJECT:
+                        case ValueType::CPP_OBJECT:
                             return_value.result = false;
                             break;
                         case ValueType::_NULL:
@@ -435,6 +451,7 @@ namespace sourdo
                         case ValueType::SOURDO_FUNCTION:
                         case ValueType::CPP_FUNCTION:
                         case ValueType::OBJECT:
+                        case ValueType::CPP_OBJECT:
                             return_value.result = false;
                             break;
                         case ValueType::_NULL:
@@ -483,6 +500,7 @@ namespace sourdo
                         case ValueType::SOURDO_FUNCTION:
                         case ValueType::CPP_FUNCTION:
                         case ValueType::OBJECT:
+                        case ValueType::CPP_OBJECT:
                             return_value.result = true;
                             break;
                         case ValueType::_NULL:
@@ -500,6 +518,7 @@ namespace sourdo
                         case ValueType::SOURDO_FUNCTION:
                         case ValueType::CPP_FUNCTION:
                         case ValueType::OBJECT:
+                        case ValueType::CPP_OBJECT:
                             return_value.result = true;
                             break;
                         case ValueType::_NULL:
@@ -627,6 +646,17 @@ namespace sourdo
                 ss << attribute_position << "Index does not exist in object";
                 return_value.error_message = ss.str();
             }
+        }
+        else if(base.get_type() == ValueType::CPP_OBJECT)
+        {
+            if(base.to_cpp_object()->prototype)
+            {
+                return perform_index_operation(data, base.to_cpp_object()->prototype, 
+                        attribute, base_position, attribute_position);
+            }
+            std::stringstream ss;
+            ss << attribute_position << "CppObject does not have an Object interface";
+            return_value.error_message = ss.str();
         }
         else
         {

@@ -6,6 +6,8 @@ namespace sourdo
 {
     void check_arg_count(Data& data, uint32_t expected_count);
 
+    void check_sourdo_func_param_count(Data& data, int arg, uint32_t expected_count);
+
     void check_is_number(Data& data, int arg);
     void check_is_bool(Data& data, int arg);
     void check_is_string(Data& data, int arg);

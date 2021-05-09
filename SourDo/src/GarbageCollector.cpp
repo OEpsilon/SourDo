@@ -54,6 +54,15 @@ namespace sourdo
             if(ref.get_type() == ValueType::OBJECT)
             {
                 ref.to_object()->marked = true;
+                mark_child_objects(ref.to_object());
+            }
+            else if(ref.get_type() == ValueType::CPP_OBJECT)
+            {
+                ref.to_cpp_object()->marked = true;
+                if(ref.to_cpp_object()->prototype)
+                {
+                    mark_child_objects(ref.to_cpp_object()->prototype);
+                }
             }
             else if(ref.get_type() == ValueType::SOURDO_FUNCTION)
             {
@@ -70,6 +79,32 @@ namespace sourdo
                 {
                     symbol.to_object()->marked = true;
                     mark_child_objects(symbol.to_object());
+                }
+                else if(symbol.get_type() == ValueType::CPP_OBJECT)
+                {
+                    symbol.to_cpp_object()->marked = true;
+                    if(symbol.to_cpp_object()->prototype)
+                    {
+                        symbol.to_cpp_object()->prototype->marked = true;
+                        mark_child_objects(symbol.to_cpp_object()->prototype);
+                    }
+                }
+                else if(symbol.get_type() == ValueType::SOURDO_FUNCTION)
+                {
+                    symbol.to_sourdo_function()->marked = true;
+                }
+            }
+
+            for(auto& symbol : current_data->stack)
+            {
+                if(symbol.get_type() == ValueType::OBJECT)
+                {
+                    symbol.to_object()->marked = true;
+                    mark_child_objects(symbol.to_object());
+                }
+                else if(symbol.get_type() == ValueType::CPP_OBJECT)
+                {
+                    symbol.to_cpp_object()->marked = true;
                 }
                 else if(symbol.get_type() == ValueType::SOURDO_FUNCTION)
                 {

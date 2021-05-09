@@ -38,6 +38,26 @@ namespace sourdo
 
         std::vector<std::string> parameters;
         std::shared_ptr<StatementListNode> statements;
+
+        void on_garbage_collected() final
+        {
+        }
+    };
+
+    struct CppObject : public GCObject
+    {
+        CppObject(size_t size)
+            : block(new uint8_t[size])
+        {
+        }
+
+        void on_garbage_collected() final
+        {
+            delete[] block;
+        }
+
+        Object* prototype = nullptr;
+        uint8_t* block;
     };
 
     class Value
@@ -52,6 +72,7 @@ namespace sourdo
         Value(SourDoFunction* new_value);
         Value(const CppFunction& new_value);
         Value(Object* new_value);
+        Value(CppObject* new_value);
         
         Value(const Value& new_value);
         Value(Value&& new_value);
@@ -67,6 +88,7 @@ namespace sourdo
         Value& operator=(SourDoFunction* new_value);
         Value& operator=(const CppFunction& new_value);
         Value& operator=(Object* new_value);
+        Value& operator=(CppObject* new_value);
 
         bool operator==(const Value& other) const;
         bool operator!=(const Value& other) const;
@@ -102,6 +124,11 @@ namespace sourdo
         {
             return std::get<Object*>(value);
         }
+
+        CppObject* to_cpp_object() const
+        {
+            return std::get<CppObject*>(value);
+        }
     private:
         friend struct std::hash<Value>;
         ValueType type;
@@ -113,7 +140,8 @@ namespace sourdo
                 std::string, 
                 SourDoFunction*, 
                 CppFunction, 
-                Object*
+                Object*,
+                CppObject*
             > value;
     };
 } // namespace SourDo
@@ -141,7 +169,8 @@ namespace std
                     std::string, 
                     sourdo::SourDoFunction*, 
                     sourdo::CppFunction, 
-                    sourdo::Object*
+                    sourdo::Object*,
+                    sourdo::CppObject*
                 >>()(k.value);
         }
     };
@@ -161,6 +190,10 @@ namespace sourdo
         virtual ~Object() = default;
 
         std::unordered_map<Value, Value> keys;
+
+        void on_garbage_collected() final
+        {
+        }
     };
 
 } // namespace SourDo

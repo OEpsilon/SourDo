@@ -144,6 +144,59 @@ namespace sourdo
         return Result::SUCCESS;
     }
     
+    void* Data::create_cpp_object(size_t size)
+    {
+        CppObject* cpp_object = new CppObject(size);
+        impl->stack.push_back(cpp_object);
+        return cpp_object->block;
+    }
+    
+    void* Data::check_cpp_object(int index, const std::string& name)
+    {
+        Value& value = impl->index_stack(index);
+        if(value.get_type() == ValueType::CPP_OBJECT)
+        {
+            if(check_value_type(value, name))
+            {
+                return value.to_cpp_object()->block;
+            }
+        }
+        std::stringstream ss;
+        ss << "Argument #" << index << ": Expected a CppObject that inherits type '" << name << "'";
+        throw SourDoError(ss.str());
+    }
+    
+    void* Data::test_cpp_object(int index, const std::string& name)
+    {
+        Value& value = impl->index_stack(index);
+        if(value.get_type() == ValueType::CPP_OBJECT)
+        {
+            if(check_value_type(value, name))
+            {
+                return value.to_cpp_object()->block;
+            }
+        }
+        return nullptr;
+    }
+
+    void Data::set_cpp_object_prototype(int index)
+    {
+        Value& cpp_object = impl->index_stack(index);
+        if(cpp_object.get_type() == ValueType::CPP_OBJECT)
+        {
+            Value value = impl->index_stack(-1);
+            if(value.get_type() == ValueType::OBJECT)
+            {
+                cpp_object.to_cpp_object()->prototype = value.to_object();
+            }
+            else if(value.get_type() == ValueType::_NULL)
+            {
+                cpp_object.to_cpp_object()->prototype = nullptr;
+            }
+        }
+        pop();
+    }
+
     GCRef Data::create_ref(int index)
     {
         Value& value = impl->index_stack(index);
@@ -330,7 +383,7 @@ namespace sourdo
         if(func.get_type() != ValueType::SOURDO_FUNCTION && func.get_type() != ValueType::CPP_FUNCTION)
         {
             std::stringstream ss;
-            ss << COLOR_RED << "Value is not a function" << COLOR_DEFAULT << std::flush;;
+            ss << COLOR_RED << "Value is not a function" << COLOR_DEFAULT << std::flush;
             if(protected_mode_enabled)
             {
                 push_string(ss.str());
@@ -354,7 +407,7 @@ namespace sourdo
             if(args.size() != func_value->parameters.size())
             {
                 std::stringstream ss;
-                ss << "Function being called expected " << func_value->parameters.size(); 
+                ss << COLOR_RED << "Function being called expected " << func_value->parameters.size(); 
                 
                 if(func_value->parameters.size() == 1)
                 {
@@ -375,6 +428,7 @@ namespace sourdo
                 {
                     ss << " were given";
                 }
+                ss << COLOR_DEFAULT << std::flush;
                 if(protected_mode_enabled)
                 {
                     push_string(ss.str());
@@ -422,6 +476,16 @@ namespace sourdo
             }
         }
         return Result::SUCCESS;
+    }
+
+    uint32_t Data::get_sourdo_func_param_count(int index)
+    {
+        Value& value = impl->index_stack(index);
+        if(value.get_type() == ValueType::SOURDO_FUNCTION)
+        {
+            return value.to_sourdo_function()->parameters.size();
+        }
+        return 0;
     }
 
     void Data::create_value(const std::string& name)

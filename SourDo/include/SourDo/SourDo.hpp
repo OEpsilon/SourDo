@@ -23,6 +23,7 @@ namespace sourdo
         SOURDO_FUNCTION,
         CPP_FUNCTION,
         OBJECT,
+        CPP_OBJECT,
     };
     
     class Data;
@@ -48,6 +49,11 @@ namespace sourdo
         
         Result do_string(const std::string& string);
         Result do_file(const std::string& file_path);
+
+        void* create_cpp_object(size_t size);
+        void* check_cpp_object(int index, const std::string& name);
+        void* test_cpp_object(int index, const std::string& name);
+        void set_cpp_object_prototype(int index);
 
         GCRef create_ref(int index);
         void remove_ref(GCRef ref);
@@ -146,6 +152,8 @@ namespace sourdo
          * @throws SourDoError Thrown if there is an error when calling the function and 'protected_mode_enabled' is false.
          */
         Result call_function(uint32_t arg_count, bool protected_mode_enabled = false);
+
+        uint32_t get_sourdo_func_param_count(int index);
 
         /**
          * @brief Creates a value in the symbol table if it doesn't already exist.

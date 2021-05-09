@@ -7,6 +7,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <iomanip>
 
 namespace sourdo
 {
@@ -14,7 +15,7 @@ namespace sourdo
     {
         uint32_t arg_count = data.get_size();
         std::stringstream ss;
-        ss << std::boolalpha << std::fixed;
+        ss << std::boolalpha << std::setprecision(14);
         for(int i = 1; i <= arg_count; i++)
         {
             switch(data.get_value_type(i))
@@ -40,6 +41,9 @@ namespace sourdo
                 case sourdo::ValueType::OBJECT:
                     ss << "[Object]";
                     break;
+                case sourdo::ValueType::CPP_OBJECT:
+                    data.push_string("[CppObject]");
+                    break;
             }
             if(i < arg_count)
             {
@@ -58,8 +62,12 @@ namespace sourdo
         switch(data.get_value_type(1))
         {
             case ValueType::NUMBER:
-                data.push_string(std::to_string(data.value_to_number(1)));
+            {
+                std::stringstream ss;
+                ss << std::boolalpha << std::setprecision(14) << data.value_to_number(1);
+                data.push_string(ss.str());
                 break;
+            }
             case ValueType::BOOL:
             {
                 std::stringstream ss;
@@ -82,6 +90,9 @@ namespace sourdo
             case sourdo::ValueType::OBJECT:
                 data.push_string("[Object]");
                 break;
+            case sourdo::ValueType::CPP_OBJECT:
+                data.push_string("[CppObject]");
+                break;
         }
         return true;
     }
@@ -97,7 +108,7 @@ namespace sourdo
 
         std::string format_string = data.value_to_string(1);
         std::stringstream ss;
-        ss << std::boolalpha << std::fixed;
+        ss << std::boolalpha << std::setprecision(14);
         for(int i = 0; i < format_string.length(); i++)
         {
             if(format_string[i] != '{')
@@ -158,6 +169,9 @@ namespace sourdo
                         break;
                     case sourdo::ValueType::OBJECT:
                         ss << "[Object]";
+                        break;
+                    case sourdo::ValueType::CPP_OBJECT:
+                        data.push_string("[CppObject]");
                         break;
                 }
             }

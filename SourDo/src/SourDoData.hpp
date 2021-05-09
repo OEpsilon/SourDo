@@ -64,4 +64,5 @@ namespace sourdo {
             return stack[index - 1];
         }
     };
+
 } // namespace sourdo
