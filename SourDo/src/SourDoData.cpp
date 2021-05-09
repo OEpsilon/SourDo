@@ -4,6 +4,7 @@
 #include "SourDoData.hpp"
 #include "Interpreter.hpp"
 #include "GarbageCollector.hpp"
+#include "GlobalData.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -69,7 +70,7 @@ namespace sourdo
             return Result::RUNTIME_ERROR;
         }
 
-        impl->stack.push_back(result.result);
+        impl->stack.emplace_back(result.result);
 
         return Result::SUCCESS;
     }
@@ -143,6 +144,121 @@ namespace sourdo
         return Result::SUCCESS;
     }
     
+    GCRef Data::create_ref(int index)
+    {
+        Value& value = impl->index_stack(index);
+
+        if(value.get_type() == ValueType::OBJECT || value.get_type() == ValueType::SOURDO_FUNCTION)
+        {
+            GCRef ref;
+            auto it = std::find(GlobalData::references.begin(), GlobalData::references.end(), Null());
+            if(it == GlobalData::references.end())
+            {
+                ref = GlobalData::references.size();
+                GlobalData::references.emplace_back(value);
+                return ref;
+            }
+            *it = value;
+            return it - GlobalData::references.begin();
+        }
+        // Invalid reference instead of error
+        return -1;
+    }
+
+    void Data::remove_ref(GCRef ref)
+    {
+        assert(ref >= 0);
+        assert(ref < GlobalData::references.size());
+    }
+
+    void Data::push_ref(GCRef ref)
+    {
+        assert(ref >= 0);
+        assert(ref < GlobalData::references.size());
+
+        impl->stack.emplace_back(GlobalData::references[ref]);
+    }
+
+    bool Data::is_ref_valid(GCRef ref)
+    {
+        return ref >= 0 && ref < GlobalData::references.size();
+    }
+
+    void Data::create_object()
+    {
+        impl->stack.emplace_back(new Object());
+        GarbageCollector::collect_garbage(impl);
+    }
+
+    Result Data::object_set(int object_index, bool protected_mode_enabled)
+    {
+        sourdo::Value& obj = impl->index_stack(object_index);
+        if(obj.get_type() != ValueType::OBJECT)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << "'" << "Value at the given index is not an object" << COLOR_DEFAULT << std::flush;
+            if(protected_mode_enabled)
+            {
+                push_string(ss.str());
+                return Result::RUNTIME_ERROR;
+            }
+            throw SourDoError(ss.str());
+        }
+        Value new_value = impl->index_stack(-1);
+        impl->stack.pop_back();
+        Value key = impl->index_stack(-1);
+        impl->stack.pop_back();
+
+        if(key.get_type() == ValueType::STRING && key.to_string() == "__prototype"
+                && (new_value.get_type() != ValueType::OBJECT || new_value.get_type() != ValueType::_NULL))
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << "'__prototype' must be set to an object or null" << COLOR_DEFAULT << std::flush;
+            if(protected_mode_enabled)
+            {
+                push_string(ss.str());
+                return Result::RUNTIME_ERROR;
+            }
+            throw SourDoError(ss.str());
+        }
+        
+        obj.to_object()->keys[key] = new_value;
+        return Result::SUCCESS;
+    }
+
+    Result Data::object_get(int object_index, bool protected_mode_enabled)
+    {
+        sourdo::Value& obj = impl->index_stack(object_index);
+        if(obj.get_type() != ValueType::OBJECT)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << "'" << "Value at the given index is not an object" << COLOR_DEFAULT << std::flush;
+            if(protected_mode_enabled)
+            {
+                push_string(ss.str());
+                return Result::RUNTIME_ERROR;
+            }
+            throw SourDoError(ss.str());
+        }
+        Value key = impl->index_stack(-1);
+        impl->stack.pop_back();
+
+        if(obj.to_object()->keys.find(key) == obj.to_object()->keys.end())
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << "Key does not exist in object" << COLOR_DEFAULT << std::flush;
+            if(protected_mode_enabled)
+            {
+                push_string(ss.str());
+                return Result::RUNTIME_ERROR;
+            }
+            throw SourDoError(ss.str());
+        }
+        
+        impl->stack.emplace_back(obj.to_object()->keys[key]);
+        return Result::SUCCESS;
+    }
+
     ValueType Data::get_value_type(int index)
     {
         return impl->index_stack(index).get_type();
@@ -180,31 +296,31 @@ namespace sourdo
 
     void Data::push_number(Number value)
     {
-        impl->stack.push_back(value);
+        impl->stack.emplace_back(value);
         GarbageCollector::collect_garbage(impl);
     }
 
     void Data::push_bool(bool value)
     {
-        impl->stack.push_back(bool(value));
+        impl->stack.emplace_back(bool(value));
         GarbageCollector::collect_garbage(impl);
     }
 
     void Data::push_string(const std::string& value)
     {
-        impl->stack.push_back(value);
+        impl->stack.emplace_back(value);
         GarbageCollector::collect_garbage(impl);
     }
 
     void Data::push_cppfunction(const CppFunction& value)
     {
-        impl->stack.push_back(value);
+        impl->stack.emplace_back(value);
         GarbageCollector::collect_garbage(impl);
     }
 
     void Data::push_null()
     {
-        impl->stack.push_back(Null());
+        impl->stack.emplace_back(Null());
         GarbageCollector::collect_garbage(impl);
     }
 
@@ -228,7 +344,7 @@ namespace sourdo
 
         for(int i = -arg_count; i < 0; i++)
         {
-            args.push_back(impl->index_stack(i));
+            args.emplace_back(impl->index_stack(i));
             remove(i);
         }
         
@@ -281,14 +397,14 @@ namespace sourdo
             func_scope.get_impl()->parent = impl;
             for(int i = 0; i < args.size(); i++)
             {
-                func_scope.get_impl()->stack.push_back(args[i]);
+                func_scope.get_impl()->stack.emplace_back(args[i]);
             }
             CppFunction func_value = func.to_cpp_function();
             try
             {
                 if(func_value(func_scope))
                 {
-                    impl->stack.push_back(func_scope.impl->index_stack(-1));
+                    impl->stack.emplace_back(func_scope.impl->index_stack(-1));
                 }
                 else
                 {
@@ -328,7 +444,7 @@ namespace sourdo
             throw SourDoError(ss.str());
         }
 
-        impl->stack.push_back(*value);
+        impl->stack.emplace_back(*value);
         return Result::SUCCESS;
     }
 

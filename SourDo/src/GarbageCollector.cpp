@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "GlobalData.hpp"
+
 namespace sourdo
 {
     std::vector<GCObject*> GarbageCollector::objects;
@@ -47,6 +49,18 @@ namespace sourdo
 
     void GarbageCollector::mark(Data::Impl* data)
     {
+        for(auto& ref : GlobalData::references)
+        {
+            if(ref.get_type() == ValueType::OBJECT)
+            {
+                ref.to_object()->marked = true;
+            }
+            else if(ref.get_type() == ValueType::SOURDO_FUNCTION)
+            {
+                ref.to_sourdo_function()->marked = true;
+            }
+        }
+
         Data::Impl* current_data = data;
         while(current_data != nullptr)
         {

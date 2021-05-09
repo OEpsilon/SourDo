@@ -29,6 +29,7 @@ namespace sourdo
 
     using Number = double;
     using CppFunction = bool(*)(Data&);
+    using GCRef = int;
     struct SourDoFunction;
     struct Object;
     
@@ -47,6 +48,41 @@ namespace sourdo
         
         Result do_string(const std::string& string);
         Result do_file(const std::string& file_path);
+
+        GCRef create_ref(int index);
+        void remove_ref(GCRef ref);
+        void push_ref(GCRef ref);
+        bool is_ref_valid(GCRef ref);
+
+        /**
+         * @brief Pushes onto the stack a new object. 
+         */
+        void create_object();
+
+        /**
+         * @brief Pushes onto the stack the value at the given key in the object. 
+         * The new value is the value on the top of the stack, and
+         * the key is the value just below top of the stack. Both are popped afterwards.
+         * 
+         * @param object_index The index that the object is located at.
+         * 
+         * @param protected_mode_enabled If true, returns an error code instead of throwing an exception.
+         * 
+         * @throws SourDoError Thrown if there is an error when calling the function and 'protected_mode_enabled' is false.
+         */
+        Result object_set(int object_index, bool protected_mode_enabled = false);
+        
+        /**
+         * @brief Pushes onto the stack the value at the given key in the object. 
+         * The key is the value on the top of the stack and is popped afterwards.
+         * 
+         * @param object_index The index that the object is located at.
+         * 
+         * @param protected_mode_enabled If true, returns an error code instead of throwing an exception.
+         * 
+         * @throws SourDoError Thrown if there is an error when calling the function and 'protected_mode_enabled' is false.
+         */
+        Result object_get(int object_index, bool protected_mode_enabled = false);
 
         /**
          * @brief Gets the type of the value at the given index. 

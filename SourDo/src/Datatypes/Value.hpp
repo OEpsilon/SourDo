@@ -151,6 +151,8 @@ namespace sourdo
 {
     struct Object : public GCObject
     {
+        Object() = default;
+        
         Object(const std::unordered_map<Value, Value>& keys)
             : keys(keys)
         {
