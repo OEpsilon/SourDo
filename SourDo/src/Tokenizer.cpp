@@ -262,6 +262,11 @@ namespace sourdo
                         tokens.emplace_back(Token::Type::DIV, saved_position);
                         break;
                     }
+                    case '%':
+                    {
+                        tokens.emplace_back(Token::Type::MOD, file_position);
+                        break;
+                    }
                     case ',':
                     {
                         tokens.emplace_back(Token::Type::COMMA, file_position);

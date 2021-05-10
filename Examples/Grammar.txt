@@ -51,7 +51,7 @@ comparison          := add_expr (<LESS_THAN | GREATER_THAN | LESS_EQUAL | GREATE
 
 add_expr            := mul_expr (<ADD|SUB> mul_expr)*
 
-mul_expr            := sign (<MUL|DIV> sign)*
+mul_expr            := sign (<MUL|DIV|MOD> sign)*
 
 sign                := <ADD|SUB> sign
                     := power

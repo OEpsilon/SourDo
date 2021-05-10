@@ -866,6 +866,7 @@ namespace sourdo
             {Token::Type::SUB,              {&Parser::unary_op,         &Parser::binary_op_left,    ExprPrecedence::ADD_EXPR    }},
             {Token::Type::MUL,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
             {Token::Type::DIV,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
+            {Token::Type::MOD,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
             {Token::Type::POW,              {nullptr,                   &Parser::binary_op_right,   ExprPrecedence::POWER       }},
             
             {Token::Type::LESS_THAN,        {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},

@@ -302,6 +302,38 @@ namespace sourdo
                 
                 break;
             }
+            case Token::Type::MOD:
+            {
+                if(left_value.get_type() == ValueType::NUMBER 
+                        && right_value.get_type() == ValueType::NUMBER)
+                {
+                    if(right_value.to_number() == 0)
+                    {
+                        std::stringstream ss;
+                        ss << position << "Cannot divide a number by zero";
+                        return_value.error_message = ss.str();
+                        break;
+                    }
+                    return_value.result = std::fmod(left_value.to_number(), right_value.to_number());
+                }
+                else if(left_value.get_type() == ValueType::OBJECT)
+                {
+                    VisitorReturn mod_method = get_magic_method(left_value, "__mod", position);
+                    if(mod_method.error_message)
+                    {
+                        return mod_method;
+                    }
+                    return_value = call_function(data, mod_method.result, {left_value.to_object(), right_value}, position);
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << position << "Cannot perform division with types " << left_value.get_type() << " and " << right_value.get_type();
+                    return_value.error_message = ss.str();
+                }
+                
+                break;
+            }
             case Token::Type::POW:
             {
                 if(left_value.get_type() == ValueType::NUMBER 
