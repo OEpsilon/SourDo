@@ -650,7 +650,7 @@ namespace sourdo
                 operand = expression_with_precedence(ExprPrecedence::SIGN, multiline_mode);
                 break;
             }
-            case Token::Type::LOGIC_NOT:
+            case Token::Type::NOT:
             {
                 operand = expression_with_precedence(ExprPrecedence::LOGIC_NOT, multiline_mode);
                 break;
@@ -661,6 +661,31 @@ namespace sourdo
             }
         }
         return std::make_shared<UnaryOpNode>(op_token, operand);
+    }
+
+    std::shared_ptr<ExpressionNode> Parser::is_expr(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
+    {
+        Position saved_position = current_token.position;
+        advance();
+        bool invert = false;
+        if(current_token.type == Token::Type::NOT)
+        {
+            invert = true;
+            advance();
+        }
+
+        if(current_token.type != Token::Type::IDENTIFIER
+            && current_token.type != Token::Type::BUILTIN_TYPE)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected an identifier";
+            error = ss.str();
+            return nullptr;
+        }
+        Token right_operand = current_token;
+        advance();
+
+        return std::make_shared<IsNode>(previous, invert, right_operand, saved_position);
     }
 
     std::shared_ptr<ExpressionNode> Parser::call(std::shared_ptr<ExpressionNode> previous, bool multiline_mode)
@@ -868,6 +893,7 @@ namespace sourdo
             {Token::Type::DIV,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
             {Token::Type::MOD,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
             {Token::Type::POW,              {nullptr,                   &Parser::binary_op_right,   ExprPrecedence::POWER       }},
+            {Token::Type::IS,               {nullptr,                   &Parser::is_expr,           ExprPrecedence::POWER       }},
             
             {Token::Type::LESS_THAN,        {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
             {Token::Type::GREATER_THAN,     {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
@@ -876,9 +902,9 @@ namespace sourdo
             {Token::Type::EQUAL,            {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
             {Token::Type::NOT_EQUAL,        {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
 
-            {Token::Type::LOGIC_OR,         {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::LOGIC_OR    }},
-            {Token::Type::LOGIC_AND,        {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::LOGIC_AND   }},
-            {Token::Type::LOGIC_NOT,        {&Parser::unary_op,         nullptr,                    ExprPrecedence::NONE        }},
+            {Token::Type::OR,               {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::LOGIC_OR    }},
+            {Token::Type::AND,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::LOGIC_AND   }},
+            {Token::Type::NOT,              {&Parser::unary_op,         nullptr,                    ExprPrecedence::NONE        }},
 
             {Token::Type::ASSIGN,           {nullptr,                   &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},
             {Token::Type::ASSIGN_ADD,       {nullptr,                   &Parser::assignment,        ExprPrecedence::ASSIGNMENT  }},

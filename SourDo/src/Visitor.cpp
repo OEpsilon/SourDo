@@ -7,6 +7,7 @@
 #include "SourDoData.hpp"
 #include "VisitorTypeFunctions/StringFunctions.hpp"
 #include "GarbageCollector.hpp"
+#include "GlobalData.hpp"
 
 #include "SourDo/Errors.hpp"
 
@@ -567,7 +568,7 @@ namespace sourdo
 
                 break;
             }
-            case Token::Type::LOGIC_OR:
+            case Token::Type::OR:
             {
                 if(left_value.get_type() == ValueType::BOOL 
                         && right_value.get_type() == ValueType::BOOL)
@@ -583,7 +584,7 @@ namespace sourdo
 
                 break;
             }
-            case Token::Type::LOGIC_AND:
+            case Token::Type::AND:
             {
                 if(left_value.get_type() == ValueType::BOOL 
                         && right_value.get_type() == ValueType::BOOL)
@@ -1114,7 +1115,7 @@ namespace sourdo
                 
                 break;
             }
-            case Token::Type::LOGIC_NOT:
+            case Token::Type::NOT:
             {
                 if(operand_value.result.get_type() == ValueType::BOOL)
                 {
@@ -1155,6 +1156,30 @@ namespace sourdo
 
         return_value = perform_binary_operation(data, left_value.result, right_value.result, node->op_token.type, node->position);
 
+        return return_value;
+    }
+
+    static VisitorReturn visit_is_node_node(Data::Impl* data, std::shared_ptr<IsNode> node)
+    {
+        VisitorReturn return_value;
+
+        VisitorReturn left = visit_ast(data, node->left_operand);
+        if(left.error_message)
+        {
+            return left;
+        }
+        
+        if(node->right_operand.type == Token::Type::IDENTIFIER)
+        {
+            if(data->get_symbol(node->right_operand.value) == nullptr)
+            {
+                std::stringstream ss;
+                ss << node->position << "'" << node->right_operand.value << "' is not defined";
+                return_value.error_message = ss.str();
+            }
+        }
+
+        return_value.result = node->invert != check_value_type(left.result, node->right_operand.value);
         return return_value;
     }
 
@@ -1299,6 +1324,11 @@ namespace sourdo
                 auto continue_node = std::static_pointer_cast<ReturnNode>(node);
                 return_value.is_continuing = true;
                 return_value.break_position = continue_node->position;
+                break;
+            }
+            case Node::Type::IS_NODE:
+            {
+                return_value = visit_is_node_node(data, std::static_pointer_cast<IsNode>(node));
                 break;
             }
             case Node::Type::CALL_NODE:

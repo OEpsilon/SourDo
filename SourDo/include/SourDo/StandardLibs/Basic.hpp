@@ -7,6 +7,7 @@ namespace sourdo
     bool print(Data& data);
     bool to_string(Data& data);
     bool format(Data& data);
+    bool error(Data& data);
 
     void load_lib_basic(Data& data);
 } // namespace sourdo

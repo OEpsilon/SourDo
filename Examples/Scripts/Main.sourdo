@@ -8,6 +8,8 @@ end
 var Vec2 = { "__name" = "Vec2" }
 
 func Vec2.new(x, y)
+    assert(x is number, "Argument #1: Expected a number")
+    assert(y is number, "Argument #2: Expected a number")
     var self = {} 
     self.__prototype = Vec2
 
@@ -21,22 +23,27 @@ func Vec2:__string()
 end
 
 func Vec2:__add(other)
+    assert(other is Vec2, "Expected a Vec2 as the right operand")
     return Vec2.new(self.x + other.x, self.y + other.y)
 end
 
 func Vec2:__sub(other)
+    assert(other is Vec2, "Expected a Vec2 as the right operand")
     return Vec2.new(self.x - other.x, self.y - other.y)
 end
 
 func Vec2:__mul(other)
+    assert(other is number, "Expected a number as the right operand")
     return Vec2.new(self.x * other, self.y * other)
 end
 
 func Vec2:__div(other)
+    assert(other is number, "Expected a number as the right operand")
     return Vec2.new(self.x / other, self.y / other)
 end
 
 var position = Vec2.new(0, 0)
+position + 2
 
 callback_signal:listen(func(call_count)
     position.x += 20

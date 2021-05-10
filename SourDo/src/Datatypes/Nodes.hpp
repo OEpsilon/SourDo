@@ -27,6 +27,7 @@ namespace sourdo
     struct ExpressionNode;
     struct BinaryOpNode;
     struct UnaryOpNode;
+    struct IsNode;
     struct CallNode;
     struct IndexNode;
     struct IndexCallNode;
@@ -58,6 +59,7 @@ namespace sourdo
             
             BINARY_OP_NODE,
             UNARY_OP_NODE,
+            IS_NODE,
             CALL_NODE,
             INDEX_NODE,
             INDEX_CALL_NODE,
@@ -393,6 +395,29 @@ namespace sourdo
         {
             std::stringstream ss;
             ss << "(" << op_token << ", " << operand->to_string(0) << ")";
+            return ss.str();
+        }
+    };
+
+    struct IsNode : public ExpressionNode
+    {
+        IsNode(std::shared_ptr<ExpressionNode> left_operand, bool invert, const Token& right_operand, 
+                const Position& position)
+            : ExpressionNode(position), left_operand(left_operand), invert(invert), right_operand(right_operand)
+        {
+            type = Type::IS_NODE;
+        }
+        
+        std::shared_ptr<ExpressionNode> left_operand;
+        bool invert;
+        Token right_operand;
+
+        std::string to_string(uint32_t indent_level) final
+        {
+            std::stringstream ss;
+            ss << "(" << left_operand->to_string(0) 
+                    << ", is, " 
+                    << right_operand << ")";
             return ss.str();
         }
     };

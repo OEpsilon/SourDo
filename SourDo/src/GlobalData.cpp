@@ -23,7 +23,7 @@ namespace sourdo
         {
             case ValueType::_NULL:
             {
-                return name == "null";
+                return name == "null_type";
                 break;
             }
             case ValueType::NUMBER:
@@ -43,12 +43,12 @@ namespace sourdo
             }
             case ValueType::SOURDO_FUNCTION:
             {
-                return name == "sourdo_function";
+                return name == "sourdo_function" || name == "function";
                 break;
             }
             case ValueType::CPP_FUNCTION:
             {
-                return name == "cpp_function";
+                return name == "cpp_function" ||  name == "function";
                 break;
             }
             case ValueType::OBJECT:

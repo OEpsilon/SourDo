@@ -10,6 +10,7 @@ namespace sourdo
         static std::unordered_map<Token::Type, const char*> strings = {
             //  Type                            String
             {   Token::Type::NONE,              "NONE"              },
+            {   Token::Type::BUILTIN_TYPE,      "BUILTIN_TYPE"      },
 
 
             {   Token::Type::VAR ,              "VAR"               },
@@ -52,9 +53,10 @@ namespace sourdo
             {   Token::Type::EQUAL,             "EQUAL"             },
             {   Token::Type::NOT_EQUAL,         "NOT_EQUAL"         },
 
-            {   Token::Type::LOGIC_OR,          "LOGIC_OR"          },
-            {   Token::Type::LOGIC_AND,         "LOGIC_AND"         },
-            {   Token::Type::LOGIC_NOT,         "LOGIC_NOT"         },
+            {   Token::Type::IS,                "IS"                },
+            {   Token::Type::OR,                "OR"                },
+            {   Token::Type::AND,               "AND"               },
+            {   Token::Type::NOT,               "NOT"               },
 
             {   Token::Type::COMMA,             "COMMA"             },
             {   Token::Type::DOT,               "DOT"               },

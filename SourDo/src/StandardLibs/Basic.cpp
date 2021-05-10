@@ -181,6 +181,28 @@ namespace sourdo
         return true;
     }
 
+    bool error(Data& data)
+    {
+        check_arg_count(data, 1);
+        check_is_string(data, 1);
+        data.error(data.value_to_string(1));
+        return false;
+    }
+
+    bool assert_func(Data& data)
+    {
+        check_arg_count(data, 2);
+        check_is_bool(data, 1);
+        check_is_string(data, 2);
+        if(!data.value_to_bool(1))
+        {
+            std::stringstream ss;
+            ss << "Assertion failed: " << data.value_to_string(2);
+            data.error(ss.str());
+        }
+        return false;
+    }
+
     void load_lib_basic(Data& data)
     {
         data.create_value("print");
@@ -194,5 +216,13 @@ namespace sourdo
         data.create_value("format");
         data.push_cppfunction(format);
         data.set_value("format", true);
+
+        data.create_value("error");
+        data.push_cppfunction(error);
+        data.set_value("error", true);
+
+        data.create_value("assert");
+        data.push_cppfunction(assert_func);
+        data.set_value("assert", true);
     }
 } // namespace sourdo

@@ -55,6 +55,7 @@ namespace sourdo
             MUL_EXPR,
             SIGN,
             POWER,
+            IS_EXPR,
             CALL,
             INDEX,
             SUBSCRIPT,
@@ -94,6 +95,7 @@ namespace sourdo
 
         std::shared_ptr<ExpressionNode> unary_op(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
 
+        std::shared_ptr<ExpressionNode> is_expr(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
         std::shared_ptr<ExpressionNode> call(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
         std::shared_ptr<ExpressionNode> index(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);
         std::shared_ptr<ExpressionNode> subscript(std::shared_ptr<ExpressionNode> previous, bool multiline_mode);

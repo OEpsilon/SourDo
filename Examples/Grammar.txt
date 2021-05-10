@@ -18,23 +18,23 @@ statement_list      := (<NEW_LINE>)* (statement (<NEW_LINE>)+)*
 
 statement           := var_declaration
                     := var_assignment
-                    := <KEYWORD:break>
-                    := <KEYWORD:continue>
-                    := <KEYWORD:if> expression <KEYWORD:then> statement_list
-                            (<KEYWORD:elif> expression <KEYWORD:then> statement_list)*
-                            (<KEYWORD:else> statement_list)?
-                            <KEYWORD:end>
-                    := <KEYWORD:for> (var_declaration|expression)
-                            <COMMA> <expression> <COMMA> (var_assignment|expression) <KEYWORD:do> statement_list <KEYWORD:end>
+                    := <BREAK>
+                    := <CONTINUE>
+                    := <IF> expression <THEN> statement_list
+                            (<ELIF> expression <THEN> statement_list)*
+                            (<ELSE> statement_list)?
+                            <END>
+                    := <FOR> (var_declaration|expression)
+                            <COMMA> <expression> <COMMA> (var_assignment|expression) <DO> statement_list <END>
 
                     := expression
 
-var_declaration     := <KEYWORD:var> <IDENTIFIER> <ASSIGN> expression
-                    := <KEYWORD:var> <IDENTIFIER>
+var_declaration     := <VAR> <IDENTIFIER> <ASSIGN> expression
+                    := <VAR> <IDENTIFIER>
 
 var_assignment      := <IDENTIFIER> <ASSIGN|ASSIGN_ADD|ASSIGN_SUB|ASSIGN_MUL|ASSIGN_DIV> expression
 
-func_def            := <KEYWORD:func> <IDENTIFIER> (<DOT|COLON> <IDENTIFIER>)? <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> statement_list <KEYWORD:end>
+func_def            := <FUNC> <IDENTIFIER> (<DOT|COLON> <IDENTIFIER>)? <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> statement_list <END>
 
 expression          := logic_or
 
@@ -56,7 +56,9 @@ mul_expr            := sign (<MUL|DIV|MOD> sign)*
 sign                := <ADD|SUB> sign
                     := power
 
-power               := call (<Power> sign)*
+power               := is_expr (<Power> sign)*
+
+is_expr             := call <IS> (<NOT>)? (<BUILTIN_TYPE | IDENTIFIER>)
 
 call                := index (<LPAREN> (expression (<COMMA> expression)*)? <RPAREN>)?
 
@@ -71,5 +73,4 @@ factor              := <NUMBER_LITERAL|STRING_LITERAL|BOOL_LITERAL|NULL_LITERAL|
 
 object_literal      := <LBRACE> (expression (<COMMA> expression)* (<COMMA>)?)? <RBRACE>
 
-lambda_function     := <KEYWORD:func> <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> statement_list <KEYWORD:end>
- 
+lambda_function     := <FUNC> <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> statement_list <END>

@@ -22,13 +22,20 @@ namespace sourdo
         {"do",          Token::Type::DO             }, 
         {"end",         Token::Type::END            },
 
-        {"or",          Token::Type::LOGIC_OR       }, 
-        {"and",         Token::Type::LOGIC_AND      }, 
-        {"not",         Token::Type::LOGIC_NOT      }, 
+        {"is",          Token::Type::IS             },
+        {"or",          Token::Type::OR             }, 
+        {"and",         Token::Type::AND            }, 
+        {"not",         Token::Type::NOT            }, 
 
         {"null",        Token::Type::NULL_LITERAL   }, 
         {"true",        Token::Type::BOOL_TRUE      }, 
         {"false",       Token::Type::BOOL_FALSE     }, 
+    };
+
+    static std::vector<std::string> BUILTIN_TYPES = 
+    {
+        "null_type", "number", "bool", "string", 
+        "sourdo_function", "cpp_function", "function",
     };
 
     TokenizerReturn tokenize_string(const std::string& text, const std::string& file_name)
@@ -96,6 +103,10 @@ namespace sourdo
                 if(KEYWORDS.find(identifier_string) != KEYWORDS.end())
                 {
                     tokens.emplace_back(KEYWORDS[identifier_string], saved_position);
+                }
+                else if(std::find(BUILTIN_TYPES.begin(), BUILTIN_TYPES.end(), identifier_string) != BUILTIN_TYPES.end())
+                {
+                    tokens.emplace_back(Token::Type::BUILTIN_TYPE, saved_position, identifier_string);
                 }
                 else
                 {
