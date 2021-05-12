@@ -46,22 +46,11 @@ namespace sourdo
     static VisitorReturn get_magic_method(const Value& left_value, const std::string& name, const Position& position)
     {
         VisitorReturn return_value;
-        if(left_value.to_object()->keys.find(name) != left_value.to_object()->keys.end())
+        std::optional<Value> prop = left_value.to_object()->find_property(name);
+        if(prop.has_value())
         {
-            return_value.result = left_value.to_object()->keys[name];
+            return_value.result = prop.value();
             return return_value;
-        }
-        
-        Value prototype_table = left_value.to_object()->keys["__prototype"];
-        while(prototype_table.get_type() != ValueType::_NULL)
-        {
-            if(prototype_table.to_object()->keys.find(name) != prototype_table.to_object()->keys.end())
-            {
-                return_value.result = prototype_table.to_object()->keys[name];
-                return return_value;
-            }
-
-            prototype_table = prototype_table.to_object()->keys["__prototype"];
         }
 
         std::stringstream ss;
@@ -656,29 +645,15 @@ namespace sourdo
         }
         else if(base.get_type() == ValueType::OBJECT)
         {
-            if(base.to_object()->keys.find(attribute) != base.to_object()->keys.end())
+            std::optional<Value> prop = base.to_object()->find_property(attribute);
+            if(!prop.has_value())
             {
-                return_value.result = base.to_object()->keys[attribute];
-            }
-            else
-            {
-                Value prototype_table = base.to_object()->keys["__prototype"];
-                while(prototype_table.get_type() != ValueType::_NULL)
-                {
-                    // We already confirmed the type of "__prototype" when it was set, so we can treat it as an object.
-                    if(prototype_table.to_object()->keys.find(attribute) != prototype_table.to_object()->keys.end())
-                    {
-                        return_value.result = prototype_table.to_object()->keys[attribute];
-                        return return_value;
-                    }
-
-                    prototype_table = prototype_table.to_object()->keys["__prototype"];
-                }
-                
                 std::stringstream ss;
                 ss << attribute_position << "Index does not exist in object";
                 return_value.error_message = ss.str();
+                return return_value;
             }
+            return_value.result = prop.value();
         }
         else if(base.get_type() == ValueType::CPP_OBJECT)
         {

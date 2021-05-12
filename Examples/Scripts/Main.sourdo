@@ -43,7 +43,6 @@ func Vec2:__div(other)
 end
 
 var position = Vec2.new(0, 0)
-position + 2
 
 callback_signal:listen(func(call_count)
     position.x += 20

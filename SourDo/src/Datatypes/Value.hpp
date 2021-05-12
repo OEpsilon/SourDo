@@ -194,6 +194,19 @@ namespace sourdo
         void on_garbage_collected() final
         {
         }
+        
+        std::optional<Value> find_property(const Value& key)
+        {
+            if(keys.find(key) != keys.end())
+            {
+                return keys[key];
+            }
+            if(keys["__prototype"] != Null())
+            {
+                return keys["__prototype"].to_object()->find_property(key);
+            }
+            return {};
+        }
     };
 
 } // namespace SourDo
