@@ -1,5 +1,7 @@
 #include "Value.hpp"
 
+#include <ostream>
+
 namespace sourdo
 {
     Value::Value()
@@ -170,5 +172,41 @@ namespace sourdo
     ValueType Value::get_type() const
     {
         return type;
+    }
+
+    std::ostream& operator<<(std::ostream& os, const Value& val)
+    {
+        switch(val.type)
+        {
+            case ValueType::_NULL: 
+                os << "null";
+                break;
+            case ValueType::NUMBER: 
+            {
+                os << val.to_number();
+                break;
+            }
+            case ValueType::BOOL: 
+                os << val.to_bool();
+                break;
+            case ValueType::STRING: 
+                os << val.to_string();
+                break;
+            case ValueType::SOURDO_FUNCTION: 
+                os << "[SourdoFunc: " << val.to_sourdo_function() << "]";
+                break;
+            case ValueType::CPP_FUNCTION: 
+                os << "[CppFunc: " << val.to_cpp_function() << "]";
+                break;
+            case ValueType::OBJECT: 
+                os << "[Object: " << val.to_object() << "]";
+                break;
+            case ValueType::CPP_OBJECT:  
+                os << "[CppObject: " << val.to_cpp_object() << "]";
+                break;
+            default:
+                break;
+        }
+        return os;
     }
 } // namespace sourdo

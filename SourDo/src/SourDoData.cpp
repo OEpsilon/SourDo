@@ -5,6 +5,8 @@
 #include "Interpreter.hpp"
 #include "GarbageCollector.hpp"
 #include "GlobalData.hpp"
+#include "Bytecode/BytecodeGen.hpp"
+#include "Bytecode/VM.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -111,6 +113,18 @@ namespace sourdo
             return Result::RUNTIME_ERROR;
         }
 
+        BytecodeGenerator byte_gen;
+        Bytecode bytecode = byte_gen.generate_bytecode(ast);
+        std::optional<std::string> error = VirtualMachine::run_bytecode(bytecode, impl);
+        if(error)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << error.value() << COLOR_DEFAULT << std::flush;
+            push_string(ss.str());
+            return Result::RUNTIME_ERROR;
+        }
+
+        /*
         VisitorReturn result = visit_ast(impl, ast);
         if(result.error_message)
         {
@@ -140,6 +154,7 @@ namespace sourdo
             push_string(ss.str());
             return Result::RUNTIME_ERROR;
         }
+        */
 
         return Result::SUCCESS;
     }

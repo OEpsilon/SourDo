@@ -26,6 +26,7 @@ int main()
     sourdo::load_lib_basic(test);
     sourdo::load_lib_math(test);
 
+    /*
     auto callback_signal = (std::vector<sourdo::GCRef>*)(test.create_cpp_object(sizeof(std::vector<sourdo::GCRef>)));
     new(callback_signal) std::vector<sourdo::GCRef>();
     
@@ -53,16 +54,18 @@ int main()
     test.set_cpp_object_prototype(-2);
     test.create_value("callback_signal");
     check_result(test, test.set_value("callback_signal", true));
+    */
 
     auto begin = std::chrono::high_resolution_clock::now();
 
-    check_result(test, test.do_file("Examples/Scripts/Main.sourdo"));
+    //check_result(test, test.do_file("Examples/Scripts/Main.sourdo"));
+    check_result(test, test.do_file("Examples/Scripts/BytecodeTest.sourdo"));
 
     auto end = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end - begin);
     std::cout << "SourDo script took " << duration.count() << " milliseconds" << std::endl;
-    
+    /*
     int call_count = 1;
     for(auto& callback_func : *callback_signal)
     {
@@ -81,6 +84,8 @@ int main()
     call_count++;
 
     callback_signal->~vector();
+
+    */
     
     return 0;
 }

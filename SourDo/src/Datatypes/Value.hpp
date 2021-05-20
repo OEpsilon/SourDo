@@ -131,6 +131,7 @@ namespace sourdo
         }
     private:
         friend struct std::hash<Value>;
+        friend std::ostream& operator<<(std::ostream& os, const Value& val);
         ValueType type;
 
         std::variant<
@@ -144,6 +145,8 @@ namespace sourdo
                 CppObject*
             > value;
     };
+
+    std::ostream& operator<<(std::ostream& os, const Value& val);
 } // namespace SourDo
 
 namespace std

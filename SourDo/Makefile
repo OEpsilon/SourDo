@@ -71,6 +71,8 @@ GENERATED :=
 OBJECTS :=
 
 GENERATED += $(OBJDIR)/Basic.o
+GENERATED += $(OBJDIR)/Bytecode.o
+GENERATED += $(OBJDIR)/BytecodeGen.o
 GENERATED += $(OBJDIR)/Errors.o
 GENERATED += $(OBJDIR)/GCObject.o
 GENERATED += $(OBJDIR)/GarbageCollector.o
@@ -80,9 +82,12 @@ GENERATED += $(OBJDIR)/Parser.o
 GENERATED += $(OBJDIR)/SourDoData.o
 GENERATED += $(OBJDIR)/Token.o
 GENERATED += $(OBJDIR)/Tokenizer.o
+GENERATED += $(OBJDIR)/VM.o
 GENERATED += $(OBJDIR)/Value.o
 GENERATED += $(OBJDIR)/Visitor.o
 OBJECTS += $(OBJDIR)/Basic.o
+OBJECTS += $(OBJDIR)/Bytecode.o
+OBJECTS += $(OBJDIR)/BytecodeGen.o
 OBJECTS += $(OBJDIR)/Errors.o
 OBJECTS += $(OBJDIR)/GCObject.o
 OBJECTS += $(OBJDIR)/GarbageCollector.o
@@ -92,6 +97,7 @@ OBJECTS += $(OBJDIR)/Parser.o
 OBJECTS += $(OBJDIR)/SourDoData.o
 OBJECTS += $(OBJDIR)/Token.o
 OBJECTS += $(OBJDIR)/Tokenizer.o
+OBJECTS += $(OBJDIR)/VM.o
 OBJECTS += $(OBJDIR)/Value.o
 OBJECTS += $(OBJDIR)/Visitor.o
 
@@ -157,6 +163,15 @@ endif
 # File Rules
 # #############################################
 
+$(OBJDIR)/Bytecode.o: src/Bytecode/Bytecode.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/BytecodeGen.o: src/Bytecode/BytecodeGen.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/VM.o: src/Bytecode/VM.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/GCObject.o: src/Datatypes/GCObject.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
