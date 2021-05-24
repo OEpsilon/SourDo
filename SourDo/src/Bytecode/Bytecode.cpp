@@ -20,8 +20,14 @@ namespace sourdo
             case OP_PUSH_NULL: 
                 os << "push_null"; 
                 break;
+            case OP_SYM_CREATE:
+                os << "sym_create"; 
+                break;
             case OP_SYM_GET:
                 os << "sym_get"; 
+                break;
+            case OP_SYM_SET:
+                os << "sym_set"; 
                 break;
             case OP_POP: 
                 os << "pop"; 
@@ -51,16 +57,23 @@ namespace sourdo
         return os;
     }
 
-    std::ostream& operator<<(std::ostream& os, const std::vector<Instruction>& ir)
+    std::ostream& operator<<(std::ostream& os, const Bytecode& bytecode)
     {
-        for(auto& instruction : ir)
+        os << "Bytecode from file: " << bytecode.file_name << "\n";
+        os << "MAIN:\n";
+        for(int i = 0; i < bytecode.instructions.size(); i++)
         {
-            os << instruction.op << " ";
-            if(instruction.operand)
+            os << "\t[" << i << "]" << "\t\t" << bytecode.instructions[i].op;
+            if(bytecode.instructions[i].operand)
             {
-                os << instruction.operand.value();
+                os << ",  " << bytecode.instructions[i].operand.value();
             }
             os << "\n";
+        }
+        os << "CONSTANTS for MAIN:\n";
+        for(int i = 0; i < bytecode.constants.size(); i++)
+        {
+            os << "\t[" << i << "]\t\t" << bytecode.constants[i] << "\n";
         }
         return os;
     }

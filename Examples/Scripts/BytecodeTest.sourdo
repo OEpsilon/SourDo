@@ -1,3 +1,3 @@
-print(1 + 2)
-print(2 - 39)
-print(format("Number: {1}, bool: {2}, string: '{3}'", 3 * 6, true, "EUIHE"))
+var three = 1 + 4
+three -= 20
+print(format("A cool number: {1}", three))

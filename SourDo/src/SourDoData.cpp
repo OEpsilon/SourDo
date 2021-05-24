@@ -7,6 +7,7 @@
 #include "GlobalData.hpp"
 #include "Bytecode/BytecodeGen.hpp"
 #include "Bytecode/VM.hpp"
+#include "Datatypes/Function.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -49,31 +50,6 @@ namespace sourdo
             return Result::RUNTIME_ERROR;
         }
 
-        VisitorReturn result = visit_ast(impl, ast);
-        if(result.error_message)
-        {
-            std::stringstream ss;
-            ss << COLOR_RED << result.error_message.value() << COLOR_DEFAULT << std::flush;
-            push_string(ss.str());
-            return Result::RUNTIME_ERROR;
-        }
-        if(result.is_breaking)
-        {
-            std::stringstream ss;
-            ss << COLOR_RED << result.break_position << "Cannot use 'break' outside of a loop" << COLOR_DEFAULT << std::flush;
-            push_string(ss.str());
-            return Result::RUNTIME_ERROR;
-        }
-        else if(result.is_continuing)
-        {
-            std::stringstream ss;
-            ss << COLOR_RED << result.break_position << "Cannot use 'continue' outside of a loop" << COLOR_DEFAULT << std::flush;
-            push_string(ss.str());
-            return Result::RUNTIME_ERROR;
-        }
-
-        impl->stack.emplace_back(result.result);
-
         return Result::SUCCESS;
     }
     
@@ -114,8 +90,15 @@ namespace sourdo
         }
 
         BytecodeGenerator byte_gen;
-        Bytecode bytecode = byte_gen.generate_bytecode(ast);
-        std::optional<std::string> error = VirtualMachine::run_bytecode(bytecode, impl);
+        auto bytecode = byte_gen.generate_bytecode(ast);
+        if(bytecode.error)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << bytecode.error.value() << COLOR_DEFAULT << std::flush;
+            push_string(ss.str());
+            return Result::RUNTIME_ERROR;
+        }
+        std::optional<std::string> error = VirtualMachine::run_bytecode(bytecode.bytecode, impl);
         if(error)
         {
             std::stringstream ss;
@@ -123,38 +106,6 @@ namespace sourdo
             push_string(ss.str());
             return Result::RUNTIME_ERROR;
         }
-
-        /*
-        VisitorReturn result = visit_ast(impl, ast);
-        if(result.error_message)
-        {
-            std::stringstream ss;
-            ss << COLOR_RED << result.error_message.value() << COLOR_DEFAULT << std::flush;
-            push_string(ss.str());
-            return Result::RUNTIME_ERROR;
-        }
-        if(result.is_breaking)
-        {
-            std::stringstream ss;
-            ss << COLOR_RED << result.break_position << "Cannot use 'break' outside of a loop" << COLOR_DEFAULT << std::flush;
-            push_string(ss.str());
-            return Result::RUNTIME_ERROR;
-        }
-        else if(result.is_function_return)
-        {
-            std::stringstream ss;
-            ss << COLOR_RED << result.break_position << "Cannot use 'return' outside of a function" << COLOR_DEFAULT << std::flush;
-            push_string(ss.str());
-            return Result::RUNTIME_ERROR;
-        }
-        else if(result.is_continuing)
-        {
-            std::stringstream ss;
-            ss << COLOR_RED << result.break_position << "Cannot use 'continue' outside of a loop" << COLOR_DEFAULT << std::flush;
-            push_string(ss.str());
-            return Result::RUNTIME_ERROR;
-        }
-        */
 
         return Result::SUCCESS;
     }
@@ -418,13 +369,14 @@ namespace sourdo
         
         if(func.get_type() == ValueType::SOURDO_FUNCTION)
         {
+            /*
             SourDoFunction* func_value = func.to_sourdo_function();
-            if(args.size() != func_value->parameters.size())
+            if(args.size() != func_value->parameter_count)
             {
                 std::stringstream ss;
-                ss << COLOR_RED << "Function being called expected " << func_value->parameters.size(); 
+                ss << COLOR_RED << "Function being called expected " << func_value->parameter_count; 
                 
-                if(func_value->parameters.size() == 1)
+                if(func_value->parameter_count == 1)
                 {
                     ss << " argument but ";
                 }
@@ -454,11 +406,12 @@ namespace sourdo
 
             Data func_scope;
             func_scope.get_impl()->parent = impl;
-            for(int i = 0; i < func_value->parameters.size(); i++)
+            for(int i = 0; i < func_value->parameter_count; i++)
             {
                 func_scope.get_impl()->symbol_table[func_value->parameters[i]] = args[i];
             }
             visit_ast(func_scope.get_impl(), func_value->statements);
+            */
         }
         else
         {
@@ -498,7 +451,7 @@ namespace sourdo
         Value& value = impl->index_stack(index);
         if(value.get_type() == ValueType::SOURDO_FUNCTION)
         {
-            return value.to_sourdo_function()->parameters.size();
+            return value.to_sourdo_function()->parameter_count;
         }
         return 0;
     }

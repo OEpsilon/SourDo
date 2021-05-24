@@ -14,7 +14,13 @@ namespace sourdo
     class BytecodeGenerator
     {
     public:
-        Bytecode generate_bytecode(std::shared_ptr<Node> ast);
+        struct Result
+        {
+            Bytecode bytecode;
+            std::optional<std::string> error;
+        };
+
+        Result generate_bytecode(std::shared_ptr<Node> ast);
     private:
         std::optional<std::string> error;
 
@@ -22,6 +28,10 @@ namespace sourdo
 
         void visit_node(std::shared_ptr<Node> node, Bytecode& bytecode);
         void visit_statement_list_node(std::shared_ptr<StatementListNode> node, Bytecode& bytecode);
+        
+        void visit_var_declaration_node(std::shared_ptr<VarDeclarationNode> node, Bytecode& bytecode);
+        void visit_assignment_node(std::shared_ptr<AssignmentNode> node, Bytecode& bytecode);
+
         void visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode);
         void visit_binary_op_node(std::shared_ptr<BinaryOpNode> node, Bytecode& bytecode);
         void visit_number_node(std::shared_ptr<NumberNode> node, Bytecode& bytecode);

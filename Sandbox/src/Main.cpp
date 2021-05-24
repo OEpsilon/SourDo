@@ -59,10 +59,11 @@ int main()
     auto begin = std::chrono::high_resolution_clock::now();
 
     //check_result(test, test.do_file("Examples/Scripts/Main.sourdo"));
-    check_result(test, test.do_file("Examples/Scripts/BytecodeTest.sourdo"));
+    sourdo::Result res = test.do_file("Examples/Scripts/BytecodeTest.sourdo");
 
     auto end = std::chrono::high_resolution_clock::now();
-    
+    check_result(test, res);
+
     auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end - begin);
     std::cout << "SourDo script took " << duration.count() << " milliseconds" << std::endl;
     /*

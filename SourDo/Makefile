@@ -84,7 +84,6 @@ GENERATED += $(OBJDIR)/Token.o
 GENERATED += $(OBJDIR)/Tokenizer.o
 GENERATED += $(OBJDIR)/VM.o
 GENERATED += $(OBJDIR)/Value.o
-GENERATED += $(OBJDIR)/Visitor.o
 OBJECTS += $(OBJDIR)/Basic.o
 OBJECTS += $(OBJDIR)/Bytecode.o
 OBJECTS += $(OBJDIR)/BytecodeGen.o
@@ -99,7 +98,6 @@ OBJECTS += $(OBJDIR)/Token.o
 OBJECTS += $(OBJDIR)/Tokenizer.o
 OBJECTS += $(OBJDIR)/VM.o
 OBJECTS += $(OBJDIR)/Value.o
-OBJECTS += $(OBJDIR)/Visitor.o
 
 # Rules
 # #############################################
@@ -203,9 +201,6 @@ $(OBJDIR)/Math.o: src/StandardLibs/Math.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/Tokenizer.o: src/Tokenizer.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/Visitor.o: src/Visitor.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

@@ -10,8 +10,6 @@
 
 namespace sourdo 
 {
-    struct StatementListNode;
-    
     struct Null
     {
     };
@@ -27,22 +25,7 @@ namespace sourdo
         return false;
     }
 
-    struct SourDoFunction : public GCObject
-    {
-        SourDoFunction(std::vector<std::string> parameters, std::shared_ptr<StatementListNode> statements)
-            : parameters(parameters), statements(statements)
-        {
-        }
-        
-        virtual ~SourDoFunction() = default;
-
-        std::vector<std::string> parameters;
-        std::shared_ptr<StatementListNode> statements;
-
-        void on_garbage_collected() final
-        {
-        }
-    };
+    struct SourDoFunction;
 
     struct CppObject : public GCObject
     {

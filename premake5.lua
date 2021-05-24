@@ -20,6 +20,8 @@ project("SourDo")
         "%{prj.name}/include/**.hpp",
     })
 
+    removefiles({ "%{prj.name}/src/Visitor.cpp" })
+
     sysincludedirs({
         "%{prj.name}/include",
     })

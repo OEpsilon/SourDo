@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "GlobalData.hpp"
+#include "Datatypes/Function.hpp"
 
 namespace sourdo
 {

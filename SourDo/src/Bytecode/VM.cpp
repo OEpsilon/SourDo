@@ -100,6 +100,20 @@ namespace sourdo
                     data->stack.emplace_back(std::pow(left, right));
                     break;
                 }
+                case OP_SYM_CREATE:
+                {
+                    Value initializer = data->index_stack(-1);
+                    data->stack.pop_back();
+                    uint64_t sym_name = instruction.operand.value();
+                    if(data->symbol_table.find(bytecode.constants[sym_name].to_string()) != data->symbol_table.end())
+                    {
+                        std::stringstream ss;
+                        ss << bytecode.file_name << "(Runtime Error): '" << bytecode.constants[sym_name].to_string() << "' is already defined";
+                        return ss.str();
+                    }
+                    data->symbol_table[bytecode.constants[sym_name].to_string()] = initializer;
+                    break;
+                }
                 case OP_SYM_GET:
                 {
                     uint64_t sym_name = instruction.operand.value();
@@ -109,13 +123,29 @@ namespace sourdo
                         ss << bytecode.file_name << "(Runtime Error): '" << bytecode.constants[sym_name].to_string() << "' is undefined";
                         return ss.str();
                     }
-                    data->stack.emplace_back(data->symbol_table[bytecode.constants[sym_name].to_string()]);
+                    Value val = data->symbol_table[bytecode.constants[sym_name].to_string()];
+                    data->stack.emplace_back(val);
+                    break;
+                }
+                case OP_SYM_SET:
+                {
+                    uint64_t sym_name = instruction.operand.value();
+                    if(data->symbol_table.find(bytecode.constants[sym_name].to_string()) == data->symbol_table.end())
+                    {
+                        std::stringstream ss;
+                        ss << bytecode.file_name << "(Runtime Error): '" << bytecode.constants[sym_name].to_string() << "' is undefined";
+                        return ss.str();
+                    }
+                    std::string str_name = bytecode.constants[sym_name].to_string();
+                    Value new_value = data->index_stack(-1);
+                    data->stack.pop_back();
+                    data->symbol_table[str_name] = new_value;
                     break;
                 }
                 case OP_CALL:
                 {
                     uint64_t param_count = instruction.operand.value();
-                    Value func = data->index_stack(-(param_count + 1) );
+                    Value func = data->index_stack(-param_count - 1);
                     data->stack.erase(data->stack.begin() + (data->stack.size() - (param_count + 1) ) );
 
                     if(func.get_type() == ValueType::SOURDO_FUNCTION)

@@ -23,18 +23,7 @@ namespace sourdo
         std::optional<std::string> error_message;
     };
 
-    struct VisitorReturn
-    {
-        Value result;
-        std::optional<std::string> error_message;
-        bool is_function_return = false;
-        bool is_breaking = false;
-        bool is_continuing = false;
-        Position break_position;
-    };
-
     TokenizerReturn tokenize_string(const std::string& string, const std::string& file_name);
-    VisitorReturn visit_ast(Data::Impl* data, std::shared_ptr<Node> ast);
 
     class Parser
     {

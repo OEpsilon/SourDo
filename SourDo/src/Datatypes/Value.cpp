@@ -190,7 +190,7 @@ namespace sourdo
                 os << val.to_bool();
                 break;
             case ValueType::STRING: 
-                os << val.to_string();
+                os << "\"" << val.to_string() << "\"";
                 break;
             case ValueType::SOURDO_FUNCTION: 
                 os << "[SourdoFunc: " << val.to_sourdo_function() << "]";

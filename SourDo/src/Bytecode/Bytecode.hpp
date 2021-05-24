@@ -15,7 +15,9 @@ namespace sourdo
         OP_PUSH_STRING,
         OP_PUSH_BOOL,
         OP_PUSH_NULL,
+        OP_SYM_CREATE,
         OP_SYM_GET,
+        OP_SYM_SET,
         OP_POP,
         OP_ADD,
         OP_SUB,
@@ -40,10 +42,11 @@ namespace sourdo
     struct Bytecode
     {
         std::string file_name;
+        std::string scope_name;
         std::vector<Instruction> instructions;
         std::vector<Value> constants;
     };
 
     std::ostream& operator<<(std::ostream& os, Opcode op);
-    std::ostream& operator<<(std::ostream& os, const std::vector<Instruction>& ir);
+    std::ostream& operator<<(std::ostream& os, const Bytecode& bytecode);
 } // namespace sourdo
