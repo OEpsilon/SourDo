@@ -98,7 +98,9 @@ namespace sourdo
             push_string(ss.str());
             return Result::RUNTIME_ERROR;
         }
-        std::optional<std::string> error = VirtualMachine::run_bytecode(bytecode.bytecode, impl);
+        std::cout << bytecode.bytecode;
+        VirtualMachine vm;
+        std::optional<std::string> error = vm.run_bytecode(bytecode.bytecode, impl);
         if(error)
         {
             std::stringstream ss;

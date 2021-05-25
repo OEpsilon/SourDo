@@ -12,6 +12,8 @@ namespace sourdo
     class VirtualMachine
     {
     public:
-        static std::optional<std::string> run_bytecode(const Bytecode& bytecode, Data::Impl* data);
+        std::optional<std::string> run_bytecode(const Bytecode& bytecode, Data::Impl* data);
+    private:
+        bool is_function = false;
     };
 } // namespace sourdo

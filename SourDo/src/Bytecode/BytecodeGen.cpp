@@ -1,6 +1,7 @@
 #include "BytecodeGen.hpp"
 
 #include "../SourDoData.hpp"
+#include "../Datatypes/Function.hpp"
 
 #include <exception>
 
@@ -32,11 +33,20 @@ namespace sourdo
             case Node::Type::STATEMENT_LIST_NODE:
                 visit_statement_list_node(std::static_pointer_cast<StatementListNode>(node), bytecode);
                 break;
+            case Node::Type::IF_NODE:
+                visit_if_node(std::static_pointer_cast<IfNode>(node), bytecode);
+                break;
             case Node::Type::VAR_DECLARATION_NODE:
                 visit_var_declaration_node(std::static_pointer_cast<VarDeclarationNode>(node), bytecode);
                 break;
             case Node::Type::ASSIGNMENT_NODE:
                 visit_assignment_node(std::static_pointer_cast<AssignmentNode>(node), bytecode);
+                break;
+            case Node::Type::FUNC_NODE:
+                visit_func_node(std::static_pointer_cast<FuncNode>(node), bytecode);
+                break;
+            case Node::Type::RETURN_NODE:
+                visit_return_node(std::static_pointer_cast<ReturnNode>(node), bytecode);
                 break;
             case Node::Type::CALL_NODE:
                 visit_call_node(std::static_pointer_cast<CallNode>(node), bytecode);
@@ -67,8 +77,9 @@ namespace sourdo
 
     void BytecodeGenerator::visit_statement_list_node(std::shared_ptr<StatementListNode> node, Bytecode& bytecode)
     {
-        static const std::array<Node::Type, 7> expression_types = 
+        static const std::array<Node::Type, 8> expression_types = 
         {
+            Node::Type::FUNC_NODE,
             Node::Type::CALL_NODE,
             Node::Type::BINARY_OP_NODE,
             Node::Type::NUMBER_NODE,
@@ -90,6 +101,10 @@ namespace sourdo
                 bytecode.instructions.emplace_back(OP_POP);
             }
         }
+    }
+
+    void BytecodeGenerator::visit_if_node(std::shared_ptr<IfNode> node, Bytecode& bytecode)
+    {
     }
 
     void BytecodeGenerator::visit_var_declaration_node(std::shared_ptr<VarDeclarationNode> node, Bytecode& bytecode)
@@ -139,6 +154,44 @@ namespace sourdo
                 break;
         }
         bytecode.instructions.emplace_back(OP_SYM_SET, sym_name);
+    }
+
+    void BytecodeGenerator::visit_func_node(std::shared_ptr<FuncNode> node, Bytecode& bytecode)
+    {
+        Bytecode func;
+        for(int64_t i = 1; i <= node->parameters.size(); i++)
+        {
+            uint64_t name = push_constant(node->parameters[i - 1], func);
+
+            func.instructions.emplace_back(OP_STACK_GET, i);
+            func.instructions.emplace_back(OP_SYM_CREATE, name);
+        }
+
+        visit_node(node->statements, func);
+        if(error)
+        {
+            return;
+        }
+
+        if(node->statements->statements.size() == 0 
+                || node->statements->statements[node->statements->statements.size() -1]->type != Node::Type::RETURN_NODE)
+        {
+            func.instructions.emplace_back(OP_PUSH_NULL);
+            func.instructions.emplace_back(OP_RET);
+        }
+        SourDoFunction* value = new SourDoFunction(node->parameters.size(), func);
+        uint64_t constant = push_constant(value, bytecode);
+        bytecode.instructions.emplace_back(OP_PUSH_FUNC, constant);
+    }
+
+    void BytecodeGenerator::visit_return_node(std::shared_ptr<ReturnNode> node, Bytecode& bytecode)
+    {
+        visit_node(node->return_value, bytecode);
+        if(error)
+        {
+            return;
+        }
+        bytecode.instructions.emplace_back(OP_RET);
     }
 
     void BytecodeGenerator::visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode)

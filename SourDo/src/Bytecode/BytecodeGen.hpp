@@ -28,9 +28,12 @@ namespace sourdo
 
         void visit_node(std::shared_ptr<Node> node, Bytecode& bytecode);
         void visit_statement_list_node(std::shared_ptr<StatementListNode> node, Bytecode& bytecode);
-        
+        void visit_if_node(std::shared_ptr<IfNode> node, Bytecode& bytecode);
+
         void visit_var_declaration_node(std::shared_ptr<VarDeclarationNode> node, Bytecode& bytecode);
         void visit_assignment_node(std::shared_ptr<AssignmentNode> node, Bytecode& bytecode);
+        void visit_func_node(std::shared_ptr<FuncNode> node, Bytecode& bytecode);
+        void visit_return_node(std::shared_ptr<ReturnNode> node, Bytecode& bytecode);
 
         void visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode);
         void visit_binary_op_node(std::shared_ptr<BinaryOpNode> node, Bytecode& bytecode);

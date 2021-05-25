@@ -15,6 +15,8 @@ namespace sourdo
         OP_PUSH_STRING,
         OP_PUSH_BOOL,
         OP_PUSH_NULL,
+        OP_PUSH_FUNC,
+        OP_STACK_GET,
         OP_SYM_CREATE,
         OP_SYM_GET,
         OP_SYM_SET,
@@ -26,6 +28,7 @@ namespace sourdo
         OP_MOD,
         OP_POW,
         OP_CALL,
+        OP_RET,
     };
 
     struct Instruction

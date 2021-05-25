@@ -1,4 +1,5 @@
 #include "Value.hpp"
+#include "Function.hpp"
 
 #include <ostream>
 
