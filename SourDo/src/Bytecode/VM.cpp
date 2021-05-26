@@ -7,13 +7,44 @@
 
 namespace sourdo
 {
+    static std::ostream& operator<<(std::ostream& os, const ValueType& type)
+    {
+        switch(type)
+        {
+            case ValueType::NUMBER:
+                os << "Number";
+                break;
+            case ValueType::BOOL:
+                os << "Bool";
+                break;
+            case ValueType::STRING:
+                os << "String";
+                break;
+            case ValueType::SOURDO_FUNCTION:
+            case ValueType::CPP_FUNCTION:
+                os << "Function";
+                break;
+            case ValueType::_NULL:
+                os << "Null";
+                break;
+            case ValueType::OBJECT:
+                os << "Object";
+                break;
+            case ValueType::CPP_OBJECT:
+                os << "CppObject";
+                break;
+        }
+        return os;
+    }
+
     std::optional<std::string> VirtualMachine::run_bytecode(const Bytecode& bytecode, Data::Impl* data)
     {
         /* Currently, file positions are not logged in runtime error messages.
          * This should be fixed using some extra debug information in the bytecode.
          */
-        for(auto& instruction : bytecode.instructions)
+        while(ipointer < bytecode.instructions.size())
         {
+            auto& instruction = bytecode.instructions[ipointer];
             switch(instruction.op)
             {
                 case OP_PUSH_NUMBER:
@@ -46,71 +77,6 @@ namespace sourdo
                     data->stack.emplace_back(data->index_stack(instruction.operand.value()));
                     break;
                 }
-                case OP_POP:
-                {
-                    data->stack.pop_back();
-                    break;
-                }
-                case OP_ADD:
-                {
-                    double right = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    double left = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    data->stack.emplace_back(left + right);
-                    break;
-                }
-                case OP_SUB:
-                {
-                    double right = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    double left = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    data->stack.emplace_back(left - right);
-                    break;
-                }
-                case OP_MUL:
-                {
-                    double right = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    double left = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    data->stack.emplace_back(left * right);
-                    break;
-                }
-                case OP_DIV:
-                {
-                    double right = data->index_stack(-1).to_number();
-                    if(right == 0)
-                    {
-                        std::stringstream ss;
-                        ss << bytecode.file_name << "(Runtime Error): Cannot divide a number by zero";
-                        return ss.str();
-                    }
-                    data->stack.pop_back();
-                    double left = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    data->stack.emplace_back(left / right);
-                    break;
-                }
-                case OP_MOD:
-                {
-                    double right = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    double left = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    data->stack.emplace_back(std::fmod(left, right));
-                    break;
-                }
-                case OP_POW:
-                {
-                    double right = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    double left = data->index_stack(-1).to_number();
-                    data->stack.pop_back();
-                    data->stack.emplace_back(std::pow(left, right));
-                    break;
-                }
                 case OP_SYM_CREATE:
                 {
                     Value initializer = data->index_stack(-1);
@@ -141,16 +107,397 @@ namespace sourdo
                 case OP_SYM_SET:
                 {
                     uint64_t sym_name = instruction.operand.value();
-                    if(data->symbol_table.find(bytecode.constants[sym_name].to_string()) == data->symbol_table.end())
+                    std::string str_name = bytecode.constants[sym_name].to_string();
+                    Value new_value = data->index_stack(-1);
+                    data->stack.pop_back();
+                    
+                    if(!data->set_symbol(bytecode.constants[sym_name].to_string(), new_value))
                     {
                         std::stringstream ss;
                         ss << bytecode.file_name << "(Runtime Error): '" << bytecode.constants[sym_name].to_string() << "' is undefined";
                         return ss.str();
                     }
-                    std::string str_name = bytecode.constants[sym_name].to_string();
-                    Value new_value = data->index_stack(-1);
+                    break;
+                }
+                case OP_JMP:
+                {
+                    ipointer = instruction.operand.value();
+                    continue;
+                    break;
+                }
+                case OP_NJMP:
+                {
+                    if(data->index_stack(-1).get_type() != ValueType::BOOL)
+                    {
+                        std::stringstream ss;
+                        ss << bytecode.file_name << "(Runtime Error): Expression does not evaluate to true";
+                        return ss.str();
+                    }
+
+                    if(!data->index_stack(-1).to_bool())
+                    {
+                        ipointer = instruction.operand.value();
+                        data->stack.pop_back();
+                        continue;
+                    }
                     data->stack.pop_back();
-                    data->symbol_table[str_name] = new_value;
+                    break;
+                }
+                case OP_PUSH_SCOPE:
+                {
+                    Data scope;
+                    scope.get_impl()->parent = data;
+                    ipointer++;
+                    std::optional<std::string> error = run_bytecode(bytecode, scope.get_impl());
+                    if(error)
+                    {
+                        return error;
+                    }
+                    if(returning)
+                    {
+                        data->stack.emplace_back(scope.get_impl()->index_stack(-1));
+                    }
+                    break;
+                }
+                case OP_POP_SCOPE:
+                {
+                    return {};
+                    break;
+                }
+                case OP_POP:
+                {
+                    data->stack.pop_back();
+                    break;
+                }
+                case OP_ADD:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(left.to_number() + right.to_number());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform addition with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_SUB:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(left.to_number() - right.to_number());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform substraction with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_MUL:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(left.to_number() * right.to_number());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform multiplication with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_DIV:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        if(right.to_number() == 0)
+                        {
+                            std::stringstream ss;
+                            ss << bytecode.file_name << "(Runtime Error): Cannot divide a number by zero";
+                            return ss.str();
+                        }
+                        data->stack.emplace_back(left.to_number() / right.to_number());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform modulo with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_MOD:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(std::fmod(left.to_number(), right.to_number()) );
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform modulo with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    
+                    break;
+                }
+                case OP_POW:
+                {
+                    Value right = data->index_stack(-1).to_number();
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1).to_number();
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(std::pow(left.to_number(), right.to_number()));
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform exponentiation with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_NEG:
+                {
+                    Value operand = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(operand.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(-operand.to_number());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform negation with value of type " 
+                                << operand.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_EQ:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(left.to_number() == right.to_number());
+                    }
+                    else if(left.get_type() == ValueType::_NULL || 
+                            right.get_type() == ValueType::_NULL)
+                    {
+                        data->stack.emplace_back(left.get_type() == right.get_type());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform equality comparison with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_NE:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(left.to_number() == right.to_number());
+                    }
+                    else if(left.get_type() == ValueType::_NULL || 
+                            right.get_type() == ValueType::_NULL)
+                    {
+                        data->stack.emplace_back(left.get_type() != right.get_type());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform inequality comparison with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_LT:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(left.to_number() < right.to_number());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform less than comparison with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_LE:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(left.to_number() <= right.to_number());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform less than or equal comparison with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_GT:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(left.to_number() > right.to_number());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform greater than comparison with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_GE:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::NUMBER && 
+                            right.get_type() == ValueType::NUMBER)
+                    {
+                        data->stack.emplace_back(left.to_number() >= right.to_number());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform greater than or equal comparison with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_OR:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::BOOL && 
+                            right.get_type() == ValueType::BOOL)
+                    {
+                        data->stack.emplace_back(left.to_bool() || right.to_bool());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform logical operation (or) with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_AND:
+                {
+                    Value right = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value left = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(left.get_type() == ValueType::BOOL && 
+                            right.get_type() == ValueType::BOOL)
+                    {
+                        data->stack.emplace_back(left.to_bool() && right.to_bool());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform logical operation (and) with types " 
+                                << left.get_type() << " and " << right.get_type();
+                        return ss.str();
+                    }
+                    break;
+                }
+                case OP_NOT:
+                {
+                    Value operand = data->index_stack(-1);
+                    data->stack.pop_back();
+                    if(operand.get_type() == ValueType::BOOL)
+                    {
+                        data->stack.emplace_back(!operand.to_bool());
+                    }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "(Runtime Error): Cannot perform logical operation (not) with value of type " 
+                                << operand.get_type();
+                        return ss.str();
+                    }
                     break;
                 }
                 case OP_CALL:
@@ -171,11 +518,15 @@ namespace sourdo
                     {
                         bool saved_state = is_function;
                         is_function = true;
+                        uint64_t saved_ipointer = ipointer;
+                        ipointer = 0;
                         std::optional<std::string> error = run_bytecode(func.to_sourdo_function()->bytecode, scope.get_impl());
                         if(error)
                         {
                             return error;
                         }
+                        returning = false;
+                        ipointer = saved_ipointer;
                         is_function = saved_state;
                         data->stack.emplace_back(scope.get_impl()->index_stack(-1));
                     }
@@ -214,11 +565,12 @@ namespace sourdo
                         ss << bytecode.file_name << "(Runtime Error): Cannot return when outside of a function";
                         return ss.str();
                     }
+                    returning = true;
                     return {};
                     break;
                 }
             }
-
+            ipointer++;
         }
         return {};
     }

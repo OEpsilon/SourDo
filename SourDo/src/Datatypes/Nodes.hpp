@@ -37,7 +37,7 @@ namespace sourdo
     struct BoolNode;
     struct NullNode;
     struct IdentifierNode;
-    struct ObjectLiteralNode;
+    struct TableNode;
 
     struct Node 
     {
@@ -69,7 +69,7 @@ namespace sourdo
             BOOL_NODE,
             NULL_NODE,
             IDENTIFIER_NODE,
-            OBJECT_LITERAL_NODE,
+            TABLE_NODE,
         };
 
         Node(const Position& position)
@@ -621,13 +621,13 @@ namespace sourdo
         }
     };
 
-    struct ObjectLiteralNode : public ExpressionNode
+    struct TableNode : public ExpressionNode
     {
-        ObjectLiteralNode(const std::map<std::shared_ptr<ExpressionNode>, std::shared_ptr<ExpressionNode>>& keys, 
+        TableNode(const std::map<std::shared_ptr<ExpressionNode>, std::shared_ptr<ExpressionNode>>& keys, 
                 const Position& position)
             : ExpressionNode(position), keys(keys)
         {
-            type = Type::OBJECT_LITERAL_NODE;
+            type = Type::TABLE_NODE;
         }
 
         std::map<std::shared_ptr<ExpressionNode>, std::shared_ptr<ExpressionNode>> keys;

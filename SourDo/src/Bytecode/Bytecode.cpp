@@ -38,6 +38,18 @@ namespace sourdo
             case OP_SYM_SET:
                 os << "sym_set"; 
                 break;
+            case OP_JMP:
+                os << "jmp"; 
+                break;
+            case OP_NJMP:
+                os << "njmp"; 
+                break;
+            case OP_PUSH_SCOPE:
+                os << "push_scope";
+                break;
+            case OP_POP_SCOPE:
+                os << "pop_scope";
+                break;
             case OP_POP: 
                 os << "pop"; 
                 break;
@@ -58,6 +70,36 @@ namespace sourdo
                 break;
             case OP_POW: 
                 os << "pow";
+                break;
+            case OP_NEG: 
+                os << "neg";
+                break;
+            case OP_EQ:
+                os << "eq";
+                break;
+            case OP_NE:
+                os << "ne";
+                break;
+            case OP_LT:
+                os << "lt";
+                break;
+            case OP_LE:
+                os << "le";
+                break;
+            case OP_GT:
+                os << "gt";
+                break;
+            case OP_GE:
+                os << "ge";
+                break;
+            case OP_OR:
+                os << "or";
+                break;
+            case OP_AND:
+                os << "and";
+                break;
+            case OP_NOT:
+                os << "not";
                 break;
             case OP_CALL: 
                 os << "call"; 
@@ -84,8 +126,10 @@ namespace sourdo
             os << "[" << i << "]" << "\t" << bytecode.instructions[i].op;
             if(bytecode.instructions[i].operand)
             {
-                static const std::vector<Opcode> multi_tab = 
+                static const std::array<Opcode, 17> multi_tab = 
                 {
+                    OP_JMP,
+                    OP_NJMP,
                     OP_POP,
                     OP_ADD,
                     OP_SUB,
@@ -93,6 +137,12 @@ namespace sourdo
                     OP_DIV,
                     OP_MOD,
                     OP_POW,
+                    OP_EQ,
+                    OP_LT,
+                    OP_LE,
+                    OP_OR,
+                    OP_AND,
+                    OP_NOT,
                     OP_CALL,
                     OP_RET,
                 };

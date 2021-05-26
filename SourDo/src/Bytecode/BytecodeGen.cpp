@@ -25,6 +25,18 @@ namespace sourdo
         bytecode.constants.emplace_back(val);
         return const_position;
     }
+
+    void BytecodeGenerator::fix_control_flows(uint64_t continue_spot, uint64_t break_spot, Bytecode& bytecode)
+    {
+        for(auto& brk : breaks)
+        {
+            bytecode.instructions[brk].operand = break_spot;
+        }
+        for(auto& cont : continues)
+        {
+            bytecode.instructions[cont].operand = continue_spot;
+        }
+    }
     
     void BytecodeGenerator::visit_node(std::shared_ptr<Node> node, Bytecode& bytecode)
     {
@@ -35,6 +47,15 @@ namespace sourdo
                 break;
             case Node::Type::IF_NODE:
                 visit_if_node(std::static_pointer_cast<IfNode>(node), bytecode);
+                break;
+            case Node::Type::FOR_NODE:
+                visit_for_node(std::static_pointer_cast<ForNode>(node), bytecode);
+                break;
+            case Node::Type::WHILE_NODE:
+                visit_while_node(std::static_pointer_cast<WhileNode>(node), bytecode);
+                break;
+            case Node::Type::LOOP_NODE:
+                visit_loop_node(std::static_pointer_cast<LoopNode>(node), bytecode);
                 break;
             case Node::Type::VAR_DECLARATION_NODE:
                 visit_var_declaration_node(std::static_pointer_cast<VarDeclarationNode>(node), bytecode);
@@ -48,11 +69,20 @@ namespace sourdo
             case Node::Type::RETURN_NODE:
                 visit_return_node(std::static_pointer_cast<ReturnNode>(node), bytecode);
                 break;
+            case Node::Type::BREAK_NODE:
+                visit_break_node(std::static_pointer_cast<BreakNode>(node), bytecode);
+                break;
+            case Node::Type::CONTINUE_NODE:
+                visit_continue_node(std::static_pointer_cast<ContinueNode>(node), bytecode);
+                break;
             case Node::Type::CALL_NODE:
                 visit_call_node(std::static_pointer_cast<CallNode>(node), bytecode);
                 break;
             case Node::Type::BINARY_OP_NODE:
                 visit_binary_op_node(std::static_pointer_cast<BinaryOpNode>(node), bytecode);
+                break;
+            case Node::Type::UNARY_OP_NODE:
+                visit_unary_op_node(std::static_pointer_cast<UnaryOpNode>(node), bytecode);
                 break;
             case Node::Type::NUMBER_NODE:
                 visit_number_node(std::static_pointer_cast<NumberNode>(node), bytecode);
@@ -105,6 +135,112 @@ namespace sourdo
 
     void BytecodeGenerator::visit_if_node(std::shared_ptr<IfNode> node, Bytecode& bytecode)
     {
+        std::vector<uint64_t> jumps;
+        jumps.reserve(node->cases.size());
+        for(auto& if_case : node->cases)
+        {
+            visit_node(if_case.condition, bytecode);
+            if(error)
+            {
+                return;
+            }
+            
+            uint64_t jump_position = bytecode.instructions.size();
+            bytecode.instructions.emplace_back(OP_NJMP);
+            bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
+            visit_node(if_case.statements, bytecode);
+            if(error)
+            {
+                return;
+            }
+            bytecode.instructions.emplace_back(OP_POP_SCOPE);
+
+            jumps.emplace_back(bytecode.instructions.size());
+            bytecode.instructions.emplace_back(OP_JMP);
+            bytecode.instructions[jump_position].operand = bytecode.instructions.size();
+        }
+
+        if(node->else_case)
+        {
+            bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
+            visit_node(node->else_case, bytecode);
+            if(error)
+            {
+                return;
+            }
+            bytecode.instructions.emplace_back(OP_POP_SCOPE);
+        }
+
+        for(auto& jmp : jumps) 
+        {
+            bytecode.instructions[jmp].operand = bytecode.instructions.size();
+        }
+    }
+
+    void BytecodeGenerator::visit_for_node(std::shared_ptr<ForNode> node, Bytecode& bytecode)
+    {
+        bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
+
+        visit_node(node->initializer, bytecode);
+        
+        uint64_t start_position = bytecode.instructions.size();
+        bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
+        visit_node(node->condition, bytecode);
+        uint64_t jump_position = bytecode.instructions.size();
+        bytecode.instructions.emplace_back(OP_NJMP);
+
+        bool saved_in_loop = in_loop;
+        in_loop = true;
+        visit_node(node->statements, bytecode);
+        in_loop = saved_in_loop;
+
+        bytecode.instructions.emplace_back(OP_POP_SCOPE);
+
+        visit_node(node->increment, bytecode);
+
+        bytecode.instructions.emplace_back(OP_JMP, start_position);
+
+        bytecode.instructions[jump_position].operand = bytecode.instructions.size();
+        fix_control_flows(start_position, bytecode.instructions.size(), bytecode);
+        bytecode.instructions.emplace_back(OP_POP_SCOPE);
+    }
+    
+    void BytecodeGenerator::visit_while_node(std::shared_ptr<WhileNode> node, Bytecode& bytecode)
+    {
+        bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
+
+        uint64_t start_position = bytecode.instructions.size();
+        visit_node(node->condition, bytecode);
+
+        uint64_t jump_position = bytecode.instructions.size();
+        bytecode.instructions.emplace_back(OP_NJMP);
+
+        bool saved_in_loop = in_loop;
+        in_loop = true;
+        visit_node(node->statements, bytecode);
+        in_loop = saved_in_loop;
+        
+        bytecode.instructions.emplace_back(OP_JMP, start_position);
+
+        bytecode.instructions[jump_position].operand = bytecode.instructions.size();
+        fix_control_flows(start_position, bytecode.instructions.size(), bytecode);
+
+        bytecode.instructions.emplace_back(OP_POP_SCOPE);
+    }
+
+    void BytecodeGenerator::visit_loop_node(std::shared_ptr<LoopNode> node, Bytecode& bytecode)
+    {
+        bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
+        uint64_t start_position = bytecode.instructions.size();
+        bool saved_in_loop = in_loop;
+        in_loop = true;
+        visit_node(node->statements, bytecode);
+        in_loop = saved_in_loop;
+
+        bytecode.instructions.emplace_back(OP_JMP, start_position);
+        fix_control_flows(start_position, bytecode.instructions.size(), bytecode);
+
+        bytecode.instructions.emplace_back(OP_POP_SCOPE);
     }
 
     void BytecodeGenerator::visit_var_declaration_node(std::shared_ptr<VarDeclarationNode> node, Bytecode& bytecode)
@@ -194,6 +330,32 @@ namespace sourdo
         bytecode.instructions.emplace_back(OP_RET);
     }
 
+    void BytecodeGenerator::visit_break_node(std::shared_ptr<BreakNode> node, Bytecode& bytecode)
+    {
+        if(!in_loop)
+        {
+            std::stringstream ss;
+            ss << node->position << "Cannot break outside of a loop";
+            error = ss.str();
+            return;
+        }
+        breaks.emplace_back(bytecode.instructions.size());
+        bytecode.instructions.emplace_back(OP_JMP);
+    }
+
+    void BytecodeGenerator::visit_continue_node(std::shared_ptr<ContinueNode> node, Bytecode& bytecode)
+    {
+        if(!in_loop)
+        {
+            std::stringstream ss;
+            ss << node->position << "Cannot continue outside of a loop";
+            error = ss.str();
+            return;
+        }
+        continues.emplace_back(bytecode.instructions.size());
+        bytecode.instructions.emplace_back(OP_JMP);
+    }
+
     void BytecodeGenerator::visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode)
     {
         visit_node(node->callee, bytecode);
@@ -234,6 +396,45 @@ namespace sourdo
                 break;
             case Token::Type::POW:
                 bytecode.instructions.emplace_back(OP_POW);
+                break;
+            case Token::Type::EQUAL:
+                bytecode.instructions.emplace_back(OP_EQ);
+                break;
+            case Token::Type::NOT_EQUAL:
+                bytecode.instructions.emplace_back(OP_NE);
+                break;
+            case Token::Type::LESS_THAN:
+                bytecode.instructions.emplace_back(OP_LT);
+                break;
+            case Token::Type::GREATER_THAN:
+                bytecode.instructions.emplace_back(OP_GT);
+                break;
+            case Token::Type::GREATER_EQUAL:
+                bytecode.instructions.emplace_back(OP_GE);
+                break;
+            case Token::Type::LESS_EQUAL:
+                bytecode.instructions.emplace_back(OP_LE);
+                break;
+            case Token::Type::AND:
+                bytecode.instructions.emplace_back(OP_AND);
+                break;
+            case Token::Type::OR:
+                bytecode.instructions.emplace_back(OP_OR);
+                break;
+            default:
+                break;
+        }
+    }
+
+    void BytecodeGenerator::visit_unary_op_node(std::shared_ptr<UnaryOpNode> node, Bytecode& bytecode)
+    {
+        switch(node->op_token.type)
+        {
+            case Token::Type::SUB:
+                bytecode.instructions.emplace_back(OP_NEG);
+                break;
+            case Token::Type::NOT:
+                bytecode.instructions.emplace_back(OP_NOT);
                 break;
             default:
                 break;

@@ -1,8 +1,0 @@
-func pow(num1, num2)
-    return num1 ** num2
-end
-
-var cool_num = 1 + 4
-cool_num -= 20
-print("Pow!", pow(2, 16))
-print("A cool number:", cool_num)

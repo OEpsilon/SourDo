@@ -397,10 +397,10 @@ namespace sourdo
                 {
                     return nullptr;
                 }
-                if(current_token.type == Token::Type::END)
+                if(current_token.type != Token::Type::END)
                 {
                     std::stringstream ss;
-                    ss << current_token << "Expected 'end'";
+                    ss << current_token.position << "Expected 'end'";
                     error = ss.str();
                 }
                 advance();
@@ -434,7 +434,7 @@ namespace sourdo
                 if(current_token.type != Token::Type::END)
                 {
                     std::stringstream ss;
-                    ss << current_token << "Expected 'end'";
+                    ss << current_token.position << "Expected 'end'";
                     error = ss.str();
                     return nullptr;
                 }
@@ -455,7 +455,7 @@ namespace sourdo
                 if(current_token.type != Token::Type::END)
                 {
                     std::stringstream ss;
-                    ss << current_token << "Expected 'end'";
+                    ss << current_token.position << "Expected 'end'";
                     error = ss.str();
                     return nullptr;
                 }

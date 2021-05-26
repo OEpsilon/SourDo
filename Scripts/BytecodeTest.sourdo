@@ -1,0 +1,10 @@
+var cool_num = 1 + 4
+cool_num -= 20
+print("A cool number:", cool_num)
+
+print("---------")
+
+for var i = 1, i <= 20, i += 1 do
+    print(i)
+    if i == 15 then break end
+end

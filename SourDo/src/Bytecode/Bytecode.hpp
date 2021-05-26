@@ -16,17 +16,38 @@ namespace sourdo
         OP_PUSH_BOOL,
         OP_PUSH_NULL,
         OP_PUSH_FUNC,
+
         OP_STACK_GET,
         OP_SYM_CREATE,
         OP_SYM_GET,
         OP_SYM_SET,
+
+        OP_JMP,
+        OP_NJMP,
+
+        OP_PUSH_SCOPE,
+        OP_POP_SCOPE,
         OP_POP,
+
         OP_ADD,
         OP_SUB,
         OP_MUL,
         OP_DIV,
         OP_MOD,
         OP_POW,
+        OP_NEG,
+
+        OP_EQ,
+        OP_NE,
+        OP_LT,
+        OP_LE,
+        OP_GT,
+        OP_GE,
+
+        OP_OR,
+        OP_AND,
+        OP_NOT,
+
         OP_CALL,
         OP_RET,
     };
