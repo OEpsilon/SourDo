@@ -159,6 +159,7 @@ namespace sourdo
         switch(current_token.type)
         {
             case Token::Type::VAR:
+            case Token::Type::CONST:
             {
                 return var_declaration();
                 break;
@@ -204,7 +205,7 @@ namespace sourdo
                     return nullptr;
                 }
                 
-                return std::make_shared<VarDeclarationNode>(name, std::make_shared<FuncNode>(parameters, statements, saved_position), saved_position);
+                return std::make_shared<VarDeclarationNode>(name, std::make_shared<FuncNode>(parameters, statements, saved_position), true, saved_position);
             }
             case Token::Type::RETURN:
             {
@@ -438,6 +439,7 @@ namespace sourdo
     std::shared_ptr<Node> Parser::var_declaration()
     {
         Position saved_position = current_token.position;
+        bool readonly = current_token.type == Token::Type::CONST;
         advance();
         if(current_token.type != Token::Type::IDENTIFIER)
         {
@@ -450,7 +452,14 @@ namespace sourdo
         advance();
         if(current_token.type != Token::Type::ASSIGN)
         {
-            return std::make_shared<VarDeclarationNode>(name_tok, nullptr, saved_position);
+            if(readonly)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "A variable declared constant must be assigned a value when declared";
+                error = ss.str();
+                return nullptr;
+            }
+            return std::make_shared<VarDeclarationNode>(name_tok, nullptr, false, saved_position);
         }
         advance();
         std::shared_ptr<ExpressionNode> expr = expression();
@@ -458,7 +467,7 @@ namespace sourdo
         {
             return nullptr;
         }
-        return std::make_shared<VarDeclarationNode>(name_tok, expr, saved_position);
+        return std::make_shared<VarDeclarationNode>(name_tok, expr, readonly, saved_position);
     }
 
     std::shared_ptr<ExpressionNode> Parser::expression(bool multiline_mode, bool allow_assignment)

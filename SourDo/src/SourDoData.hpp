@@ -9,17 +9,38 @@
 #include "Datatypes/Value.hpp"
 
 namespace sourdo {
+    struct Symbol
+    {
+        Symbol()
+        {
+        }
+
+        Symbol(bool readonly, Value val)
+            : readonly(readonly), val(val)
+        {
+        }
+        bool readonly = false;
+        Value val;
+    };
+
+    enum class SetSymbolResult
+    {
+        SUCCESS,
+        SYM_NOT_FOUND,
+        SYM_READONLY,
+    };
+
     class Data::Impl
     {
     public:
         Data::Impl* parent = nullptr;
 
         // Used to keep temporary values.
-        std::vector<sourdo::Value> stack;
+        std::vector<Value> stack;
         // Used to store named values.
-        std::map<std::string, sourdo::Value> symbol_table;
+        std::map<std::string, Symbol> symbol_table;
 
-        bool set_symbol(const std::string& index, const sourdo::Value& value)
+        SetSymbolResult set_symbol(const std::string& index, const sourdo::Value& value)
         {
             if(symbol_table.find(index) == symbol_table.end())
             {
@@ -28,18 +49,28 @@ namespace sourdo {
                 {
                     if(current_parent->symbol_table.find(index) != parent->symbol_table.end())
                     {
-                        current_parent->symbol_table[index] = value;
-                        return true;
+                        if(symbol_table[index].readonly)
+                        {
+                            return SetSymbolResult::SYM_READONLY;
+                        }
+                        current_parent->symbol_table[index].val = value;
+
+                        return SetSymbolResult::SUCCESS;
                     }
                     current_parent = parent->parent;
                 }
-                return false;
+                return SetSymbolResult::SYM_NOT_FOUND;
             }
-            symbol_table[index] = value;
-            return true;
+            if(symbol_table[index].readonly)
+            {
+                return SetSymbolResult::SYM_READONLY;
+            }
+
+            symbol_table[index].val = value;
+            return SetSymbolResult::SUCCESS;
         }
 
-        Value* get_symbol(const std::string& index)
+        std::optional<Value> get_symbol(const std::string& index)
         {
             if(symbol_table.find(index) == symbol_table.end())
             {
@@ -47,9 +78,9 @@ namespace sourdo {
                 {
                     return parent->get_symbol(index);
                 }
-                return nullptr;
+                return {};
             }
-            return &(symbol_table[index]);
+            return symbol_table[index].val;
         }
 
         sourdo::Value& index_stack(int index)

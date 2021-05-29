@@ -114,22 +114,22 @@ namespace sourdo
         {
             for(auto& [k, symbol] : current_data->symbol_table)
             {
-                if(symbol.get_type() == ValueType::OBJECT)
+                if(symbol.val.get_type() == ValueType::OBJECT)
                 {
-                    mark_object(symbol.to_object());
+                    mark_object(symbol.val.to_object());
                 }
-                else if(symbol.get_type() == ValueType::TABLE)
+                else if(symbol.val.get_type() == ValueType::TABLE)
                 {
-                    mark_table(symbol.to_table());
+                    mark_table(symbol.val.to_table());
                 }
-                else if(symbol.get_type() == ValueType::CPP_OBJECT)
+                else if(symbol.val.get_type() == ValueType::CPP_OBJECT)
                 {
-                    symbol.to_cpp_object()->marked = true;
-                    mark_class_type(symbol.to_cpp_object()->type);
+                    symbol.val.to_cpp_object()->marked = true;
+                    mark_class_type(symbol.val.to_cpp_object()->type);
                 }
-                else if(symbol.get_type() == ValueType::SOURDO_FUNCTION)
+                else if(symbol.val.get_type() == ValueType::SOURDO_FUNCTION)
                 {
-                    symbol.to_sourdo_function()->marked = true;
+                    symbol.val.to_sourdo_function()->marked = true;
                 }
             }
 

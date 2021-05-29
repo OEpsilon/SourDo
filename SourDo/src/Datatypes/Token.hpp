@@ -14,7 +14,7 @@ namespace sourdo
             NONE,
             BUILTIN_TYPE,
 
-            VAR, FUNC, 
+            VAR, CONST, FUNC, 
             RETURN, BREAK, CONTINUE,
             IF, ELIF, ELSE, 
             FOR, WHILE, LOOP,

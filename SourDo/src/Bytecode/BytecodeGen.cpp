@@ -278,7 +278,7 @@ namespace sourdo
         {
             bytecode.instructions.emplace_back(OP_PUSH_NULL);
         }
-        bytecode.instructions.emplace_back(OP_SYM_CREATE, var_name);
+        bytecode.instructions.emplace_back(node->readonly ? OP_SYM_CONST : OP_SYM_CREATE, var_name);
     }
 
     void BytecodeGenerator::visit_assignment_node(std::shared_ptr<AssignmentNode> node, Bytecode& bytecode)
@@ -409,19 +409,6 @@ namespace sourdo
         bytecode.instructions.emplace_back(OP_JMP);
     }
 
-    void BytecodeGenerator::visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode)
-    {
-        visit_node(node->callee, bytecode);
-        if(error) return;
-
-        for(auto& arg : node->arguments)
-        {
-            visit_node(arg, bytecode);
-            if(error) return;
-        }
-        bytecode.instructions.emplace_back(Opcode::OP_CALL, node->arguments.size());
-    }
-
     void BytecodeGenerator::visit_binary_op_node(std::shared_ptr<BinaryOpNode> node, Bytecode& bytecode)
     {
         visit_node(node->left_operand, bytecode);
@@ -495,6 +482,24 @@ namespace sourdo
             default:
                 break;
         }
+    }
+
+    void BytecodeGenerator::visit_is_node(std::shared_ptr<IsNode> node, Bytecode& bytecode)
+    {
+        
+    }
+
+    void BytecodeGenerator::visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode)
+    {
+        visit_node(node->callee, bytecode);
+        if(error) return;
+
+        for(auto& arg : node->arguments)
+        {
+            visit_node(arg, bytecode);
+            if(error) return;
+        }
+        bytecode.instructions.emplace_back(Opcode::OP_CALL, node->arguments.size());
     }
 
     void BytecodeGenerator::visit_index_node(std::shared_ptr<IndexNode> node, Bytecode& bytecode)

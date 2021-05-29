@@ -20,6 +20,7 @@ namespace sourdo
         OP_STACK_GET,
         OP_STACK_GET_TOP,
         OP_SYM_CREATE,
+        OP_SYM_CONST,
         OP_SYM_GET,
         OP_SYM_SET,
 

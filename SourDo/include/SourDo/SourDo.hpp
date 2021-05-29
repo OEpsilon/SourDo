@@ -164,6 +164,15 @@ namespace sourdo
         void create_value(const std::string& name);
 
         /**
+         * @brief Creates a value in the symbol table if it doesn't already exist.
+         *      If the value is newly created, then it is made constant. 
+         * 
+         * @param name The name of the value to be returned.
+         * 
+         */
+        void create_constant(const std::string& name);
+
+        /**
          * @brief Pushes a value in the symbol table onto the top of the stack.
          * 
          * @param name The name of the value to be returned.

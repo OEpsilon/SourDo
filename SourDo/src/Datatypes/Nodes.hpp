@@ -253,13 +253,15 @@ namespace sourdo
 
     struct VarDeclarationNode : public Node
     {
-        VarDeclarationNode(const Token& name_tok, std::shared_ptr<ExpressionNode> initializer, const Position& position)
-            : Node(position), name_tok(name_tok), initializer(initializer)
+        VarDeclarationNode(const Token& name_tok, std::shared_ptr<ExpressionNode> initializer, 
+                bool readonly, const Position& position)
+            : Node(position), name_tok(name_tok), initializer(initializer), readonly(readonly)
         {
             type = Type::VAR_DECLARATION_NODE;
         }
         Token name_tok;
         std::shared_ptr<ExpressionNode> initializer;
+        bool readonly;
 
         std::string to_string(uint32_t indent_level) final
         {

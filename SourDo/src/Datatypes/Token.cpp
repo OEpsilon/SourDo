@@ -14,6 +14,7 @@ namespace sourdo
 
 
             {   Token::Type::VAR ,              "VAR"               },
+            {   Token::Type::CONST ,            "CONST"             },
             {   Token::Type::FUNC ,             "FUNC"              },
 
             {   Token::Type::RETURN ,           "RETURN"            },

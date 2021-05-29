@@ -1,6 +1,6 @@
 print("---------")
 
-var players = {
+const Players = {
     "Player1" = 200,
     "Best Player" = 1000,
     "New Player" = 0,
@@ -9,9 +9,9 @@ var players = {
             error("Player '" + to_string(player) + "' does not exist")
         end
         self[player] += increment
-    end
+    end,
 }
 
-print(players["Player1"])
-players:change_player_score("Player1", -80)
-print(players["Player1"])
+print(Players["Player1"])
+Players:change_player_score("Player1", -80)
+print(Players["Player1"])

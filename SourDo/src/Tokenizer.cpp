@@ -5,8 +5,9 @@
 
 namespace sourdo
 {
-    static std::unordered_map<std::string, Token::Type> KEYWORDS = 
+    static const std::unordered_map<std::string, Token::Type> KEYWORDS = 
     {
+        {"const",       Token::Type::CONST          }, 
         {"var",         Token::Type::VAR            }, 
         {"func",        Token::Type::FUNC           },
         {"return",      Token::Type::RETURN         }, 
@@ -166,7 +167,7 @@ namespace sourdo
                     file_position.column--;
                     if(KEYWORDS.find(identifier_string) != KEYWORDS.end())
                     {
-                        tokens.emplace_back(KEYWORDS[identifier_string], saved_position);
+                        tokens.emplace_back(KEYWORDS.at(identifier_string), saved_position);
                     }
                     else if(std::find(BUILTIN_TYPES.begin(), BUILTIN_TYPES.end(), identifier_string) != BUILTIN_TYPES.end())
                     {
@@ -248,6 +249,8 @@ namespace sourdo
                             file_position.column++;
                             current_char = text[i];
                         }
+                        i--;
+                        file_position.column--;
                         break;
                     }
                     else if(current_char == '*')

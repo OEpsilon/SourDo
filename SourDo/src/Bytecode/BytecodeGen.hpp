@@ -45,9 +45,10 @@ namespace sourdo
         void visit_break_node(std::shared_ptr<BreakNode> node, Bytecode& bytecode);
         void visit_continue_node(std::shared_ptr<ContinueNode> node, Bytecode& bytecode);
 
-        void visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode);
         void visit_binary_op_node(std::shared_ptr<BinaryOpNode> node, Bytecode& bytecode);
         void visit_unary_op_node(std::shared_ptr<UnaryOpNode> node, Bytecode& bytecode);
+        void visit_is_node(std::shared_ptr<IsNode> node, Bytecode& bytecode);
+        void visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode);
         void visit_index_node(std::shared_ptr<IndexNode> node, Bytecode& bytecode);
         void visit_index_call_node(std::shared_ptr<IndexCallNode> node, Bytecode& bytecode);
         

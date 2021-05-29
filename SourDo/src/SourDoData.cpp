@@ -447,13 +447,18 @@ namespace sourdo
 
     void Data::create_value(const std::string& name)
     {
-        impl->symbol_table[name] = Null();
+        impl->symbol_table[name].val = Null();
+    }
+
+    void Data::create_constant(const std::string& name)
+    {
+        impl->symbol_table[name] = {true, Null()};
     }
 
     Result Data::get_value(const std::string& name, bool protected_mode_enabled)
     {
-        Value* value = impl->get_symbol(name);
-        if(value == nullptr)
+        std::optional<Value> value = impl->get_symbol(name);
+        if(!value)
         {
             std::stringstream ss;
             ss << COLOR_RED << "'" << name << "' is undefined" << COLOR_DEFAULT << std::flush;
@@ -471,19 +476,37 @@ namespace sourdo
 
     Result Data::set_value(const std::string& name, bool protected_mode_enabled)
     {
-        bool result = impl->set_symbol(name, impl->index_stack(-1));
+        SetSymbolResult result = impl->set_symbol(name, impl->index_stack(-1));
         pop();
         GarbageCollector::collect_garbage(impl);
-        if(!result)
+        switch(result)
         {
-            std::stringstream ss;
-            ss << COLOR_RED << "'" << name << "' is undefined" << COLOR_DEFAULT << std::flush;
-            if(protected_mode_enabled)
+            case SetSymbolResult::SYM_NOT_FOUND:
             {
-                push_string(ss.str());
-                return Result::RUNTIME_ERROR;
+                std::stringstream ss;
+                ss << COLOR_RED << "'" << name << "' is undefined" << COLOR_DEFAULT << std::flush;
+                if(protected_mode_enabled)
+                {
+                    push_string(ss.str());
+                    return Result::RUNTIME_ERROR;
+                }
+                throw SourDoError(ss.str());
+                break;
             }
-            throw SourDoError(ss.str());
+            case SetSymbolResult::SYM_READONLY:
+            {
+                std::stringstream ss;
+                ss << COLOR_RED << "'" << name << "' is a constant" << COLOR_DEFAULT << std::flush;
+                if(protected_mode_enabled)
+                {
+                    push_string(ss.str());
+                    return Result::RUNTIME_ERROR;
+                }
+                throw SourDoError(ss.str());
+                break;
+            }
+            default:
+                break;
         }
         return Result::SUCCESS;
     }

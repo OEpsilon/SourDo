@@ -35,6 +35,9 @@ namespace sourdo
             case OP_SYM_CREATE:
                 os << "sym_create"; 
                 break;
+            case OP_SYM_CONST:
+                os << "sym_const"; 
+                break;
             case OP_SYM_GET:
                 os << "sym_get"; 
                 break;

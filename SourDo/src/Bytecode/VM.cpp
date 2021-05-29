@@ -88,6 +88,7 @@ namespace sourdo
                     break;
                 }
                 case OP_SYM_CREATE:
+                case OP_SYM_CONST:
                 {
                     Value initializer = data->index_stack(-1);
                     data->stack.pop_back();
@@ -98,14 +99,14 @@ namespace sourdo
                         ss << bytecode.file_name << "(Runtime Error): '" << bytecode.constants[sym_name].to_string() << "' is already defined";
                         return ss.str();
                     }
-                    data->symbol_table[bytecode.constants[sym_name].to_string()] = initializer;
+                    data->symbol_table[bytecode.constants[sym_name].to_string()] = {instruction.op == OP_SYM_CONST, initializer};
                     break;
                 }
                 case OP_SYM_GET:
                 {
                     uint64_t sym_name = instruction.operand.value();
-                    Value* value = data->get_symbol(bytecode.constants[sym_name].to_string());
-                    if(value == nullptr)
+                    std::optional<Value> value = data->get_symbol(bytecode.constants[sym_name].to_string());
+                    if(!value)
                     {
                         std::stringstream ss;
                         ss << bytecode.file_name << "(Runtime Error): '" << bytecode.constants[sym_name].to_string() << "' is undefined";
@@ -121,10 +122,17 @@ namespace sourdo
                     Value new_value = data->index_stack(-1);
                     data->stack.pop_back();
                     
-                    if(!data->set_symbol(bytecode.constants[sym_name].to_string(), new_value))
+                    SetSymbolResult res = data->set_symbol(bytecode.constants[sym_name].to_string(), new_value);
+                    if(res == SetSymbolResult::SYM_NOT_FOUND)
                     {
                         std::stringstream ss;
                         ss << bytecode.file_name << "(Runtime Error): '" << bytecode.constants[sym_name].to_string() << "' is undefined";
+                        return ss.str();
+                    }
+                    else if(res == SetSymbolResult::SYM_READONLY)
+                    {
+                        std::stringstream ss;
+                        ss << bytecode.file_name << "(Runtime Error): '" << bytecode.constants[sym_name].to_string() << "' is a constant";
                         return ss.str();
                     }
                     break;
