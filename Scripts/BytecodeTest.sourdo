@@ -1,21 +1,17 @@
-var cool_num = 1 + 4
-cool_num -= 20
-print("A cool number:", cool_num)
-
 print("---------")
 
 var players = {
     "Player1" = 200,
     "Best Player" = 1000,
     "New Player" = 0,
+    "change_player_score" = func(self, player, increment)
+        if not self:has(player) then
+            error("Player '" + to_string(player) + "' does not exist")
+        end
+        self[player] += increment
+    end
 }
 
 print(players["Player1"])
-players.Player1 = 100
-players["Player1"] += 20
+players:change_player_score("Player1", -80)
 print(players["Player1"])
-
-for var i = 1, i <= 20, i += 1 do
-    print(i)
-    if i == 15 then break end
-end

@@ -13,5 +13,6 @@ namespace sourdo
     void check_is_string(Data& data, int arg);
     void check_is_function(Data& data, int arg);
     void check_is_null(Data& data, int arg);
+    void check_is_table(Data& data, int arg);
     void check_is_object(Data& data, int arg);
 } // namespace sourdo

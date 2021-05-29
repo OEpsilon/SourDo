@@ -174,66 +174,31 @@ namespace sourdo
 
                 std::vector<std::string> parameters;
                 std::shared_ptr<StatementListNode> statements;
-
-                auto fill_function_data = [&]() -> void
-                {
-                    get_parameters(parameters);
-                    if(error)
-                    {
-                        return;
-                    }
-
-                    statements = statement_list();
-                    if(error)
-                    {
-                        return;
-                    }
-                    if(current_token.type != Token::Type::END)
-                    {
-                        std::stringstream ss;
-                        ss << current_token.position << "Expected 'end'";
-                        error = ss.str();
-                        return;
-                    }
-                    advance();
-                };
                 
                 advance();
                 Token name = current_token;
                 advance();
-                if(current_token.type == Token::Type::DOT || current_token.type == Token::Type::COLON)
-                {
-                    if(current_token.type == Token::Type::COLON)
-                    {
-                        parameters.push_back("self");
-                    }
-                    advance();
-                    if(current_token.type != Token::Type::IDENTIFIER)
-                    {
-                        std::stringstream ss;
-                        ss << current_token.position << "Expected an identifier";
-                        error = ss.str();
-                        return nullptr;
-                    }
-                    Token property_name = current_token;
-                    advance();
-
-                    fill_function_data();
-                    if(error)
-                    {
-                        return nullptr;
-                    }
-                    return std::make_shared<AssignmentNode>(
-                        std::make_shared<IndexNode>(std::make_shared<IdentifierNode>(name), 
-                            std::make_shared<StringNode>(property_name)
-                        ),
-                        AssignmentNode::Operation::NONE,
-                        std::make_shared<FuncNode>(parameters, statements, saved_position),
-                        saved_position
-                    );
-                }
                 
-                fill_function_data();
+                get_parameters(parameters);
+                if(error)
+                {
+                    return nullptr;
+                }
+
+                statements = statement_list();
+                if(error)
+                {
+                    return nullptr;
+                }
+                if(current_token.type != Token::Type::END)
+                {
+                    std::stringstream ss;
+                    ss << current_token.position << "Expected 'end'";
+                    error = ss.str();
+                    return nullptr;
+                }
+                advance();
+                
                 if(error)
                 {
                     return nullptr;
@@ -861,6 +826,11 @@ namespace sourdo
             keys[key] = value;
         }
         while(current_token.type == Token::Type::COMMA);
+
+        while(current_token.type == Token::Type::NEW_LINE)
+        {
+            advance();
+        }
 
         if(current_token.type != Token::Type::RBRACE)
         {

@@ -32,10 +32,12 @@ namespace sourdo
         {
             bytecode.instructions[brk].operand = break_spot;
         }
+        breaks.clear();
         for(auto& cont : continues)
         {
             bytecode.instructions[cont].operand = continue_spot;
         }
+        continues.clear();
     }
     
     void BytecodeGenerator::visit_node(std::shared_ptr<Node> node, Bytecode& bytecode)
@@ -86,6 +88,9 @@ namespace sourdo
                 break;
             case Node::Type::INDEX_NODE:
                 visit_index_node(std::static_pointer_cast<IndexNode>(node), bytecode);
+                break;
+            case Node::Type::INDEX_CALL_NODE:
+                visit_index_call_node(std::static_pointer_cast<IndexCallNode>(node), bytecode);
                 break;
             case Node::Type::NUMBER_NODE:
                 visit_number_node(std::static_pointer_cast<NumberNode>(node), bytecode);
@@ -199,6 +204,8 @@ namespace sourdo
 
         in_loop = saved_in_loop;
 
+        uint64_t continue_spot = bytecode.instructions.size();
+
         bytecode.instructions.emplace_back(OP_POP_SCOPE);
 
         visit_node(node->increment, bytecode);
@@ -207,15 +214,14 @@ namespace sourdo
         bytecode.instructions.emplace_back(OP_JMP, start_position);
 
         bytecode.instructions[jump_position].operand = bytecode.instructions.size();
-        fix_control_flows(start_position, bytecode.instructions.size(), bytecode);
+        fix_control_flows(continue_spot, bytecode.instructions.size(), bytecode);
         bytecode.instructions.emplace_back(OP_POP_SCOPE);
     }
     
     void BytecodeGenerator::visit_while_node(std::shared_ptr<WhileNode> node, Bytecode& bytecode)
     {
-        bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
-
         uint64_t start_position = bytecode.instructions.size();
+        bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
         visit_node(node->condition, bytecode);
         if(error) return;
 
@@ -228,25 +234,31 @@ namespace sourdo
         if(error) return;
 
         in_loop = saved_in_loop;
+
+        uint64_t continue_spot = bytecode.instructions.size();
+
+        bytecode.instructions.emplace_back(OP_POP_SCOPE);
         
         bytecode.instructions.emplace_back(OP_JMP, start_position);
 
         bytecode.instructions[jump_position].operand = bytecode.instructions.size();
-        fix_control_flows(start_position, bytecode.instructions.size(), bytecode);
+        fix_control_flows(continue_spot, bytecode.instructions.size(), bytecode);
 
         bytecode.instructions.emplace_back(OP_POP_SCOPE);
     }
 
     void BytecodeGenerator::visit_loop_node(std::shared_ptr<LoopNode> node, Bytecode& bytecode)
     {
-        bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
         uint64_t start_position = bytecode.instructions.size();
+        bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
         bool saved_in_loop = in_loop;
         in_loop = true;
         visit_node(node->statements, bytecode);
         if(error) return;
 
         in_loop = saved_in_loop;
+
+        bytecode.instructions.emplace_back(OP_POP_SCOPE);
 
         bytecode.instructions.emplace_back(OP_JMP, start_position);
         fix_control_flows(start_position, bytecode.instructions.size(), bytecode);
@@ -490,6 +502,26 @@ namespace sourdo
         visit_node(node->base, bytecode);
         visit_node(node->attribute, bytecode);
         bytecode.instructions.emplace_back(OP_VAL_GET);
+    }
+
+    void BytecodeGenerator::visit_index_call_node(std::shared_ptr<IndexCallNode> node, Bytecode& bytecode)
+    {
+        visit_node(node->base, bytecode);
+        if(error) return;
+
+        visit_node(node->callee, bytecode);
+        if(error) return;
+
+        bytecode.instructions.emplace_back(OP_VAL_GET);
+        visit_node(node->base, bytecode);
+        if(error) return;
+
+        for(auto& arg : node->arguments)
+        {
+            visit_node(arg, bytecode);
+            if(error) return;
+        }
+        bytecode.instructions.emplace_back(Opcode::OP_CALL, node->arguments.size() + 1);
     }
 
     void BytecodeGenerator::visit_number_node(std::shared_ptr<NumberNode> node, Bytecode& bytecode)

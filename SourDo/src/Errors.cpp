@@ -116,6 +116,16 @@ namespace sourdo
         }
     }
 
+    void check_is_table(Data& data, int arg)
+    {
+        if(data.get_value_type(arg) != ValueType::TABLE)
+        {
+            std::stringstream ss;
+            ss << "Argument #" << arg << ": Expected a table";
+            data.error(ss.str());
+        }
+    }
+
     void check_is_object(Data& data, int arg)
     {
         if(data.get_value_type(arg) != ValueType::OBJECT)

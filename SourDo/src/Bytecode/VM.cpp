@@ -3,6 +3,7 @@
 #include "../Datatypes/Position.hpp"
 #include "../Datatypes/Function.hpp"
 #include "../VisitorTypeFunctions/StringFunctions.hpp"
+#include "../VisitorTypeFunctions/TableFunctions.hpp"
 
 #include <cmath>
 
@@ -145,6 +146,12 @@ namespace sourdo
                     {
                         case ValueType::TABLE:
                         {
+                            if(key.get_type() == ValueType::STRING && key.to_string() == "has")
+                            {
+                                std::stringstream ss;
+                                ss << "(Runtime Error): 'has' is a built-in method for tables and cannot be changed";
+                                return ss.str();
+                            }
                             object.to_table()->keys[key] = val;
                             break;
                         }
@@ -181,6 +188,11 @@ namespace sourdo
                     {
                         case ValueType::TABLE:
                         {
+                            if(key.get_type() == ValueType::STRING && key.to_string() == "has")
+                            {
+                                data->stack.emplace_back(table_has);
+                                break;
+                            }
                             data->stack.emplace_back(object.to_table()->keys[key]);
                             break;
                         }
@@ -294,6 +306,11 @@ namespace sourdo
                             right.get_type() == ValueType::NUMBER)
                     {
                         data->stack.emplace_back(left.to_number() + right.to_number());
+                    }
+                    else if(left.get_type() == ValueType::STRING && 
+                            right.get_type() == ValueType::STRING)
+                    {
+                        data->stack.emplace_back(left.to_string() + right.to_string());
                     }
                     else
                     {

@@ -52,7 +52,7 @@ namespace sourdo
             {
                 case '\n':
                 {
-                    tokens.emplace_back(Token::Type::NEW_LINE);
+                    tokens.emplace_back(Token::Type::NEW_LINE, file_position);
                     file_position.column = 0;
                     file_position.line++;
                     break;
