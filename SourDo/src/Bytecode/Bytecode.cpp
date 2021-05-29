@@ -27,7 +27,10 @@ namespace sourdo
                 os << "push_func"; 
                 break;
             case OP_STACK_GET: 
-                os << "sym_get"; 
+                os << "stack_get"; 
+                break;
+            case OP_STACK_GET_TOP:
+                os << "stack_get_top";
                 break;
             case OP_SYM_CREATE:
                 os << "sym_create"; 
@@ -37,6 +40,15 @@ namespace sourdo
                 break;
             case OP_SYM_SET:
                 os << "sym_set"; 
+                break;
+            case OP_AlLOC_TABLE:
+                os << "alloc_table"; 
+                break;
+            case OP_VAL_SET:
+                os << "val_set"; 
+                break;
+            case OP_VAL_GET:
+                os << "val_get"; 
                 break;
             case OP_JMP:
                 os << "jmp"; 

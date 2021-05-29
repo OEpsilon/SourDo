@@ -34,7 +34,7 @@ namespace sourdo
 
     static std::vector<std::string> BUILTIN_TYPES = 
     {
-        "null_type", "number", "bool", "string", 
+        "null_type", "number", "bool", "string", "table",
         "sourdo_function", "cpp_function", "function",
     };
 

@@ -6,15 +6,15 @@ namespace sourdo
 
     bool check_value_type(const Value& value, const std::string& name)
     {
-        auto find_object_name = [name](Object* prototype) -> bool
+        auto find_class_name = [name](ClassType* type) -> bool
         {
-            while(prototype != nullptr)
+            while(type != nullptr)
             {
-                if(prototype->keys.find("__name") != prototype->keys.end())
+                if(type->name == name)
                 {
-                    return name == prototype->keys["__name"].to_string();
+                    return true;
                 }
-                prototype = prototype->keys["__prototype"].to_object();
+                type = type->super;
             }
             return name == "Object";
         };
@@ -53,12 +53,12 @@ namespace sourdo
             }
             case ValueType::OBJECT:
             {
-                return find_object_name(value.to_object());
+                return find_class_name(value.to_object()->type);
                 break;
             }
             case ValueType::CPP_OBJECT:
             {
-                return find_object_name(value.to_cpp_object()->prototype);
+                return find_class_name(value.to_cpp_object()->type);
                 break;
             }
         }

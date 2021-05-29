@@ -26,22 +26,9 @@ namespace sourdo
     }
 
     struct SourDoFunction;
-
-    struct CppObject : public GCObject
-    {
-        CppObject(size_t size)
-            : block(new uint8_t[size])
-        {
-        }
-
-        void on_garbage_collected() final
-        {
-            delete[] block;
-        }
-
-        Object* prototype = nullptr;
-        uint8_t* block;
-    };
+    struct Table;
+    struct Object;
+    struct CppObject;
 
     class Value
     {
@@ -55,6 +42,7 @@ namespace sourdo
         Value(SourDoFunction* new_value);
         Value(const CppFunction& new_value);
         Value(Object* new_value);
+        Value(Table* new_value);
         Value(CppObject* new_value);
         
         Value(const Value& new_value);
@@ -71,6 +59,7 @@ namespace sourdo
         Value& operator=(SourDoFunction* new_value);
         Value& operator=(const CppFunction& new_value);
         Value& operator=(Object* new_value);
+        Value& operator=(Table* new_value);
         Value& operator=(CppObject* new_value);
 
         bool operator==(const Value& other) const;
@@ -103,6 +92,11 @@ namespace sourdo
             return std::get<CppFunction>(value);
         }
 
+        Table* to_table() const
+        {
+            return std::get<Table*>(value);
+        }
+
         Object* to_object() const
         {
             return std::get<Object*>(value);
@@ -125,6 +119,7 @@ namespace sourdo
                 SourDoFunction*, 
                 CppFunction, 
                 Object*,
+                Table*,
                 CppObject*
             > value;
     };
@@ -156,6 +151,7 @@ namespace std
                     sourdo::SourDoFunction*, 
                     sourdo::CppFunction, 
                     sourdo::Object*,
+                    sourdo::Table*,
                     sourdo::CppObject*
                 >>()(k.value);
         }
@@ -164,35 +160,92 @@ namespace std
 
 namespace sourdo
 {
-    struct Object : public GCObject
+    struct Table : public GCObject
     {
-        Object() = default;
+        Table() = default;
         
-        Object(const std::unordered_map<Value, Value>& keys)
+        Table(const std::unordered_map<Value, Value>& keys)
             : keys(keys)
         {
         }
         
-        virtual ~Object() = default;
+        virtual ~Table() = default;
 
         std::unordered_map<Value, Value> keys;
+        bool readonly = false;
 
         void on_garbage_collected() final
         {
         }
-        
-        std::optional<Value> find_property(const Value& key)
+    };
+
+    struct ClassType : public GCObject
+    {
+        ClassType(const std::unordered_map<std::string, Value>& methods,
+                const std::vector<std::string>& property_names)
+            : methods(methods), property_names(property_names)
         {
-            if(keys.find(key) != keys.end())
+        }
+
+        virtual ~ClassType() = default;
+        ClassType* super = nullptr;
+
+        std::unordered_map<std::string, Value> methods;
+        std::vector<std::string> property_names;
+        std::string name;
+    };
+
+    struct Object : public GCObject
+    {
+        Object() = default;
+
+        Object(const std::unordered_map<std::string, Value>& props, ClassType* type)
+            : props(props), type(type)
+        {
+        }
+
+        virtual ~Object() = default;
+        ClassType* type = nullptr;
+
+        std::unordered_map<std::string, Value> props;
+
+        std::optional<Value> find_symbol(std::string name)
+        {
+            if(props.find(name) != props.end())
             {
-                return keys[key];
+                return props[name];
             }
-            if(keys["__prototype"] != Null())
+            ClassType* current_type = type;
+            while(current_type != nullptr)
             {
-                return keys["__prototype"].to_object()->find_property(key);
+                if(current_type->methods.find(name) != current_type->methods.end())
+                {
+                    return current_type->methods[name];
+                }
+                current_type = current_type->super;
             }
             return {};
         }
+
+        void on_garbage_collected() final
+        {
+        }
+    };
+
+    struct CppObject : public GCObject
+    {
+        CppObject(size_t size)
+            : block(new uint8_t[size])
+        {
+        }
+
+        void on_garbage_collected() final
+        {
+            delete[] block;
+        }
+
+        ClassType* type = nullptr;
+        uint8_t* block;
     };
 
 } // namespace SourDo

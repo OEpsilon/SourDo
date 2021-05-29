@@ -9,16 +9,6 @@ namespace sourdo
 {
     std::vector<GCObject*> GarbageCollector::objects;
 
-    static void print_objects(const std::string& message, const std::vector<GCObject*>& objects)
-    {
-        std::cout << message << "\n{\n";
-        for(auto obj : objects)
-        {
-            std::cout << std::boolalpha << "    [" << obj << "]: " << "{.marked = " << obj->marked << "},\n";
-        }
-        std::cout << "}\n\n";
-    }
-
     void GarbageCollector::add_object(GCObject* object)
     {
         objects.emplace_back(object);
@@ -27,19 +17,67 @@ namespace sourdo
     void GarbageCollector::collect_garbage(Data::Impl* data)
     {
         mark(data);
-        //print_objects("After mark: ", objects);
         sweep();
-        //print_objects("After sweep: ", objects);
     }
 
-    static void mark_child_objects(Object* object)
+    static void mark_table(Table* table);
+
+    static void mark_class_type(ClassType* type)
     {
-        for(auto& [k, symbol] : object->keys)
+        type->marked = true;
+        if(type->super)
+        {
+            mark_class_type(type->super);
+        }
+    }
+
+    static void mark_object(Object* object)
+    {
+        object->marked = true;
+        if(object->type)
+        {
+            object->type->marked = true;
+        }
+
+        for(auto& [k, symbol] : object->props)
         {
             if(symbol.get_type() == ValueType::OBJECT)
             {
-                symbol.to_object()->marked = true;
-                mark_child_objects(symbol.to_object());
+                mark_object(symbol.to_object());
+            }
+            else if(symbol.get_type() == ValueType::TABLE)
+            {
+                mark_table(symbol.to_table());
+            }
+            else if(symbol.get_type() == ValueType::CPP_OBJECT)
+            {
+                symbol.to_cpp_object()->marked = true;
+                mark_class_type(symbol.to_cpp_object()->type);
+            }
+            else if(symbol.get_type() == ValueType::SOURDO_FUNCTION)
+            {
+                symbol.to_sourdo_function()->marked = true;
+            }
+        }
+    }
+
+    static void mark_table(Table* table)
+    {
+        table->marked = true;
+        for(auto& [k, symbol] : table->keys)
+        {
+            if(symbol.get_type() == ValueType::OBJECT)
+            {
+                mark_object(symbol.to_object());
+            }
+            else if(symbol.get_type() == ValueType::TABLE)
+            {
+                mark_table(symbol.to_table());
+            }
+            else if(symbol.get_type() == ValueType::CPP_OBJECT)
+            {
+                symbol.to_cpp_object()->marked = true;
+                mark_class_type(symbol.to_cpp_object()->type);
             }
             else if(symbol.get_type() == ValueType::SOURDO_FUNCTION)
             {
@@ -54,16 +92,16 @@ namespace sourdo
         {
             if(ref.get_type() == ValueType::OBJECT)
             {
-                ref.to_object()->marked = true;
-                mark_child_objects(ref.to_object());
+                mark_object(ref.to_object());
+            }
+            else if(ref.get_type() == ValueType::TABLE)
+            {
+                mark_table(ref.to_table());
             }
             else if(ref.get_type() == ValueType::CPP_OBJECT)
             {
                 ref.to_cpp_object()->marked = true;
-                if(ref.to_cpp_object()->prototype)
-                {
-                    mark_child_objects(ref.to_cpp_object()->prototype);
-                }
+                mark_class_type(ref.to_cpp_object()->type);
             }
             else if(ref.get_type() == ValueType::SOURDO_FUNCTION)
             {
@@ -78,17 +116,16 @@ namespace sourdo
             {
                 if(symbol.get_type() == ValueType::OBJECT)
                 {
-                    symbol.to_object()->marked = true;
-                    mark_child_objects(symbol.to_object());
+                    mark_object(symbol.to_object());
+                }
+                else if(symbol.get_type() == ValueType::TABLE)
+                {
+                    mark_table(symbol.to_table());
                 }
                 else if(symbol.get_type() == ValueType::CPP_OBJECT)
                 {
                     symbol.to_cpp_object()->marked = true;
-                    if(symbol.to_cpp_object()->prototype)
-                    {
-                        symbol.to_cpp_object()->prototype->marked = true;
-                        mark_child_objects(symbol.to_cpp_object()->prototype);
-                    }
+                    mark_class_type(symbol.to_cpp_object()->type);
                 }
                 else if(symbol.get_type() == ValueType::SOURDO_FUNCTION)
                 {
@@ -100,8 +137,11 @@ namespace sourdo
             {
                 if(symbol.get_type() == ValueType::OBJECT)
                 {
-                    symbol.to_object()->marked = true;
-                    mark_child_objects(symbol.to_object());
+                    mark_object(symbol.to_object());
+                }
+                else if(symbol.get_type() == ValueType::TABLE)
+                {
+                    mark_table(symbol.to_table());
                 }
                 else if(symbol.get_type() == ValueType::CPP_OBJECT)
                 {

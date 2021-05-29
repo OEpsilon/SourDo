@@ -2,6 +2,7 @@
 
 #include "../Datatypes/Position.hpp"
 #include "../Datatypes/Function.hpp"
+#include "../VisitorTypeFunctions/StringFunctions.hpp"
 
 #include <cmath>
 
@@ -12,23 +13,26 @@ namespace sourdo
         switch(type)
         {
             case ValueType::NUMBER:
-                os << "Number";
+                os << "number";
                 break;
             case ValueType::BOOL:
-                os << "Bool";
+                os << "bool";
                 break;
             case ValueType::STRING:
-                os << "String";
+                os << "string";
                 break;
             case ValueType::SOURDO_FUNCTION:
             case ValueType::CPP_FUNCTION:
-                os << "Function";
+                os << "function";
                 break;
             case ValueType::_NULL:
-                os << "Null";
+                os << "null";
                 break;
             case ValueType::OBJECT:
-                os << "Object";
+                os << "object";
+                break;
+            case ValueType::TABLE:
+                os << "table";
                 break;
             case ValueType::CPP_OBJECT:
                 os << "CppObject";
@@ -77,6 +81,11 @@ namespace sourdo
                     data->stack.emplace_back(data->index_stack(instruction.operand.value()));
                     break;
                 }
+                case OP_STACK_GET_TOP:
+                {
+                    data->stack.emplace_back(data->index_stack(-instruction.operand.value()));
+                    break;
+                }
                 case OP_SYM_CREATE:
                 {
                     Value initializer = data->index_stack(-1);
@@ -116,6 +125,112 @@ namespace sourdo
                         std::stringstream ss;
                         ss << bytecode.file_name << "(Runtime Error): '" << bytecode.constants[sym_name].to_string() << "' is undefined";
                         return ss.str();
+                    }
+                    break;
+                }
+                case OP_AlLOC_TABLE:
+                {
+                    data->stack.emplace_back(new Table());
+                    break;
+                }
+                case OP_VAL_SET:
+                {
+                    Value val = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value key = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value object = data->index_stack(-1);
+                    data->stack.pop_back();
+                    switch(object.get_type())
+                    {
+                        case ValueType::TABLE:
+                        {
+                            object.to_table()->keys[key] = val;
+                            break;
+                        }
+                        case ValueType::STRING:
+                        {
+                            if(key.get_type() == ValueType::NUMBER)
+                            {
+                                std::stringstream ss;
+                                ss << "(Runtime Error): The result from indexing a string cannot be assigned to";
+                                return ss.str();
+                            }
+                            std::stringstream ss;
+                            ss << "(Runtime Error): Expected a number";
+                            return ss.str();
+                            break;
+                        }
+                        default:
+                        {
+                            std::stringstream ss;
+                            ss << "(Runtime Error): Cannot index value of type " << object.get_type(); 
+                            return ss.str();
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case OP_VAL_GET:
+                {
+                    Value key = data->index_stack(-1);
+                    data->stack.pop_back();
+                    Value object = data->index_stack(-1);
+                    data->stack.pop_back();
+                    switch(object.get_type())
+                    {
+                        case ValueType::TABLE:
+                        {
+                            data->stack.emplace_back(object.to_table()->keys[key]);
+                            break;
+                        }
+                        case ValueType::STRING:
+                        {
+                            if(key.get_type() == ValueType::STRING)
+                            {
+                                if(key.to_string() == "length")
+                                {
+                                    data->stack.emplace_back(string_length);
+                                }
+                                else
+                                {
+                                    std::stringstream ss;
+                                    ss << "(Runtime Error): '" << key.to_string() << "' does not exist in string";
+                                    return ss.str();
+                                }
+                            }
+                            else if(key.get_type() == ValueType::NUMBER)
+                            {
+                                int num = key.to_number();
+                                if(num < 0)
+                                {
+                                    std::stringstream ss;
+                                    ss << "(Runtime Error): Index is less than 0";
+                                    return ss.str();
+                                }
+                                else if(num > object.to_string().size())
+                                {
+                                    std::stringstream ss;
+                                    ss << "(Runtime Error): Index is greater than the string length";
+                                    return ss.str();
+                                }
+                                else
+                                {
+                                    data->stack.emplace_back(std::string(1, object.to_string()[num]));
+                                }
+                            }
+                            std::stringstream ss;
+                            ss << "(Runtime Error): Expected a number";
+                            return ss.str();
+                            break;
+                        }
+                        default:
+                        {
+                            std::stringstream ss;
+                            ss << "(Runtime Error): Cannot index value of type " << object.get_type(); 
+                            return ss.str();
+                            break;
+                        }
                     }
                     break;
                 }

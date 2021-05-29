@@ -58,6 +58,12 @@ namespace sourdo
         type = ValueType::OBJECT;
         value = new_value;
     }
+
+    Value::Value(Table* new_value)
+    {
+        type = ValueType::TABLE;
+        value = new_value;
+    }
     
     Value::Value(CppObject* new_value)
     {
@@ -149,6 +155,13 @@ namespace sourdo
     Value& Value::operator=(Object* new_value)
     {
         type = ValueType::OBJECT;
+        value = new_value;
+        return *this;
+    }
+
+    Value& Value::operator=(Table* new_value)
+    {
+        type = ValueType::TABLE;
         value = new_value;
         return *this;
     }

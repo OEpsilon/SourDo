@@ -22,6 +22,7 @@ namespace sourdo
         STRING,
         SOURDO_FUNCTION,
         CPP_FUNCTION,
+        TABLE,
         OBJECT,
         CPP_OBJECT,
     };
@@ -32,7 +33,6 @@ namespace sourdo
     using CppFunction = bool(*)(Data&);
     using GCRef = int;
     struct SourDoFunction;
-    struct Object;
     
     /**
      * @brief Represents and holds the data of a scope in a SourDo Program. 
@@ -53,7 +53,7 @@ namespace sourdo
         void* create_cpp_object(size_t size);
         void* check_cpp_object(int index, const std::string& name);
         void* test_cpp_object(int index, const std::string& name);
-        void set_cpp_object_prototype(int index);
+        void set_cpp_object_type(int index, const std::string& name);
 
         GCRef create_ref(int index);
         void remove_ref(GCRef ref);
@@ -61,34 +61,34 @@ namespace sourdo
         bool is_ref_valid(GCRef ref);
 
         /**
-         * @brief Pushes onto the stack a new object. 
+         * @brief Pushes onto the stack a new table. 
          */
-        void create_object();
+        void create_table();
 
         /**
-         * @brief Pushes onto the stack the value at the given key in the object. 
+         * @brief Pushes onto the stack the value at the given key in the table. 
          * The new value is the value on the top of the stack, and
          * the key is the value just below top of the stack. Both are popped afterwards.
          * 
-         * @param object_index The index that the object is located at.
+         * @param object_index The index that the table is located at.
          * 
          * @param protected_mode_enabled If true, returns an error code instead of throwing an exception.
          * 
          * @throws SourDoError Thrown if there is an error when calling the function and 'protected_mode_enabled' is false.
          */
-        Result object_set(int object_index, bool protected_mode_enabled = false);
+        Result table_set(int object_index, bool protected_mode_enabled = false);
         
         /**
-         * @brief Pushes onto the stack the value at the given key in the object. 
+         * @brief Pushes onto the stack the value at the given key in the table. 
          * The key is the value on the top of the stack and is popped afterwards.
          * 
-         * @param object_index The index that the object is located at.
+         * @param object_index The index that the table is located at.
          * 
          * @param protected_mode_enabled If true, returns an error code instead of throwing an exception.
          * 
          * @throws SourDoError Thrown if there is an error when calling the function and 'protected_mode_enabled' is false.
          */
-        Result object_get(int object_index, bool protected_mode_enabled = false);
+        Result table_get(int object_index, bool protected_mode_enabled = false);
 
         /**
          * @brief Gets the type of the value at the given index. 

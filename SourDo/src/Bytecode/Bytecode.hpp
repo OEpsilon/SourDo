@@ -18,9 +18,14 @@ namespace sourdo
         OP_PUSH_FUNC,
 
         OP_STACK_GET,
+        OP_STACK_GET_TOP,
         OP_SYM_CREATE,
         OP_SYM_GET,
         OP_SYM_SET,
+
+        OP_AlLOC_TABLE,
+        OP_VAL_SET,
+        OP_VAL_GET,
 
         OP_JMP,
         OP_NJMP,

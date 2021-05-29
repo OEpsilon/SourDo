@@ -4,6 +4,17 @@ print("A cool number:", cool_num)
 
 print("---------")
 
+var players = {
+    "Player1" = 200,
+    "Best Player" = 1000,
+    "New Player" = 0,
+}
+
+print(players["Player1"])
+players.Player1 = 100
+players["Player1"] += 20
+print(players["Player1"])
+
 for var i = 1, i <= 20, i += 1 do
     print(i)
     if i == 15 then break end

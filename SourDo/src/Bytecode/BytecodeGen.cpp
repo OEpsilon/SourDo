@@ -84,6 +84,9 @@ namespace sourdo
             case Node::Type::UNARY_OP_NODE:
                 visit_unary_op_node(std::static_pointer_cast<UnaryOpNode>(node), bytecode);
                 break;
+            case Node::Type::INDEX_NODE:
+                visit_index_node(std::static_pointer_cast<IndexNode>(node), bytecode);
+                break;
             case Node::Type::NUMBER_NODE:
                 visit_number_node(std::static_pointer_cast<NumberNode>(node), bytecode);
                 break;
@@ -99,6 +102,9 @@ namespace sourdo
             case Node::Type::IDENTIFIER_NODE:
                 visit_identifier_node(std::static_pointer_cast<IdentifierNode>(node), bytecode);
                 break;
+            case Node::Type::TABLE_NODE:
+                visit_table_node(std::static_pointer_cast<TableNode>(node), bytecode);
+                break;
             default:
                 throw std::runtime_error("A node is not implemented yet");
                 break;
@@ -107,7 +113,7 @@ namespace sourdo
 
     void BytecodeGenerator::visit_statement_list_node(std::shared_ptr<StatementListNode> node, Bytecode& bytecode)
     {
-        static const std::array<Node::Type, 8> expression_types = 
+        static const std::array<Node::Type, 9> expression_types = 
         {
             Node::Type::FUNC_NODE,
             Node::Type::CALL_NODE,
@@ -117,6 +123,7 @@ namespace sourdo
             Node::Type::BOOL_NODE,
             Node::Type::NULL_NODE,
             Node::Type::IDENTIFIER_NODE,
+            Node::Type::TABLE_NODE,
         };
 
         for(auto& stmt : node->statements)
@@ -140,19 +147,14 @@ namespace sourdo
         for(auto& if_case : node->cases)
         {
             visit_node(if_case.condition, bytecode);
-            if(error)
-            {
-                return;
-            }
+            if(error) return;
             
             uint64_t jump_position = bytecode.instructions.size();
             bytecode.instructions.emplace_back(OP_NJMP);
             bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
             visit_node(if_case.statements, bytecode);
-            if(error)
-            {
-                return;
-            }
+            if(error) return;
+
             bytecode.instructions.emplace_back(OP_POP_SCOPE);
 
             jumps.emplace_back(bytecode.instructions.size());
@@ -164,10 +166,8 @@ namespace sourdo
         {
             bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
             visit_node(node->else_case, bytecode);
-            if(error)
-            {
-                return;
-            }
+            if(error) return;
+
             bytecode.instructions.emplace_back(OP_POP_SCOPE);
         }
 
@@ -182,21 +182,27 @@ namespace sourdo
         bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
 
         visit_node(node->initializer, bytecode);
+        if(error) return;
         
         uint64_t start_position = bytecode.instructions.size();
         bytecode.instructions.emplace_back(OP_PUSH_SCOPE);
         visit_node(node->condition, bytecode);
+        if(error) return;
+
         uint64_t jump_position = bytecode.instructions.size();
         bytecode.instructions.emplace_back(OP_NJMP);
 
         bool saved_in_loop = in_loop;
         in_loop = true;
         visit_node(node->statements, bytecode);
+        if(error) return;
+
         in_loop = saved_in_loop;
 
         bytecode.instructions.emplace_back(OP_POP_SCOPE);
 
         visit_node(node->increment, bytecode);
+        if(error) return;
 
         bytecode.instructions.emplace_back(OP_JMP, start_position);
 
@@ -211,6 +217,7 @@ namespace sourdo
 
         uint64_t start_position = bytecode.instructions.size();
         visit_node(node->condition, bytecode);
+        if(error) return;
 
         uint64_t jump_position = bytecode.instructions.size();
         bytecode.instructions.emplace_back(OP_NJMP);
@@ -218,6 +225,8 @@ namespace sourdo
         bool saved_in_loop = in_loop;
         in_loop = true;
         visit_node(node->statements, bytecode);
+        if(error) return;
+
         in_loop = saved_in_loop;
         
         bytecode.instructions.emplace_back(OP_JMP, start_position);
@@ -235,6 +244,8 @@ namespace sourdo
         bool saved_in_loop = in_loop;
         in_loop = true;
         visit_node(node->statements, bytecode);
+        if(error) return;
+
         in_loop = saved_in_loop;
 
         bytecode.instructions.emplace_back(OP_JMP, start_position);
@@ -249,10 +260,7 @@ namespace sourdo
         if(node->initializer)
         {
             visit_node(node->initializer, bytecode);
-            if(error)
-            {
-                return;
-            }
+            if(error) return;
         }
         else
         {
@@ -263,14 +271,53 @@ namespace sourdo
 
     void BytecodeGenerator::visit_assignment_node(std::shared_ptr<AssignmentNode> node, Bytecode& bytecode)
     {
-        uint64_t sym_name = push_constant(
-                std::static_pointer_cast<IdentifierNode>(node->assignee)->name_tok.value, bytecode);
+        if(node->assignee->type == Node::Type::IDENTIFIER_NODE)
+        {
+            uint64_t sym_name = push_constant(
+                    std::static_pointer_cast<IdentifierNode>(node->assignee)->name_tok.value, bytecode);
+            if(node->op != AssignmentNode::Operation::NONE)
+            {
+                visit_node(node->assignee, bytecode);
+                if(error) return;
+            }
+            visit_node(node->new_value, bytecode);
+            if(error) return;
+
+            switch(node->op)
+            {
+                case AssignmentNode::Operation::ADD:
+                    bytecode.instructions.emplace_back(OP_ADD);
+                    break;
+                case AssignmentNode::Operation::SUB:
+                    bytecode.instructions.emplace_back(OP_SUB);
+                    break;
+                case AssignmentNode::Operation::MUL:
+                    bytecode.instructions.emplace_back(OP_MUL);
+                    break;
+                case AssignmentNode::Operation::DIV:
+                    bytecode.instructions.emplace_back(OP_DIV);
+                    break;
+                default:
+                    break;
+            }
+            bytecode.instructions.emplace_back(OP_SYM_SET, sym_name);
+            return;
+        }
+        auto index_node = std::static_pointer_cast<IndexNode>(node->assignee);
+        visit_node(index_node->base, bytecode);
+        if(error) return;
+
+        visit_node(index_node->attribute, bytecode);
+        if(error) return;
+
         if(node->op != AssignmentNode::Operation::NONE)
         {
-            visit_node(node->assignee, bytecode);
+            bytecode.instructions.emplace_back(OP_STACK_GET_TOP, 2);
+            bytecode.instructions.emplace_back(OP_STACK_GET_TOP, 2);
+            bytecode.instructions.emplace_back(OP_VAL_GET);
         }
-
         visit_node(node->new_value, bytecode);
+        if(error) return;
 
         switch(node->op)
         {
@@ -289,7 +336,7 @@ namespace sourdo
             default:
                 break;
         }
-        bytecode.instructions.emplace_back(OP_SYM_SET, sym_name);
+        bytecode.instructions.emplace_back(OP_VAL_SET);
     }
 
     void BytecodeGenerator::visit_func_node(std::shared_ptr<FuncNode> node, Bytecode& bytecode)
@@ -304,10 +351,7 @@ namespace sourdo
         }
 
         visit_node(node->statements, func);
-        if(error)
-        {
-            return;
-        }
+        if(error) return;
 
         if(node->statements->statements.size() == 0 
                 || node->statements->statements[node->statements->statements.size() -1]->type != Node::Type::RETURN_NODE)
@@ -323,10 +367,7 @@ namespace sourdo
     void BytecodeGenerator::visit_return_node(std::shared_ptr<ReturnNode> node, Bytecode& bytecode)
     {
         visit_node(node->return_value, bytecode);
-        if(error)
-        {
-            return;
-        }
+        if(error) return;
         bytecode.instructions.emplace_back(OP_RET);
     }
 
@@ -428,6 +469,9 @@ namespace sourdo
 
     void BytecodeGenerator::visit_unary_op_node(std::shared_ptr<UnaryOpNode> node, Bytecode& bytecode)
     {
+        visit_node(node->operand, bytecode);
+        if(error) return;
+
         switch(node->op_token.type)
         {
             case Token::Type::SUB:
@@ -439,6 +483,13 @@ namespace sourdo
             default:
                 break;
         }
+    }
+
+    void BytecodeGenerator::visit_index_node(std::shared_ptr<IndexNode> node, Bytecode& bytecode)
+    {
+        visit_node(node->base, bytecode);
+        visit_node(node->attribute, bytecode);
+        bytecode.instructions.emplace_back(OP_VAL_GET);
     }
 
     void BytecodeGenerator::visit_number_node(std::shared_ptr<NumberNode> node, Bytecode& bytecode)
@@ -468,6 +519,22 @@ namespace sourdo
     {
         uint64_t constant = push_constant(node->name_tok.value, bytecode);
         bytecode.instructions.emplace_back(Opcode::OP_SYM_GET, constant);
+    }
+
+    void BytecodeGenerator::visit_table_node(std::shared_ptr<TableNode> node , Bytecode& bytecode)
+    {
+        bytecode.instructions.emplace_back(OP_AlLOC_TABLE);
+        for(auto[k, v] : node->keys)
+        {
+            bytecode.instructions.emplace_back(OP_STACK_GET_TOP, 1);
+            visit_node(k, bytecode);
+            if(error) return;
+
+            visit_node(v, bytecode);
+            if(error) return;
+            
+            bytecode.instructions.emplace_back(OP_VAL_SET);
+        }
     }
 
 } // namespace sourdo

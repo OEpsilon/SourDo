@@ -147,21 +147,8 @@ namespace sourdo
         return nullptr;
     }
 
-    void Data::set_cpp_object_prototype(int index)
+    void Data::set_cpp_object_type(int index, const std::string& name)
     {
-        Value& cpp_object = impl->index_stack(index);
-        if(cpp_object.get_type() == ValueType::CPP_OBJECT)
-        {
-            Value value = impl->index_stack(-1);
-            if(value.get_type() == ValueType::OBJECT)
-            {
-                cpp_object.to_cpp_object()->prototype = value.to_object();
-            }
-            else if(value.get_type() == ValueType::_NULL)
-            {
-                cpp_object.to_cpp_object()->prototype = nullptr;
-            }
-        }
         pop();
     }
 
@@ -205,13 +192,13 @@ namespace sourdo
         return ref >= 0 && ref < GlobalData::references.size();
     }
 
-    void Data::create_object()
+    void Data::create_table()
     {
-        impl->stack.emplace_back(new Object());
+        impl->stack.emplace_back(new Table());
         GarbageCollector::collect_garbage(impl);
     }
 
-    Result Data::object_set(int object_index, bool protected_mode_enabled)
+    Result Data::table_set(int object_index, bool protected_mode_enabled)
     {
         sourdo::Value& obj = impl->index_stack(object_index);
         if(obj.get_type() != ValueType::OBJECT)
@@ -243,11 +230,11 @@ namespace sourdo
             throw SourDoError(ss.str());
         }
         
-        obj.to_object()->keys[key] = new_value;
+        obj.to_table()->keys[key] = new_value;
         return Result::SUCCESS;
     }
 
-    Result Data::object_get(int object_index, bool protected_mode_enabled)
+    Result Data::table_get(int object_index, bool protected_mode_enabled)
     {
         sourdo::Value& obj = impl->index_stack(object_index);
         if(obj.get_type() != ValueType::OBJECT)
@@ -264,7 +251,7 @@ namespace sourdo
         Value key = impl->index_stack(-1);
         impl->stack.pop_back();
 
-        if(obj.to_object()->keys.find(key) == obj.to_object()->keys.end())
+        if(obj.to_table()->keys.find(key) == obj.to_table()->keys.end())
         {
             std::stringstream ss;
             ss << COLOR_RED << "Key does not exist in object" << COLOR_DEFAULT << std::flush;
@@ -276,7 +263,7 @@ namespace sourdo
             throw SourDoError(ss.str());
         }
         
-        impl->stack.emplace_back(obj.to_object()->keys[key]);
+        impl->stack.emplace_back(obj.to_table()->keys[key]);
         return Result::SUCCESS;
     }
 

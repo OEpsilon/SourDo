@@ -48,10 +48,13 @@ namespace sourdo
         void visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode);
         void visit_binary_op_node(std::shared_ptr<BinaryOpNode> node, Bytecode& bytecode);
         void visit_unary_op_node(std::shared_ptr<UnaryOpNode> node, Bytecode& bytecode);
+        void visit_index_node(std::shared_ptr<IndexNode> node, Bytecode& bytecode);
+        
         void visit_number_node(std::shared_ptr<NumberNode> node, Bytecode& bytecode);
         void visit_string_node(std::shared_ptr<StringNode> node, Bytecode& bytecode);
         void visit_bool_node(std::shared_ptr<BoolNode> node, Bytecode& bytecode);
         void visit_null_node(std::shared_ptr<NullNode> node, Bytecode& bytecode);
         void visit_identifier_node(std::shared_ptr<IdentifierNode> node , Bytecode& bytecode);
+        void visit_table_node(std::shared_ptr<TableNode> node , Bytecode& bytecode);
     };
 } // namespace sourdo

@@ -870,7 +870,7 @@ namespace sourdo
             return nullptr;
         }
         advance();
-        return std::make_shared<ObjectLiteralNode>(std::move(keys), saved_position);
+        return std::make_shared<TableNode>(std::move(keys), saved_position);
     }
 
     Parser::ParseExprRule& Parser::get_rule(const Token::Type& type)
