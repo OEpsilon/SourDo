@@ -68,6 +68,9 @@ namespace sourdo
             case OP_POP: 
                 os << "pop"; 
                 break;
+            case OP_TYPE_CHECK:
+                os << "type_check";
+                break;
             case OP_ADD: 
                 os << "add"; 
                 break;

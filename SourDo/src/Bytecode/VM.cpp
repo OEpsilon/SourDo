@@ -5,6 +5,8 @@
 #include "../VisitorTypeFunctions/StringFunctions.hpp"
 #include "../VisitorTypeFunctions/TableFunctions.hpp"
 
+#include "../GlobalData.hpp"
+
 #include <cmath>
 
 namespace sourdo
@@ -297,6 +299,14 @@ namespace sourdo
                 case OP_POP_SCOPE:
                 {
                     return {};
+                    break;
+                }
+                case OP_TYPE_CHECK:
+                {
+                    Value val = data->index_stack(-1);
+                    data->stack.pop_back();
+                    std::string type = bytecode.constants[instruction.operand.value()].to_string();
+                    data->stack.emplace_back(check_value_type(val, type));
                     break;
                 }
                 case OP_POP:

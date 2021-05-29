@@ -8,6 +8,15 @@ const Players = {
         if not self:has(player) then
             error("Player '" + to_string(player) + "' does not exist")
         end
+
+        if player is not string then
+            error("Argument #2: Expected a string")
+        end
+
+        if increment is not number then
+            error("Argument #3: Expected a number")
+        end
+        
         self[player] += increment
     end,
 }

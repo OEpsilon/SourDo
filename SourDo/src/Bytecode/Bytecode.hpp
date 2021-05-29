@@ -35,6 +35,7 @@ namespace sourdo
         OP_POP_SCOPE,
         OP_POP,
 
+        OP_TYPE_CHECK,
         OP_ADD,
         OP_SUB,
         OP_MUL,

@@ -86,6 +86,9 @@ namespace sourdo
             case Node::Type::UNARY_OP_NODE:
                 visit_unary_op_node(std::static_pointer_cast<UnaryOpNode>(node), bytecode);
                 break;
+            case Node::Type::IS_NODE:
+                visit_is_node(std::static_pointer_cast<IsNode>(node), bytecode);
+                break;
             case Node::Type::INDEX_NODE:
                 visit_index_node(std::static_pointer_cast<IndexNode>(node), bytecode);
                 break;
@@ -486,7 +489,16 @@ namespace sourdo
 
     void BytecodeGenerator::visit_is_node(std::shared_ptr<IsNode> node, Bytecode& bytecode)
     {
-        
+        visit_node(node->left_operand, bytecode);
+        if(error) return;
+
+        uint64_t type_name = push_constant(node->right_operand.value, bytecode);
+
+        bytecode.instructions.emplace_back(OP_TYPE_CHECK, type_name);
+        if(node->invert)
+        {
+            bytecode.instructions.emplace_back(OP_NOT);
+        }
     }
 
     void BytecodeGenerator::visit_call_node(std::shared_ptr<CallNode> node, Bytecode& bytecode)
