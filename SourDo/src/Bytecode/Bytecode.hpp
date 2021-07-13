@@ -9,13 +9,27 @@
 
 namespace sourdo
 {
-    enum Opcode : uint64_t
+    enum Opcode : uint8_t
     {
         OP_PUSH_NUMBER,
         OP_PUSH_STRING,
         OP_PUSH_BOOL,
         OP_PUSH_NULL,
         OP_PUSH_FUNC,
+
+        OP_CREATE_SUBTYPE,
+        OP_CREATE_TYPE,
+        OP_SET_SETTER,
+        OP_SET_GETTER,
+        OP_SET_METHOD,
+        OP_SET_CLASS_PROP,
+        OP_SET_INITIALIZER,
+        OP_GET_INITIALIZER,
+        OP_FINISH_TYPE,
+
+        OP_ALLOC_OBJECT,
+        OP_ADD_PROPERTY,
+        OP_ADD_CONST_PROPERTY,
 
         OP_STACK_GET,
         OP_STACK_GET_TOP,
@@ -34,6 +48,7 @@ namespace sourdo
         OP_PUSH_SCOPE,
         OP_POP_SCOPE,
         OP_POP,
+        OP_REMOVE_TOP,
 
         OP_TYPE_CHECK,
         OP_ADD,

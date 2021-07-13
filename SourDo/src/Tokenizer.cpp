@@ -10,6 +10,13 @@ namespace sourdo
         {"const",       Token::Type::CONST          }, 
         {"var",         Token::Type::VAR            }, 
         {"func",        Token::Type::FUNC           },
+
+        {"class",       Token::Type::CLASS          },
+        {"private",     Token::Type::PRIVATE        },
+        {"set",         Token::Type::SET            },
+        {"get",         Token::Type::GET            },
+        {"extends",     Token::Type::EXTENDS        },
+
         {"return",      Token::Type::RETURN         }, 
         {"break",       Token::Type::BREAK          }, 
         {"continue",    Token::Type::CONTINUE       },
@@ -23,7 +30,7 @@ namespace sourdo
         {"do",          Token::Type::DO             }, 
         {"end",         Token::Type::END            },
 
-        {"is",          Token::Type::IS             },
+        {"isa",         Token::Type::ISA            },
         {"or",          Token::Type::OR             }, 
         {"and",         Token::Type::AND            }, 
         {"not",         Token::Type::NOT            }, 

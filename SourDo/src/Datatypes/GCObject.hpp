@@ -2,6 +2,8 @@
 
 #include <cstddef>
 
+#include "SourDo/SourDo.hpp"
+
 namespace sourdo
 {
     struct GCObject
@@ -12,6 +14,6 @@ namespace sourdo
 
         static void* operator new(size_t size);
 
-        virtual void on_garbage_collected() = 0;
+        virtual void on_garbage_collected(Data::Impl* data) = 0;
     };
 } // namespace sourdo

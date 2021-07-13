@@ -68,9 +68,11 @@ namespace sourdo
         std::vector<std::string> get_parameters(std::vector<std::string>& parameters);
 
         std::shared_ptr<StatementListNode> statement_list();
+        std::shared_ptr<ClassNode> class_def();
 
         std::shared_ptr<Node> statement();
-        std::shared_ptr<Node> var_declaration();
+        std::shared_ptr<VarDeclarationNode> var_declaration();
+        std::shared_ptr<Node> func_declaration();
 
         std::shared_ptr<ExpressionNode> expression(bool multiline_mode = false, bool allow_assignment = false);
         std::shared_ptr<ExpressionNode> expression_with_precedence(ExprPrecedence precedence, bool multiline_mode = false);

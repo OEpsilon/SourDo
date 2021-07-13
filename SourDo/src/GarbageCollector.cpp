@@ -5,6 +5,7 @@
 #include "GlobalData.hpp"
 #include "Datatypes/Function.hpp"
 
+
 namespace sourdo
 {
     std::vector<GCObject*> GarbageCollector::objects;
@@ -20,139 +21,111 @@ namespace sourdo
         sweep();
     }
 
-    static void mark_table(Table* table);
+    static void mark_class(ClassType* class_type);
 
-    static void mark_class_type(ClassType* type)
-    {
-        type->marked = true;
-        if(type->super)
-        {
-            mark_class_type(type->super);
-        }
-    }
+    static void mark_gc_object(Value& ref);
 
     static void mark_object(Object* object)
     {
         object->marked = true;
-        if(object->type)
+        for(auto&[k, prop] : object->props)
         {
-            object->type->marked = true;
+            mark_gc_object(prop.val);
         }
-
-        for(auto& [k, symbol] : object->props)
-        {
-            if(symbol.get_type() == ValueType::OBJECT)
-            {
-                mark_object(symbol.to_object());
-            }
-            else if(symbol.get_type() == ValueType::TABLE)
-            {
-                mark_table(symbol.to_table());
-            }
-            else if(symbol.get_type() == ValueType::CPP_OBJECT)
-            {
-                symbol.to_cpp_object()->marked = true;
-                mark_class_type(symbol.to_cpp_object()->type);
-            }
-            else if(symbol.get_type() == ValueType::SOURDO_FUNCTION)
-            {
-                symbol.to_sourdo_function()->marked = true;
-            }
-        }
+        mark_class(object->type);
     }
 
     static void mark_table(Table* table)
     {
         table->marked = true;
-        for(auto& [k, symbol] : table->keys)
+        for(auto&[k, v] : table->keys)
         {
-            if(symbol.get_type() == ValueType::OBJECT)
-            {
-                mark_object(symbol.to_object());
-            }
-            else if(symbol.get_type() == ValueType::TABLE)
-            {
-                mark_table(symbol.to_table());
-            }
-            else if(symbol.get_type() == ValueType::CPP_OBJECT)
-            {
-                symbol.to_cpp_object()->marked = true;
-                mark_class_type(symbol.to_cpp_object()->type);
-            }
-            else if(symbol.get_type() == ValueType::SOURDO_FUNCTION)
-            {
-                symbol.to_sourdo_function()->marked = true;
-            }
+            mark_gc_object(v);
+        }
+    }
+
+    static void mark_class(ClassType* class_type)
+    {
+        class_type->marked = true;
+        if(class_type->initializer)
+        {
+            class_type->initializer->marked = true;
+        }
+
+        for(auto&[k, method] : class_type->methods)
+        {
+            mark_gc_object(method.val);
+        }
+
+        for(auto&[k, setter] : class_type->setters)
+        {
+            mark_gc_object(setter.val);
+        }
+
+        for(auto&[k, getter] : class_type->getters)
+        {
+            mark_gc_object(getter.val);
+        }
+
+        for(auto&[k, method] : class_type->class_methods)
+        {
+            mark_gc_object(method.val);
+        }
+    }
+
+    static void mark_cpp_object(CppObject* object)
+    {
+        object->marked = true;
+        for(auto&[k, ref] : object->props)
+        {
+            mark_gc_object(ref.val);
+        }
+        mark_class(object->type);
+    }
+
+    static void mark_gc_object(Value& ref)
+    {
+        switch(ref.get_type())
+        {
+            case ValueType::SOURDO_FUNCTION:
+                ref.to_sourdo_function()->marked = true;
+                break;
+            case ValueType::OBJECT:
+                mark_object(ref.to_object());
+                break;
+            case ValueType::TABLE:
+                mark_table(ref.to_table());
+                break;
+            case ValueType::CLASS_TYPE:
+                mark_class(ref.to_class());
+                break;
+            case ValueType::CPP_OBJECT:
+                mark_cpp_object(ref.to_cpp_object());
+                break;
+            default:
+                break;
         }
     }
 
     void GarbageCollector::mark(Data::Impl* data)
     {
-        for(auto& ref : GlobalData::references)
+        while(data != nullptr)
         {
-            if(ref.get_type() == ValueType::OBJECT)
+            for(auto& ref : GlobalData::references)
             {
-                mark_object(ref.to_object());
-            }
-            else if(ref.get_type() == ValueType::TABLE)
-            {
-                mark_table(ref.to_table());
-            }
-            else if(ref.get_type() == ValueType::CPP_OBJECT)
-            {
-                ref.to_cpp_object()->marked = true;
-                mark_class_type(ref.to_cpp_object()->type);
-            }
-            else if(ref.get_type() == ValueType::SOURDO_FUNCTION)
-            {
-                ref.to_sourdo_function()->marked = true;
-            }
-        }
-
-        Data::Impl* current_data = data;
-        while(current_data != nullptr)
-        {
-            for(auto& [k, symbol] : current_data->symbol_table)
-            {
-                if(symbol.val.get_type() == ValueType::OBJECT)
-                {
-                    mark_object(symbol.val.to_object());
-                }
-                else if(symbol.val.get_type() == ValueType::TABLE)
-                {
-                    mark_table(symbol.val.to_table());
-                }
-                else if(symbol.val.get_type() == ValueType::CPP_OBJECT)
-                {
-                    symbol.val.to_cpp_object()->marked = true;
-                    mark_class_type(symbol.val.to_cpp_object()->type);
-                }
-                else if(symbol.val.get_type() == ValueType::SOURDO_FUNCTION)
-                {
-                    symbol.val.to_sourdo_function()->marked = true;
-                }
+                mark_gc_object(ref);
             }
 
-            for(auto& symbol : current_data->stack)
+            for(auto&[k, ref] : data->symbol_table)
             {
-                if(symbol.get_type() == ValueType::OBJECT)
-                {
-                    mark_object(symbol.to_object());
-                }
-                else if(symbol.get_type() == ValueType::TABLE)
-                {
-                    mark_table(symbol.to_table());
-                }
-                else if(symbol.get_type() == ValueType::CPP_OBJECT)
-                {
-                    symbol.to_cpp_object()->marked = true;
-                }
-                else if(symbol.get_type() == ValueType::SOURDO_FUNCTION)
-                {
-                    symbol.to_sourdo_function()->marked = true;
-                }
+                mark_gc_object(ref.val);
             }
-            current_data = current_data->parent;
+
+            for(auto& ref : data->stack)
+            {
+                mark_gc_object(ref);
+            }
+            data = data->parent;
         }
     }
 

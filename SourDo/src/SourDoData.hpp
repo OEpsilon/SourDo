@@ -3,6 +3,7 @@
 #include "SourDo/SourDo.hpp"
 
 #include <vector>
+#include <optional>
 #include <map>
 #include <sstream>
 
@@ -40,7 +41,7 @@ namespace sourdo {
         // Used to store named values.
         std::map<std::string, Symbol> symbol_table;
 
-        SetSymbolResult set_symbol(const std::string& index, const sourdo::Value& value)
+        SetSymbolResult set_symbol(const std::string& index, const Value& value)
         {
             if(symbol_table.find(index) == symbol_table.end())
             {
@@ -83,7 +84,7 @@ namespace sourdo {
             return symbol_table[index].val;
         }
 
-        sourdo::Value& index_stack(int index)
+        Value& index_stack(int index)
         {
             assert(index != 0);
             assert(std::abs(index) <= stack.size());

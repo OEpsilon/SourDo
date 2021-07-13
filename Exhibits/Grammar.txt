@@ -29,12 +29,22 @@ statement           := var_declaration
 
                     := expression
 
+class_def           := <CLASS> <IDENTIFIER> <EXTENDS> <IDENTIFIER> 
+                            (<PRIVATE>? (func_def|var_declaration|class_set|class_get))*
+                            <END>
+
+class_set           := <SET> <IDENTIFIER> <LPAREN> <IDENTIFIER> <COMMA> <IDENTIFIER> <RPAREN> statement_list <END>
+
+class_get           := <GET> <IDENTIFIER> <LPAREN> <IDENTIFIER> <RPAREN> statement_list <END>
+
 var_declaration     := <VAR> <IDENTIFIER> <ASSIGN> expression
                     := <VAR> <IDENTIFIER>
 
 var_assignment      := <IDENTIFIER> <ASSIGN|ASSIGN_ADD|ASSIGN_SUB|ASSIGN_MUL|ASSIGN_DIV> expression
 
-func_def            := <FUNC> <IDENTIFIER> (<DOT|COLON> <IDENTIFIER>)? <LPAREN> (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)? <RPAREN> statement_list <END>
+func_def            := <FUNC> <IDENTIFIER> (<DOT|COLON> <IDENTIFIER>)? <LPAREN> params <RPAREN> statement_list <END>
+
+params              := (<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)?
 
 expression          := logic_or
 

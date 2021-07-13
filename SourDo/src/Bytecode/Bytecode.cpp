@@ -26,6 +26,42 @@ namespace sourdo
             case OP_PUSH_FUNC: 
                 os << "push_func"; 
                 break;
+            case OP_CREATE_SUBTYPE:
+                os << "create_subtype";
+                break;
+            case OP_CREATE_TYPE:
+                os << "create_type";
+                break;
+            case OP_SET_SETTER:
+                os << "set_setter";
+                break;
+            case OP_SET_GETTER:
+                os << "set_getter";
+                break;
+            case OP_SET_METHOD:
+                os << "set_method";
+                break;
+            case OP_SET_CLASS_PROP:
+                os << "set_class_prop";
+                break;
+            case OP_SET_INITIALIZER:
+                os << "set_initializer";
+                break;
+            case OP_GET_INITIALIZER:
+                os << "get_initializer";
+                break;
+            case OP_FINISH_TYPE:
+                os << "finish_type";
+                break;
+            case OP_ALLOC_OBJECT:
+                os << "alloc_object";
+                break;
+            case OP_ADD_PROPERTY:
+                os << "add_property";
+                break;
+            case OP_ADD_CONST_PROPERTY:
+                os << "add_const_property";
+                break;
             case OP_STACK_GET: 
                 os << "stack_get"; 
                 break;
@@ -67,6 +103,9 @@ namespace sourdo
                 break;
             case OP_POP: 
                 os << "pop"; 
+                break;
+            case OP_REMOVE_TOP: 
+                os << "remove_top"; 
                 break;
             case OP_TYPE_CHECK:
                 os << "type_check";

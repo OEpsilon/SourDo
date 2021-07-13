@@ -16,7 +16,7 @@
         {
             "type": "shell",
             "label": "Test SourDo",
-            "command": "vendor/premake/bin/MacOS/premake5 gmake2 && make && ./bin/macosx/Debug-x86_64/Sandbox/Sandbox ",
+            "command": "vendor/premake/bin/MacOS/premake5 gmake2 && make && ./bin/macosx/Debug-x86_64/Sandbox/Sandbox",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

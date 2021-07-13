@@ -27,6 +27,7 @@ namespace sourdo
 
     struct SourDoFunction;
     struct Table;
+    struct ClassType;
     struct Object;
     struct CppObject;
 
@@ -41,8 +42,10 @@ namespace sourdo
         Value(const char* new_value);
         Value(SourDoFunction* new_value);
         Value(const CppFunction& new_value);
+        Value(Value* new_value);
         Value(Object* new_value);
         Value(Table* new_value);
+        Value(ClassType* new_value);
         Value(CppObject* new_value);
         
         Value(const Value& new_value);
@@ -58,8 +61,10 @@ namespace sourdo
         Value& operator=(const char* new_value);
         Value& operator=(SourDoFunction* new_value);
         Value& operator=(const CppFunction& new_value);
+        Value& operator=(Value* new_value);
         Value& operator=(Object* new_value);
         Value& operator=(Table* new_value);
+        Value& operator=(ClassType* new_value);
         Value& operator=(CppObject* new_value);
 
         bool operator==(const Value& other) const;
@@ -78,7 +83,7 @@ namespace sourdo
         }
 
         std::string to_string() const
-        { 
+        {
             return std::get<std::string>(value); 
         }
 
@@ -92,9 +97,19 @@ namespace sourdo
             return std::get<CppFunction>(value);
         }
 
+        Value* to_value_ref() const
+        {
+            return std::get<Value*>(value);
+        }
+
         Table* to_table() const
         {
             return std::get<Table*>(value);
+        }
+
+        ClassType* to_class() const
+        {
+            return std::get<ClassType*>(value);
         }
 
         Object* to_object() const
@@ -112,14 +127,16 @@ namespace sourdo
         ValueType type;
 
         std::variant<
-                Null, 
+                Null,
                 double, 
-                bool, 
+                bool,
                 std::string, 
                 SourDoFunction*, 
-                CppFunction, 
+                CppFunction,
+                Value*,
                 Object*,
                 Table*,
+                ClassType*,
                 CppObject*
             > value;
     };
@@ -149,9 +166,11 @@ namespace std
                     bool, 
                     std::string, 
                     sourdo::SourDoFunction*, 
-                    sourdo::CppFunction, 
+                    sourdo::CppFunction,
+                    sourdo::Value*,
                     sourdo::Object*,
                     sourdo::Table*,
+                    sourdo::ClassType*,
                     sourdo::CppObject*
                 >>()(k.value);
         }
@@ -174,73 +193,108 @@ namespace sourdo
         std::unordered_map<Value, Value> keys;
         bool readonly = false;
 
-        void on_garbage_collected() final
+        void on_garbage_collected(Data::Impl* data) final
         {
         }
     };
 
     struct ClassType : public GCObject
     {
-        ClassType(const std::unordered_map<std::string, Value>& methods,
-                const std::vector<std::string>& property_names)
-            : methods(methods), property_names(property_names)
+        struct Property
+        {
+            Property() = default;
+
+            Property(const Value& val, const std::string& class_context, bool is_private, bool readonly)
+                : val(val), class_context(class_context), is_private(is_private), readonly(readonly)
+            {
+            }
+
+            Value val;
+            std::string class_context;
+            bool is_private = false;
+            bool readonly = false;
+        };
+
+        ClassType(const std::string& name, ClassType* super)
+            : name(name), super(super)
         {
         }
 
         virtual ~ClassType() = default;
         ClassType* super = nullptr;
 
-        std::unordered_map<std::string, Value> methods;
-        std::vector<std::string> property_names;
+        SourDoFunction* initializer = nullptr;
+        std::unordered_map<std::string, Property> methods;
+        std::unordered_map<std::string, Property> setters;
+        std::unordered_map<std::string, Property> getters;
+
+        std::unordered_map<std::string, Property> class_methods;
+        
         std::string name;
+        bool complete = false;
+
+        void on_garbage_collected(Data::Impl* data) override {}
     };
 
     struct Object : public GCObject
     {
         Object() = default;
 
-        Object(const std::unordered_map<std::string, Value>& props, ClassType* type)
-            : props(props), type(type)
+        Object(ClassType* type)
+            : type(type)
         {
         }
 
         virtual ~Object() = default;
         ClassType* type = nullptr;
 
-        std::unordered_map<std::string, Value> props;
+        std::unordered_map<std::string, ClassType::Property> props;
 
-        std::optional<Value> find_symbol(std::string name)
+        Value* find_method(std::string name)
+        {
+            ClassType* current_type = type;
+            while(current_type != nullptr)
+            {
+                if(current_type->methods.find(name) != current_type->methods.end())
+                {
+                    return &current_type->methods[name].val;
+                }
+                current_type = current_type->super;
+            }
+            return nullptr;
+        }
+
+        ClassType::Property* find_symbol(std::string name)
         {
             if(props.find(name) != props.end())
             {
-                return props[name];
+                return &props[name];
             }
             ClassType* current_type = type;
             while(current_type != nullptr)
             {
                 if(current_type->methods.find(name) != current_type->methods.end())
                 {
-                    return current_type->methods[name];
+                    return &current_type->methods[name];
                 }
                 current_type = current_type->super;
             }
-            return {};
+            return nullptr;
         }
 
-        void on_garbage_collected() final
-        {
-        }
+        void on_garbage_collected(Data::Impl* data) override;
     };
 
-    struct CppObject : public GCObject
+    struct CppObject : public Object
     {
-        CppObject(size_t size)
-            : block(new uint8_t[size])
+        CppObject(ClassType* type, size_t size)
+            : Object(type), block(new uint8_t[size])
         {
         }
 
-        void on_garbage_collected() final
+        void on_garbage_collected(Data::Impl* data) final
         {
+            Object::on_garbage_collected(data);
             delete[] block;
         }
 

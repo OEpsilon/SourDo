@@ -17,6 +17,12 @@ namespace sourdo
             {   Token::Type::CONST ,            "CONST"             },
             {   Token::Type::FUNC ,             "FUNC"              },
 
+            {   Token::Type::CLASS ,            "CLASS"             },
+            {   Token::Type::PRIVATE ,          "PRIVATE"           },
+            {   Token::Type::SET ,              "SET"               },
+            {   Token::Type::GET ,              "GET"               },
+            {   Token::Type::EXTENDS ,          "EXTENDS"           },
+
             {   Token::Type::RETURN ,           "RETURN"            },
             {   Token::Type::BREAK ,            "BREAK"             },
             {   Token::Type::CONTINUE ,         "CONTINUE"          },
@@ -54,7 +60,7 @@ namespace sourdo
             {   Token::Type::EQUAL,             "EQUAL"             },
             {   Token::Type::NOT_EQUAL,         "NOT_EQUAL"         },
 
-            {   Token::Type::IS,                "IS"                },
+            {   Token::Type::ISA,               "ISA"               },
             {   Token::Type::OR,                "OR"                },
             {   Token::Type::AND,               "AND"               },
             {   Token::Type::NOT,               "NOT"               },

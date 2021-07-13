@@ -53,6 +53,12 @@ namespace sourdo
         value = new_value;
     }
 
+    Value::Value(Value* new_value)
+    {
+        type = ValueType::VALUE_REF;
+        value = new_value;
+    }
+
     Value::Value(Object* new_value)
     {
         type = ValueType::OBJECT;
@@ -62,6 +68,12 @@ namespace sourdo
     Value::Value(Table* new_value)
     {
         type = ValueType::TABLE;
+        value = new_value;
+    }
+
+    Value::Value(ClassType* new_value)
+    {
+        type = ValueType::CLASS_TYPE;
         value = new_value;
     }
     
@@ -152,6 +164,13 @@ namespace sourdo
         return *this;
     }
 
+    Value& Value::operator=(Value* new_value)
+    {
+        type = ValueType::VALUE_REF;
+        value = new_value;
+        return *this;
+    }
+
     Value& Value::operator=(Object* new_value)
     {
         type = ValueType::OBJECT;
@@ -162,6 +181,13 @@ namespace sourdo
     Value& Value::operator=(Table* new_value)
     {
         type = ValueType::TABLE;
+        value = new_value;
+        return *this;
+    }
+
+    Value& Value::operator=(ClassType* new_value)
+    {
+        type = ValueType::CLASS_TYPE;
         value = new_value;
         return *this;
     }
@@ -211,6 +237,28 @@ namespace sourdo
                 break;
             case ValueType::CPP_FUNCTION: 
                 os << "[CppFunc: " << val.to_cpp_function() << "]";
+                break;
+            case ValueType::VALUE_REF:
+                os << *(val.to_value_ref());
+                break;
+            case ValueType::TABLE: 
+            {
+                os << "{";
+                int i = 0;
+                for(auto&[k, v] : val.to_table()->keys)
+                {
+                    os << k << "=" << v;
+                    if(i < val.to_table()->keys.size() - 1)
+                    {
+                        os << ", ";
+                    }
+                    i++;
+                }
+                os << "}";
+                break;
+            }
+            case ValueType::CLASS_TYPE: 
+                os << "[ClassType: " << val.to_class()->name << "]";
                 break;
             case ValueType::OBJECT: 
                 os << "[Object: " << val.to_object() << "]";

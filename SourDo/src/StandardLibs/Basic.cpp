@@ -38,8 +38,17 @@ namespace sourdo
                 case sourdo::ValueType::CPP_FUNCTION:
                     ss << "[CppFunction]";
                     break;
+                case sourdo::ValueType::VALUE_REF:
+                    data.push_string("[ValueRef]");
+                    break;
+                case sourdo::ValueType::TABLE:
+                    ss << "[Table]";
+                    break;
                 case sourdo::ValueType::OBJECT:
                     ss << "[Object]";
+                    break;
+                case ValueType::CLASS_TYPE:
+                    ss << "[ClassType]";
                     break;
                 case sourdo::ValueType::CPP_OBJECT:
                     data.push_string("[CppObject]");
@@ -120,6 +129,7 @@ namespace sourdo
                 i++;
                 if(format_string[i] == '{')
                 {
+                    ss << '{';
                     continue;
                 }
                 std::string index_str = "";

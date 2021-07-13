@@ -16,7 +16,7 @@ namespace sourdo
                 }
                 type = type->super;
             }
-            return name == "Object";
+            return name == "object";
         };
 
         switch(value.get_type())
@@ -51,9 +51,24 @@ namespace sourdo
                 return name == "cpp_function" ||  name == "function";
                 break;
             }
+            case ValueType::VALUE_REF:
+            {
+                return check_value_type(*(value.to_value_ref()), name);
+                break;
+            }
+            case ValueType::TABLE:
+            {
+                return name == "table";
+                break;
+            }
             case ValueType::OBJECT:
             {
                 return find_class_name(value.to_object()->type);
+                break;
+            }
+            case ValueType::CLASS_TYPE:
+            {
+                return name == "class_type";
                 break;
             }
             case ValueType::CPP_OBJECT:

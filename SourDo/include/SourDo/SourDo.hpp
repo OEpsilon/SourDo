@@ -22,8 +22,10 @@ namespace sourdo
         STRING,
         SOURDO_FUNCTION,
         CPP_FUNCTION,
+        VALUE_REF,
         TABLE,
         OBJECT,
+        CLASS_TYPE,
         CPP_OBJECT,
     };
     

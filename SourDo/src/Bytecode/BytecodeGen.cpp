@@ -47,6 +47,9 @@ namespace sourdo
             case Node::Type::STATEMENT_LIST_NODE:
                 visit_statement_list_node(std::static_pointer_cast<StatementListNode>(node), bytecode);
                 break;
+            case Node::Type::CLASS_NODE:
+                visit_class_node(std::static_pointer_cast<ClassNode>(node), bytecode);
+                break;
             case Node::Type::IF_NODE:
                 visit_if_node(std::static_pointer_cast<IfNode>(node), bytecode);
                 break;
@@ -146,6 +149,166 @@ namespace sourdo
                 bytecode.instructions.emplace_back(OP_POP);
             }
         }
+    }
+
+    void BytecodeGenerator::visit_class_node(std::shared_ptr<ClassNode> node, Bytecode& bytecode)
+    {
+        uint64_t class_name = push_constant(node->class_name.value, bytecode);
+        if(node->super_name)
+        {
+            bytecode.instructions.emplace_back(OP_SYM_GET, push_constant(node->super_name.value().value, bytecode));
+            bytecode.instructions.emplace_back(OP_CREATE_SUBTYPE, class_name);
+        }
+        else
+        {
+            bytecode.instructions.emplace_back(OP_CREATE_TYPE, class_name);
+        }
+        bytecode.instructions.emplace_back(OP_STACK_GET_TOP, 1);
+        bytecode.instructions.emplace_back(OP_SYM_CONST, class_name);
+
+        Bytecode class_initializer;
+        class_initializer.instructions.emplace_back(OP_STACK_GET, 1);
+        if(node->super_name)
+        {
+            class_initializer.instructions.emplace_back(OP_SYM_GET, push_constant(node->super_name.value().value, class_initializer));
+            class_initializer.instructions.emplace_back(OP_GET_INITIALIZER);
+            class_initializer.instructions.emplace_back(OP_REMOVE_TOP, 2);
+
+            class_initializer.instructions.emplace_back(OP_STACK_GET_TOP, 2);
+            class_initializer.instructions.emplace_back(OP_CALL, 1);
+            class_initializer.instructions.emplace_back(OP_POP);
+        }
+
+        for(auto&[name, decl] : node->properties)
+        {
+            class_initializer.instructions.emplace_back(OP_PUSH_STRING, push_constant(node->class_name.value, class_initializer));
+            class_initializer.instructions.emplace_back(OP_PUSH_STRING, push_constant(name, class_initializer));
+            
+            if(decl.initial_value)
+            {
+                visit_node(decl.initial_value, class_initializer);
+            }
+            else
+            {
+                class_initializer.instructions.emplace_back(OP_PUSH_NULL);
+            }
+
+            class_initializer.instructions.emplace_back(decl.readonly? OP_ADD_CONST_PROPERTY : OP_ADD_PROPERTY, decl.is_private);
+        }
+        class_initializer.instructions.emplace_back(OP_PUSH_NULL);
+        class_initializer.instructions.emplace_back(OP_RET);
+
+        SourDoFunction* value = new SourDoFunction(1, node->class_name.value, class_initializer);
+        bytecode.instructions.emplace_back(OP_PUSH_FUNC, push_constant(value, bytecode));
+        bytecode.instructions.emplace_back(OP_SET_INITIALIZER);
+
+        for(auto&[name, decl] : node->methods)
+        {
+            if(name == "new")
+            {
+                auto func_node = std::static_pointer_cast<FuncNode>(decl.initial_value);
+
+                Bytecode class_new;
+                uint64_t type = push_constant(node->class_name.value, class_new);
+                class_new.instructions.emplace_back(OP_SYM_GET, type);
+                class_new.instructions.emplace_back(OP_ALLOC_OBJECT);
+
+                class_new.instructions.emplace_back(OP_SYM_GET, type);
+                class_new.instructions.emplace_back(OP_GET_INITIALIZER);
+                class_new.instructions.emplace_back(OP_REMOVE_TOP, 2);
+
+                class_new.instructions.emplace_back(OP_STACK_GET_TOP, 2);
+                class_new.instructions.emplace_back(OP_CALL, 1);
+                class_new.instructions.emplace_back(OP_POP);
+
+                class_new.instructions.emplace_back(OP_STACK_GET_TOP, 1);
+                class_new.instructions.emplace_back(OP_PUSH_STRING, push_constant("new", class_new));
+                class_new.instructions.emplace_back(OP_VAL_GET);
+                class_new.instructions.emplace_back(OP_STACK_GET_TOP, 2);
+                for(uint32_t i = 1; i < func_node->parameters.size(); i++)
+                {
+                    class_new.instructions.emplace_back(OP_STACK_GET, i);
+                }
+                class_new.instructions.emplace_back(OP_CALL, func_node->parameters.size());
+                class_new.instructions.emplace_back(OP_POP);
+
+                class_new.instructions.emplace_back(OP_STACK_GET_TOP, 1);
+                class_new.instructions.emplace_back(OP_RET);
+
+                bytecode.instructions.emplace_back(OP_PUSH_STRING, push_constant("new", bytecode));
+                SourDoFunction* class_method = new SourDoFunction(func_node->parameters.size() - 1, node->class_name.value, class_new);
+                bytecode.instructions.emplace_back(OP_PUSH_FUNC, push_constant(class_method, bytecode));
+                bytecode.instructions.emplace_back(OP_SET_CLASS_PROP);
+            }
+            
+            bytecode.instructions.emplace_back(OP_PUSH_STRING, push_constant(name, bytecode));
+
+            visit_func_node(std::static_pointer_cast<FuncNode>(decl.initial_value), bytecode, node->class_name.value);
+            bytecode.instructions.emplace_back(OP_SET_METHOD, decl.is_private);
+        }
+
+        for(auto&[name, setter] : node->setters)
+        {
+            Bytecode func;
+
+            uint64_t self_name = push_constant(setter.self_name.value, func);
+
+            func.instructions.emplace_back(OP_STACK_GET, 1);
+            func.instructions.emplace_back(OP_SYM_CREATE, self_name);
+
+            uint64_t new_value_name = push_constant(setter.new_value_name.value, func);
+
+            func.instructions.emplace_back(OP_STACK_GET, 2);
+            func.instructions.emplace_back(OP_SYM_CREATE, new_value_name);
+
+            visit_node(setter.statements, func);
+            if(error) return;
+
+            if(setter.statements->statements.size() == 0 
+                    || setter.statements->statements[setter.statements->statements.size() -1]->type != Node::Type::RETURN_NODE)
+            {
+                func.instructions.emplace_back(OP_PUSH_NULL);
+                func.instructions.emplace_back(OP_RET);
+            }
+
+            uint64_t prop_name = push_constant(name, bytecode);
+            bytecode.instructions.emplace_back(OP_PUSH_STRING, prop_name);
+
+            SourDoFunction* value = new SourDoFunction(2, node->class_name.value, func);
+            uint64_t constant = push_constant(value, bytecode);
+            bytecode.instructions.emplace_back(OP_PUSH_FUNC, constant);
+            bytecode.instructions.emplace_back(OP_SET_SETTER, setter.is_private);
+        }
+
+        for(auto&[name, getter] : node->getters)
+        {
+            Bytecode func;
+
+            uint64_t self_name = push_constant(getter.self_name.value, func);
+
+            func.instructions.emplace_back(OP_STACK_GET, 1);
+            func.instructions.emplace_back(OP_SYM_CREATE, self_name);
+
+            visit_node(getter.statements, func);
+            if(error) return;
+
+            if(getter.statements->statements.size() == 0 
+                    || getter.statements->statements[getter.statements->statements.size() -1]->type != Node::Type::RETURN_NODE)
+            {
+                func.instructions.emplace_back(OP_PUSH_NULL);
+                func.instructions.emplace_back(OP_RET);
+            }
+
+            uint64_t prop_name = push_constant(name, bytecode);
+            bytecode.instructions.emplace_back(OP_PUSH_STRING, prop_name);
+
+            SourDoFunction* value = new SourDoFunction(1, node->class_name.value, func);
+            uint64_t constant = push_constant(value, bytecode);
+            bytecode.instructions.emplace_back(OP_PUSH_FUNC, constant);
+            bytecode.instructions.emplace_back(OP_SET_GETTER, getter.is_private);
+        }
+        bytecode.instructions.emplace_back(OP_FINISH_TYPE);
+        bytecode.instructions.emplace_back(OP_POP);
     }
 
     void BytecodeGenerator::visit_if_node(std::shared_ptr<IfNode> node, Bytecode& bytecode)
@@ -354,7 +517,7 @@ namespace sourdo
         bytecode.instructions.emplace_back(OP_VAL_SET);
     }
 
-    void BytecodeGenerator::visit_func_node(std::shared_ptr<FuncNode> node, Bytecode& bytecode)
+    void BytecodeGenerator::visit_func_node(std::shared_ptr<FuncNode> node, Bytecode& bytecode, const std::optional<std::string>& class_context)
     {
         Bytecode func;
         for(int64_t i = 1; i <= node->parameters.size(); i++)
@@ -374,7 +537,7 @@ namespace sourdo
             func.instructions.emplace_back(OP_PUSH_NULL);
             func.instructions.emplace_back(OP_RET);
         }
-        SourDoFunction* value = new SourDoFunction(node->parameters.size(), func);
+        SourDoFunction* value = new SourDoFunction(node->parameters.size(), class_context, func);
         uint64_t constant = push_constant(value, bytecode);
         bytecode.instructions.emplace_back(OP_PUSH_FUNC, constant);
     }
@@ -555,8 +718,7 @@ namespace sourdo
 
     void BytecodeGenerator::visit_bool_node(std::shared_ptr<BoolNode> node, Bytecode& bytecode)
     {
-        uint64_t constant = push_constant(node->value.type == Token::Type::BOOL_TRUE ? true : false, bytecode);
-        bytecode.instructions.emplace_back(Opcode::OP_PUSH_BOOL, constant);
+        bytecode.instructions.emplace_back(Opcode::OP_PUSH_BOOL, node->value.type == Token::Type::BOOL_TRUE);
     }
 
     void BytecodeGenerator::visit_null_node(std::shared_ptr<NullNode> node, Bytecode& bytecode)

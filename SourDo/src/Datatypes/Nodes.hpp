@@ -5,6 +5,7 @@
 #include <sstream>
 #include <optional>
 #include <map>
+#include <unordered_map>
 
 #include "Token.hpp"
 
@@ -12,6 +13,8 @@ namespace sourdo
 {
     struct Node;
     struct StatementListNode;
+    struct ClassNode;
+    
     struct IfNode;
     struct ForNode;
     struct WhileNode;
@@ -43,8 +46,8 @@ namespace sourdo
     {
         enum class Type
         {
-            NONE = 0,
             STATEMENT_LIST_NODE,
+            CLASS_NODE,
             IF_NODE,
             FOR_NODE,
             WHILE_NODE,
@@ -72,18 +75,16 @@ namespace sourdo
             TABLE_NODE,
         };
 
+        virtual ~Node() = default;
+
+        Type type;
+        Position position;
+    protected:
         Node(const Position& position)
             : position(position)
         {
 
         }
-
-        virtual ~Node() = default;
-
-        Type type = Type::NONE;
-        Position position;
-
-        virtual std::string to_string(uint32_t indent_level) = 0;
     };
 
     struct ExpressionNode : public Node
@@ -107,26 +108,78 @@ namespace sourdo
         std::vector<std::shared_ptr<Node>> statements;
 
         virtual ~StatementListNode() = default;
+    };
 
-        std::string to_string(uint32_t indent_level) final
+    struct ClassNode : public Node
+    {
+        struct Property
         {
-            std::stringstream ss;
-            ss << "(";
-            for(int i = 0; i < statements.size(); i++)
+            Property() = default;
+
+            Property(std::shared_ptr<ExpressionNode> initial_value, bool readonly, bool is_private)
+                : initial_value(initial_value), readonly(readonly), is_private(is_private)
             {
-                for(int i = 0; i < indent_level; i++)
-                {
-                    ss << "\t";
-                }
-                ss << statements[i]->to_string(indent_level + 1);
-                if(i < statements.size() - 1)
-                {
-                    ss << "\n";
-                }
             }
-            ss << ")";
-            return ss.str();
+
+            std::shared_ptr<ExpressionNode> initial_value;
+            bool readonly = false;
+            bool is_private = false;
+        };
+
+        struct Setter
+        {
+            Setter() = default;
+
+            Setter(const Token& self_name, const Token& new_value_name,
+                    std::shared_ptr<StatementListNode> statements,
+                    bool is_private, const Position& position)
+                : self_name(self_name), new_value_name(new_value_name), 
+                    statements(statements), is_private(is_private), position(position)
+            {
+            }
+
+            Token self_name;
+            Token new_value_name;
+            std::shared_ptr<StatementListNode> statements;
+            Position position;
+            bool is_private = false;
+        };
+
+        struct Getter
+        {
+            Getter() = default;
+            
+            Getter(const Token& self_name, std::shared_ptr<StatementListNode> statements,
+                    bool is_private, const Position& position)
+                : self_name(self_name), statements(statements), is_private(is_private), position(position)
+            {
+            }
+
+            Token self_name;
+            std::shared_ptr<StatementListNode> statements;
+            Position position;
+            bool is_private = false;
+        };
+
+        ClassNode(const Token& class_name, const std::optional<Token>& super_name,
+                const std::unordered_map<std::string, Property>& properties, 
+                const std::unordered_map<std::string, Property>& methods,
+                const std::unordered_map<std::string, Setter>& setters, 
+                const std::unordered_map<std::string, Getter>& getters, 
+                const Position& position)
+            : Node(position), class_name(class_name), super_name(super_name),
+                properties(std::move(properties)), methods(std::move(methods)),
+                setters(std::move(setters)), getters(std::move(getters))
+        {
+            type = Type::CLASS_NODE;
         }
+
+        Token class_name;
+        std::optional<Token> super_name;
+        std::unordered_map<std::string, Property> properties;
+        std::unordered_map<std::string, Property> methods;
+        std::unordered_map<std::string, Setter> setters;
+        std::unordered_map<std::string, Getter> getters;
     };
 
     struct IfNode : public Node
@@ -152,30 +205,6 @@ namespace sourdo
         
         std::vector<IfBlock> cases;
         std::shared_ptr<StatementListNode> else_case;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            for(int i = 0; i < cases.size(); i++)
-            {
-                if(i == 0)
-                {
-                    ss << "if(";
-                }
-                else
-                {
-                    ss << "\nelif(";
-                }
-                ss << cases[i].condition->to_string(0) << "\n";
-                ss << cases[i].statements->to_string(indent_level + 1) << "\n)";
-            }
-            if(else_case)
-            {
-                ss << "\nelse(\n";
-                ss << else_case->to_string(indent_level + 1) << "\n)";
-            }
-            return ss.str();
-        }
     };
 
     struct ForNode : public Node
@@ -193,13 +222,6 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> condition; 
         std::shared_ptr<Node> increment;
         std::shared_ptr<StatementListNode> statements;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            // I'll deal with this later
-            std::stringstream ss;
-            return ss.str();
-        }
     };
 
     struct WhileNode : public Node
@@ -213,14 +235,6 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> condition;
         std::shared_ptr<StatementListNode> statements;
 
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "while(" << condition->to_string(0) << "\n";
-            ss << statements->to_string(indent_level + 1) << "\n)";
-            return ss.str();
-        }
-
         virtual ~WhileNode() = default;
     };
 
@@ -233,20 +247,6 @@ namespace sourdo
         }
 
         std::shared_ptr<StatementListNode> statements;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "loop(" << "\n";
-            ss << statements->to_string(indent_level + 1) << "\n";
-            for(int i = 0; i < indent_level; i++)
-            {
-                ss << "\t";
-            }
-
-            ss << ")";
-            return ss.str();
-        }
 
         virtual ~LoopNode() = default;
     };
@@ -262,13 +262,6 @@ namespace sourdo
         Token name_tok;
         std::shared_ptr<ExpressionNode> initializer;
         bool readonly;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(var " << name_tok << ", " << initializer << ")";
-            return ss.str();
-        }
     };
 
     struct ReturnNode : public Node
@@ -281,13 +274,6 @@ namespace sourdo
 
         std::shared_ptr<ExpressionNode> return_value;
 
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "return " << return_value->to_string(0);
-            return ss.str();
-        }
-
         virtual ~ReturnNode() = default;
     };
 
@@ -299,13 +285,6 @@ namespace sourdo
             type = Type::BREAK_NODE;
         }
 
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "break";
-            return ss.str();
-        }
-
         virtual ~BreakNode() = default;
     };
 
@@ -315,13 +294,6 @@ namespace sourdo
             : Node(position)
         {
             type = Type::CONTINUE_NODE;
-        }
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "continue";
-            return ss.str();
         }
 
         virtual ~ContinueNode() = default;
@@ -346,13 +318,6 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> assignee;
         Operation op;
         std::shared_ptr<ExpressionNode> new_value;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(" << assignee->to_string(0) << ", " << new_value << ")";
-            return ss.str();
-        }
     };
 
     struct BinaryOpNode : public ExpressionNode
@@ -369,15 +334,6 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> left_operand;
         Token op_token;
         std::shared_ptr<ExpressionNode> right_operand;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(" << left_operand->to_string(0) 
-                    << ", " << op_token << ", " 
-                    << right_operand->to_string(0) << ")";
-            return ss.str();
-        }
     };
 
     struct UnaryOpNode : public ExpressionNode
@@ -392,13 +348,6 @@ namespace sourdo
 
         Token op_token;
         std::shared_ptr<ExpressionNode> operand;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(" << op_token << ", " << operand->to_string(0) << ")";
-            return ss.str();
-        }
     };
 
     struct IsNode : public ExpressionNode
@@ -413,15 +362,6 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> left_operand;
         bool invert;
         Token right_operand;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(" << left_operand->to_string(0) 
-                    << ", is, " 
-                    << right_operand << ")";
-            return ss.str();
-        }
     };
 
     struct CallNode : public ExpressionNode
@@ -434,22 +374,6 @@ namespace sourdo
 
         std::shared_ptr<ExpressionNode> callee; 
         std::vector<std::shared_ptr<ExpressionNode>> arguments;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(" << callee->to_string(0) << ", ";
-            for(int i = 0; i < arguments.size(); i++)
-            {
-                ss << arguments[i]->to_string(0);
-                if(i <= arguments.size() - 1)
-                {
-                    ss << ", ";
-                }
-            }
-            ss << ")";
-            return ss.str();
-        }
     };
 
     struct IndexNode : public ExpressionNode
@@ -462,13 +386,6 @@ namespace sourdo
 
         std::shared_ptr<ExpressionNode> base; 
         std::shared_ptr<ExpressionNode> attribute;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(" << base->to_string(0) << ", " << attribute->to_string(0) << ")";
-            return ss.str();
-        }
     };
 
     struct IndexCallNode : public ExpressionNode
@@ -483,23 +400,6 @@ namespace sourdo
         std::shared_ptr<ExpressionNode> base; 
         std::shared_ptr<ExpressionNode> callee;
         std::vector<std::shared_ptr<ExpressionNode>> arguments;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "(" << base->to_string(0) << ", " << callee->to_string(0) << ", ";
-            
-            for(int i = 0; i < arguments.size(); i++)
-            {
-                ss << arguments[i]->to_string(0);
-                if(i <= arguments.size() - 1)
-                {
-                    ss << ", ";
-                }
-            }
-            ss << ")";
-            return ss.str();
-        }
     };
 
     struct NumberNode : public ExpressionNode
@@ -513,13 +413,6 @@ namespace sourdo
         virtual ~NumberNode() = default;
 
         Token value;
-        
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << value;
-            return ss.str();
-        }
     };
 
     struct StringNode : public ExpressionNode
@@ -533,13 +426,6 @@ namespace sourdo
         virtual ~StringNode() = default;
 
         Token value;
-        
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << value;
-            return ss.str();
-        }
     };
 
     struct BoolNode : public ExpressionNode
@@ -553,13 +439,6 @@ namespace sourdo
         virtual ~BoolNode() = default;
 
         Token value;
-        
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << value;
-            return ss.str();
-        }
     };
 
     struct NullNode : public ExpressionNode
@@ -573,13 +452,6 @@ namespace sourdo
         virtual ~NullNode() = default;
 
         Token value;
-        
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << "null";
-            return ss.str();
-        }
     };
 
     struct IdentifierNode : public ExpressionNode
@@ -593,13 +465,6 @@ namespace sourdo
         virtual ~IdentifierNode() = default;
         
         Token name_tok;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            ss << name_tok;
-            return ss.str();
-        }
     };
 
     struct FuncNode : public ExpressionNode
@@ -614,13 +479,6 @@ namespace sourdo
 
         std::vector<std::string> parameters;
         std::shared_ptr<StatementListNode> statements;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            // implement later
-            std::stringstream ss;
-            return ss.str();
-        }
     };
 
     struct TableNode : public ExpressionNode
@@ -633,17 +491,6 @@ namespace sourdo
         }
 
         std::map<std::shared_ptr<ExpressionNode>, std::shared_ptr<ExpressionNode>> keys;
-
-        std::string to_string(uint32_t indent_level) final
-        {
-            std::stringstream ss;
-            return ss.str();
-        }
     };
 
-    inline std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Node>& node)
-    {
-        os << node->to_string(0);
-        return os;
-    }
 } // namespace sourdo

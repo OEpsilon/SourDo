@@ -78,6 +78,7 @@ GENERATED += $(OBJDIR)/GCObject.o
 GENERATED += $(OBJDIR)/GarbageCollector.o
 GENERATED += $(OBJDIR)/GlobalData.o
 GENERATED += $(OBJDIR)/Math.o
+GENERATED += $(OBJDIR)/Object.o
 GENERATED += $(OBJDIR)/Parser.o
 GENERATED += $(OBJDIR)/SourDoData.o
 GENERATED += $(OBJDIR)/Token.o
@@ -92,6 +93,7 @@ OBJECTS += $(OBJDIR)/GCObject.o
 OBJECTS += $(OBJDIR)/GarbageCollector.o
 OBJECTS += $(OBJDIR)/GlobalData.o
 OBJECTS += $(OBJDIR)/Math.o
+OBJECTS += $(OBJDIR)/Object.o
 OBJECTS += $(OBJDIR)/Parser.o
 OBJECTS += $(OBJDIR)/SourDoData.o
 OBJECTS += $(OBJDIR)/Token.o
@@ -171,6 +173,9 @@ $(OBJDIR)/VM.o: src/Bytecode/VM.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/GCObject.o: src/Datatypes/GCObject.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Object.o: src/Datatypes/Object.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/Token.o: src/Datatypes/Token.cpp

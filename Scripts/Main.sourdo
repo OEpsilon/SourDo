@@ -1,51 +1,59 @@
-func factorial(value)
-    if value <= 1 then
-        return 1
+class Player
+    func new(self, name)
+        self.name = name
     end
-    return value * factorial(value - 1)
+
+    var name
 end
 
-var Vec2 = { "__name" = "Vec2" }
+class Vec2
+    func new(self, x, y)
+        self.x = x
+        self.y = y
+    end
 
-func Vec2.new(x, y)
-    assert(x is number, "Argument #1: Expected a number")
-    assert(y is number, "Argument #2: Expected a number")
-    var self = {} 
-    self.__prototype = Vec2
+    var x
+    var y
 
-    self.x = x
-    self.y = y
-    return self
+    func __str(self)
+        return format("[{1}, {2}]", self.x, self.y)
+    end
 end
 
-func Vec2:__string()
-    return format("({1}, {2})", self.x, self.y)
+class Player2D extends Player
+    func new(self, name, position)
+        self.name = name
+        self.position = position
+        self.hidden_num = 4
+    end
+
+    var position
+
+    private var _hidden_num = 1
+
+    get hidden_num(self)
+        return self._hidden_num
+    end
+
+    -- Add this setter for less ambiguous error messages 
+    private set hidden_num(self, new_num)
+        self._hidden_num = new_num
+    end
+    
+    func __str(self)
+        self.hidden_num = 902
+        return format("[{1} {2}]", self.position:__str(), self.name)
+    end 
+    
 end
 
-func Vec2:__add(other)
-    assert(other is Vec2, "Expected a Vec2 as the right operand")
-    return Vec2.new(self.x + other.x, self.y + other.y)
-end
+var player = Player2D.new("Player1", Vec2.new(0, 0))
+var powerful_player = Player2D.new("Powerful Player", Vec2.new(40, 0))
 
-func Vec2:__sub(other)
-    assert(other is Vec2, "Expected a Vec2 as the right operand")
-    return Vec2.new(self.x - other.x, self.y - other.y)
-end
+print("player is a Player:", player isa Player)
+print("player is a Player2D:", player isa Player2D)
 
-func Vec2:__mul(other)
-    assert(other is number, "Expected a number as the right operand")
-    return Vec2.new(self.x * other, self.y * other)
-end
-
-func Vec2:__div(other)
-    assert(other is number, "Expected a number as the right operand")
-    return Vec2.new(self.x / other, self.y / other)
-end
-
-var position = Vec2.new(0, 0)
-
-callback_signal:listen(func(call_count)
-    position.x += 20
-    position.y += 20
-    print(format("Call #{1}: {2}", call_count, position:__string()))
-end)
+print(player:__str())
+player.position.x += 20
+print(player:__str())
+print(powerful_player:__str())

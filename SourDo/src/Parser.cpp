@@ -154,6 +154,356 @@ namespace sourdo
         return std::make_shared<StatementListNode>(statements, saved_position);
     }
 
+    std::shared_ptr<ClassNode> Parser::class_def()
+    {
+        Position saved_position = current_token.position;
+        advance();
+        if(current_token.type != Token::Type::IDENTIFIER)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected an identifier";
+            error = ss.str();
+            return nullptr;
+        }
+        Token class_name = current_token;
+        std::optional<Token> super_name;
+        advance();
+        if(current_token.type == Token::Type::EXTENDS)
+        {
+            advance();
+            if(current_token.type != Token::Type::IDENTIFIER)
+            {
+                std::stringstream ss;
+                ss << current_token.position << "Expected an identifier";
+                error = ss.str();
+                return nullptr;
+            }
+            super_name = current_token;
+            advance();
+        }
+
+        while(current_token.type == Token::Type::NEW_LINE)
+        {
+            advance();
+        }
+
+        std::unordered_map<std::string, ClassNode::Property> properties;
+        bool has_new_func = false;
+        std::unordered_map<std::string, ClassNode::Property> methods;
+        std::unordered_map<std::string, ClassNode::Setter> setters;
+        std::unordered_map<std::string, ClassNode::Getter> getters;
+
+        while(current_token.type != Token::Type::END && 
+                current_token.type != Token::Type::TK_EOF)
+        {
+            bool is_private = false;
+            if(current_token.type == Token::Type::PRIVATE)
+            {
+                is_private = true;
+                advance();
+            }
+
+            #define IDENTIFIER_CHECK(identifier_name)                       \
+            if(current_token.type != Token::Type::IDENTIFIER)               \
+            {                                                               \
+                std::stringstream ss;                                       \
+                ss << current_token.position << "Expected an identifier";   \
+                error = ss.str();                                           \
+                return nullptr;                                             \
+            }                                                               \
+            Token identifier_name = current_token;                          \
+            advance()
+            
+            #define CHECK_IDENTIFIER_EXISTS(identifier_name)                \
+            if(properties.find(identifier_name) != properties.end()         \
+                    || methods.find(identifier_name) != methods.end()       \
+                    || setters.find(identifier_name) != setters.end()       \
+                    || getters.find(identifier_name) != getters.end())      \
+            {                                                               \
+                std::stringstream ss;                                       \
+                ss << current_token.position << "'" << identifier_name      \
+                        << "' is already defined in class '"                \
+                        << class_name.value << "'";                         \
+                error = ss.str();                                           \
+                return nullptr;                                             \
+            }
+
+            switch(current_token.type)
+            {
+                case Token::Type::CONST:
+                case Token::Type::VAR:
+                {
+                    bool readonly = current_token.type == Token::Type::CONST;
+                    Position saved_position = current_token.position;
+                    advance();
+                    IDENTIFIER_CHECK(name_tok);
+                    if(name_tok.value == "new")
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "'new' must be declared as a method";
+                        error = ss.str();
+                        return nullptr;
+                    }
+
+                    if(current_token.type != Token::Type::ASSIGN)
+                    {
+                        if(readonly)
+                        {
+                            std::stringstream ss;
+                            ss << current_token.position << "A property declared constant must be assigned a value when declared";
+                            error = ss.str();
+                            return nullptr;
+                        }
+                        properties[name_tok.value] = ClassNode::Property(nullptr, false, is_private);
+                        break;
+                    }
+                    advance();
+                    std::shared_ptr<ExpressionNode> expr = expression();
+                    if(error)
+                    {
+                        return nullptr;
+                    }
+                    properties[name_tok.value] = ClassNode::Property(nullptr, readonly, is_private);
+                    break;
+                }
+                case Token::Type::FUNC:
+                {
+                    Position saved_position = current_token.position;
+
+                    std::vector<std::string> parameters;
+                    std::shared_ptr<StatementListNode> statements;
+                    
+                    advance();
+                    IDENTIFIER_CHECK(name);
+                    CHECK_IDENTIFIER_EXISTS(name.value);
+                    has_new_func = has_new_func || name.value == "new";
+                    if(name.value == "new" && is_private)
+                    {
+                        std::stringstream ss;
+                        ss << saved_position << "The 'new' method cannot be declared private";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    
+                    get_parameters(parameters);
+                    if(error)
+                    {
+                        return nullptr;
+                    }
+                    if(parameters.size() == 0)
+                    {
+                        std::stringstream ss;
+                        ss << saved_position << "Function declared in a class must have at least 1 parameter";
+                        error = ss.str();
+                        return nullptr;
+                    }
+
+                    statements = statement_list();
+                    if(error)
+                    {
+                        return nullptr;
+                    }
+                    if(current_token.type != Token::Type::END)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected 'end'";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    advance();
+                    
+                    methods[name.value] = ClassNode::Property(std::make_shared<FuncNode>(parameters, statements, saved_position), true, is_private);
+                    break;
+                }
+                case Token::Type::SET:
+                {
+                    Position saved_position = current_token.position;
+                    advance();
+
+                    IDENTIFIER_CHECK(name);
+                    if(properties.find(name.value) != properties.end()
+                            || methods.find(name.value) != methods.end()
+                            || setters.find(name.value) != setters.end())
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "'" << name.value
+                                << "' is already defined in class '"
+                                << class_name.value << "'";
+                        error = ss.str();
+                        return nullptr;
+                    }
+
+                    if(name.value == "new")
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "'new' must be declared as a method";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    
+                    if(current_token.type != Token::Type::LPAREN)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected a '('";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    advance();
+
+                    IDENTIFIER_CHECK(self_name);
+
+                    if(current_token.type != Token::Type::COMMA)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected a ','";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    advance();
+
+                    IDENTIFIER_CHECK(new_value_name);
+
+                    if(current_token.type != Token::Type::RPAREN)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected a ')'";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    advance();
+
+                    std::shared_ptr<StatementListNode> statements = statement_list();
+                    if(error)
+                    {
+                        return nullptr;
+                    }
+
+                    if(current_token.type != Token::Type::END)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected 'end'";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    advance();
+
+                    setters[name.value] = ClassNode::Setter(self_name, new_value_name, statements, is_private, saved_position);
+                    break;
+                }
+                case Token::Type::GET:
+                {
+                    Position saved_position = current_token.position;
+                    advance();
+
+                    IDENTIFIER_CHECK(name);
+                    if(properties.find(name.value) != properties.end()
+                            || methods.find(name.value) != methods.end()
+                            || getters.find(name.value) != getters.end())
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "'" << name.value
+                                << "' is already defined in class '"
+                                << class_name.value << "'";
+                        error = ss.str();
+                        return nullptr;
+                    }
+
+                    if(name.value == "new")
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "'new' must be declared as a method";
+                        error = ss.str();
+                        return nullptr;
+                    }
+
+                    if(current_token.type != Token::Type::LPAREN)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected a '('";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    advance();
+
+                    IDENTIFIER_CHECK(self_name);
+
+                    if(current_token.type != Token::Type::RPAREN)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected a ')'";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    advance();
+
+                    std::shared_ptr<StatementListNode> statements = statement_list();
+                    if(error)
+                    {
+                        return nullptr;
+                    }
+
+                    if(current_token.type != Token::Type::END)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected 'end'";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    advance();
+
+                    getters[name.value] = ClassNode::Getter(self_name, statements, is_private, saved_position);
+                    #undef IDENTIFIER_CHECK
+                    #undef CHECK_IDENTIFIER_EXISTS
+                    break;
+                }
+                default:
+                    if(is_private)
+                    {
+                        std::stringstream ss;
+                        ss << current_token.position << "Expected a declaration";
+                        error = ss.str();
+                        return nullptr;
+                    }
+                    break;
+            }
+
+            uint32_t new_line_count = 0;
+            while(current_token.type == Token::Type::NEW_LINE)
+            {
+                advance();
+                new_line_count++;
+            }
+            if(new_line_count == 0)
+            {
+                break;
+            }
+        }
+
+        if(!has_new_func)
+        {
+            methods["new"] = ClassNode::Property(std::make_shared<FuncNode>(std::vector<std::string>(), 
+                    std::make_shared<StatementListNode>(
+                        std::vector<std::shared_ptr<Node>>(), Position()
+                    ),
+                    Position()
+                ),
+                true,
+                false
+            );
+        }
+
+        if(current_token.type != Token::Type::END)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected 'end'";
+            error = ss.str();
+            return nullptr;
+        }
+        advance();
+
+        return std::make_shared<ClassNode>(class_name, super_name, properties, methods, setters, getters, saved_position);
+    }
+
     std::shared_ptr<Node> Parser::statement()
     {
         switch(current_token.type)
@@ -164,48 +514,19 @@ namespace sourdo
                 return var_declaration();
                 break;
             }
+            case Token::Type::CLASS:
+            {
+                return class_def();
+                break;
+            }
             case Token::Type::FUNC:
             {
                 // Don't give an error yet as this may be a lambda function and thus have no name.
                 if(tokens[position + 1].type != Token::Type::IDENTIFIER)
                 {
-                    break;
-                }
-                Position saved_position = current_token.position;
-
-                std::vector<std::string> parameters;
-                std::shared_ptr<StatementListNode> statements;
-                
-                advance();
-                Token name = current_token;
-                advance();
-                
-                get_parameters(parameters);
-                if(error)
-                {
                     return nullptr;
                 }
-
-                statements = statement_list();
-                if(error)
-                {
-                    return nullptr;
-                }
-                if(current_token.type != Token::Type::END)
-                {
-                    std::stringstream ss;
-                    ss << current_token.position << "Expected 'end'";
-                    error = ss.str();
-                    return nullptr;
-                }
-                advance();
-                
-                if(error)
-                {
-                    return nullptr;
-                }
-                
-                return std::make_shared<VarDeclarationNode>(name, std::make_shared<FuncNode>(parameters, statements, saved_position), true, saved_position);
+                return func_declaration();
             }
             case Token::Type::RETURN:
             {
@@ -436,7 +757,7 @@ namespace sourdo
         return expression(false, true);
     }
 
-    std::shared_ptr<Node> Parser::var_declaration()
+    std::shared_ptr<VarDeclarationNode> Parser::var_declaration()
     {
         Position saved_position = current_token.position;
         bool readonly = current_token.type == Token::Type::CONST;
@@ -468,6 +789,40 @@ namespace sourdo
             return nullptr;
         }
         return std::make_shared<VarDeclarationNode>(name_tok, expr, readonly, saved_position);
+    }
+
+    std::shared_ptr<Node> Parser::func_declaration()
+    {
+        Position saved_position = current_token.position;
+
+        std::vector<std::string> parameters;
+        std::shared_ptr<StatementListNode> statements;
+        
+        advance();
+        Token name = current_token;
+        advance();
+        
+        get_parameters(parameters);
+        if(error)
+        {
+            return nullptr;
+        }
+
+        statements = statement_list();
+        if(error)
+        {
+            return nullptr;
+        }
+        if(current_token.type != Token::Type::END)
+        {
+            std::stringstream ss;
+            ss << current_token.position << "Expected 'end'";
+            error = ss.str();
+            return nullptr;
+        }
+        advance();
+        
+        return std::make_shared<VarDeclarationNode>(name, std::make_shared<FuncNode>(parameters, statements, saved_position), true, saved_position);
     }
 
     std::shared_ptr<ExpressionNode> Parser::expression(bool multiline_mode, bool allow_assignment)
@@ -872,7 +1227,7 @@ namespace sourdo
             {Token::Type::DIV,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
             {Token::Type::MOD,              {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::MUL_EXPR    }},
             {Token::Type::POW,              {nullptr,                   &Parser::binary_op_right,   ExprPrecedence::POWER       }},
-            {Token::Type::IS,               {nullptr,                   &Parser::is_expr,           ExprPrecedence::POWER       }},
+            {Token::Type::ISA,              {nullptr,                   &Parser::is_expr,           ExprPrecedence::POWER       }},
             
             {Token::Type::LESS_THAN,        {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},
             {Token::Type::GREATER_THAN,     {nullptr,                   &Parser::binary_op_left,    ExprPrecedence::COMPARISON  }},

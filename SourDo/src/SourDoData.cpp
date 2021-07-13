@@ -50,6 +50,26 @@ namespace sourdo
             return Result::RUNTIME_ERROR;
         }
 
+        BytecodeGenerator byte_gen;
+        auto bytecode = byte_gen.generate_bytecode(ast);
+        if(bytecode.error)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << bytecode.error.value() << COLOR_DEFAULT << std::flush;
+            push_string(ss.str());
+            return Result::RUNTIME_ERROR;
+        }
+        std::cout << bytecode.bytecode;
+        VirtualMachine vm;
+        std::optional<std::string> error = vm.run_bytecode(bytecode.bytecode, impl);
+        if(error)
+        {
+            std::stringstream ss;
+            ss << COLOR_RED << error.value() << COLOR_DEFAULT << std::flush;
+            push_string(ss.str());
+            return Result::RUNTIME_ERROR;
+        }
+
         return Result::SUCCESS;
     }
     
@@ -98,7 +118,6 @@ namespace sourdo
             push_string(ss.str());
             return Result::RUNTIME_ERROR;
         }
-        std::cout << bytecode.bytecode;
         VirtualMachine vm;
         std::optional<std::string> error = vm.run_bytecode(bytecode.bytecode, impl);
         if(error)
@@ -114,9 +133,10 @@ namespace sourdo
     
     void* Data::create_cpp_object(size_t size)
     {
-        CppObject* cpp_object = new CppObject(size);
-        impl->stack.push_back(cpp_object);
-        return cpp_object->block;
+        //CppObject* cpp_object = new CppObject(size);
+        //impl->stack.push_back(cpp_object);
+        //return cpp_object->block;
+        return nullptr;
     }
     
     void* Data::check_cpp_object(int index, const std::string& name)
@@ -201,7 +221,7 @@ namespace sourdo
     Result Data::table_set(int object_index, bool protected_mode_enabled)
     {
         sourdo::Value& obj = impl->index_stack(object_index);
-        if(obj.get_type() != ValueType::OBJECT)
+        if(obj.get_type() != ValueType::TABLE)
         {
             std::stringstream ss;
             ss << COLOR_RED << "'" << "Value at the given index is not an object" << COLOR_DEFAULT << std::flush;
@@ -358,7 +378,7 @@ namespace sourdo
         
         if(func.get_type() == ValueType::SOURDO_FUNCTION)
         {
-            /*
+            
             SourDoFunction* func_value = func.to_sourdo_function();
             if(args.size() != func_value->parameter_count)
             {
@@ -397,10 +417,10 @@ namespace sourdo
             func_scope.get_impl()->parent = impl;
             for(int i = 0; i < func_value->parameter_count; i++)
             {
-                func_scope.get_impl()->symbol_table[func_value->parameters[i]] = args[i];
+                func_scope.get_impl()->stack.emplace_back(args[i]);
             }
-            visit_ast(func_scope.get_impl(), func_value->statements);
-            */
+            VirtualMachine vm;
+            vm.run_bytecode(func_value->bytecode, func_scope.get_impl());
         }
         else
         {

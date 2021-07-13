@@ -15,11 +15,12 @@ namespace sourdo
             BUILTIN_TYPE,
 
             VAR, CONST, FUNC, 
+            CLASS, PRIVATE, SET, GET, EXTENDS,
             RETURN, BREAK, CONTINUE,
             IF, ELIF, ELSE, 
             FOR, WHILE, LOOP,
             THEN, DO, END,
-            IS, OR, AND, NOT,
+            ISA, OR, AND, NOT,
             
             NUMBER_LITERAL, STRING_LITERAL, BOOL_TRUE, BOOL_FALSE, NULL_LITERAL, IDENTIFIER,
             ADD, SUB, MUL, DIV, MOD, POW,

@@ -33,6 +33,7 @@ namespace sourdo
 
         void visit_node(std::shared_ptr<Node> node, Bytecode& bytecode);
         void visit_statement_list_node(std::shared_ptr<StatementListNode> node, Bytecode& bytecode);
+        void visit_class_node(std::shared_ptr<ClassNode> node, Bytecode& bytecode);
         void visit_if_node(std::shared_ptr<IfNode> node, Bytecode& bytecode);
         void visit_for_node(std::shared_ptr<ForNode> node, Bytecode& bytecode);
         void visit_while_node(std::shared_ptr<WhileNode> node, Bytecode& bytecode);
@@ -40,7 +41,7 @@ namespace sourdo
 
         void visit_var_declaration_node(std::shared_ptr<VarDeclarationNode> node, Bytecode& bytecode);
         void visit_assignment_node(std::shared_ptr<AssignmentNode> node, Bytecode& bytecode);
-        void visit_func_node(std::shared_ptr<FuncNode> node, Bytecode& bytecode);
+        void visit_func_node(std::shared_ptr<FuncNode> node, Bytecode& bytecode, const std::optional<std::string>& class_context = {});
         void visit_return_node(std::shared_ptr<ReturnNode> node, Bytecode& bytecode);
         void visit_break_node(std::shared_ptr<BreakNode> node, Bytecode& bytecode);
         void visit_continue_node(std::shared_ptr<ContinueNode> node, Bytecode& bytecode);
